@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<smaph>
+	<setting name="freebase">
+		<param name="key" value="FREEBASE_KEY" />
+	</setting>
+	<setting name="cache">
+		<param name="bing-cache" value="" />
+	</setting>
+	<setting name="bing">
+		<param name="key" value="BING_KEY" />
+	</setting>
+	<setting name="tagme">
+		<param name="host" value="tagme.di.unipi.it/tag"/>
+		<param name="key" value="TAGME_KEY" />
+        </setting>
+	<setting name="stands4">
+		<param name="uid" value="STANDS4_UID" />
+		<param name="tokenid" value="STANDS4_TOKENID" />
+		<param name="cache" value="stands4.cache" />
+	</setting>
+</smaph>

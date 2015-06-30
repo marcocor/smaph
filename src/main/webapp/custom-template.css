@@ -1,0 +1,30 @@
+body {
+  padding-top: 50px;
+}
+
+.starter-template {
+  padding: 40px 15px;
+  text-align: center;
+}
+
+.red {
+  color: red;
+}
+
+.green {
+  color: green;
+}
+
+.popover {
+  max-width: 1000px;
+}
+
+.vcenter {
+    display: inline-block;
+    vertical-align: middle;
+    float: none;
+}
+
+a:hover {
+  text-decoration: none;
+}

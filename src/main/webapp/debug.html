@@ -1,0 +1,272 @@
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <link rel="icon" href="../../favicon.ico">
+
+    <title>Starter Template for Bootstrap</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Custom styles for this template -->
+    <link href="custom-template.css" rel="stylesheet">
+
+    <!-- Just for debugging purposes. Don't actually copy these 2 lines! -->
+    <!--[if lt IE 9]><script src="../../assets/js/ie8-responsive-file-warning.js"></script><![endif]-->
+    <script src="js/ie-emulation-modes-warning.js"></script>
+
+    <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
+    <script src="js/ie10-viewport-bug-workaround.js"></script>
+
+    <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+  </head>
+
+  <body>
+
+    <div class="navbar navbar-inverse navbar-fixed-top" role="navigation">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="#">SMAPH Debugger</a>
+        </div>
+        <div class="collapse navbar-collapse">
+        </div><!--/.nav-collapse -->
+      </div>
+    </div>
+    
+    <div class="container-fluid">
+      <div class="row starter-template">
+	<div class="col-lg-6 col-lg-offset-3">
+	  <div class="input-group">
+	    <input type="text" class="form-control" id="query-input" value="amstrong mon landing">
+	    <span class="input-group-btn">
+	      <button class="btn btn-default" type="button" id="debug-button">Debug!</button>
+	    </span>
+	  </div><!-- /input-group -->
+	</div><!-- /.col-lg-6 -->
+      </div><!-- /.row -->
+
+      <div class="row">
+	<div class="col-lg-8 col-lg-offset-2">
+	  <div class="alert alert-success" role="alert">
+	    <div class="container-fluid">
+	      <div class="row">
+		<div class="col-lg-8 col-lg-offset-1 vcenter" id="result-alert">
+		  To debug a query, click on Debug!
+		</div>
+	    	<div class="col-lg-2 vcenter">
+		  <div class="media">
+		    <img class="media-object" id="cat-loading" src="sitting-cat.png"/>
+		  </div>
+		</div>
+	      </div>
+	    </div>
+	  </div>
+	</div><!-- /.col-lg-6 -->
+      </div><!-- /.row -->
+
+      <div class="row">
+	<div class="col-lg-10 col-lg-offset-1">
+	  <div>
+	    <h1>Source 1 - Annotator</h1>
+	  </div>
+	  <div class="panel panel-primary">
+	    <div class="panel-heading">
+	      <h4 class="panel-title">
+		<a data-toggle="collapse" href="#collapseRetrievedBolds"><span class="activate-tooltip" data-toggle="tooltip" title="The query is issued to the search engine. Bolds contained in the snippets are extracted.">Retrieved Bolds</span></a>
+	      </h4>
+	    </div>
+	    <div id="collapseRetrievedBolds" class="panel-collapse collapse">
+	      <div class="panel-body">
+		<p>These are the bolds retrieved by the NormalSearch on Bing.</p>
+	      </div>
+	      <div class="container-fluid">
+		<div class="row">
+		  <div class="col-lg-10 col-lg-offset-1">
+		    <table class="table">
+		    <thead>
+		      <tr>
+			<th><span class="activate-tooltip" data-toggle="tooltip" title="This is the rank of the result that contained this bold.">Rank</span></th>
+			<th>Bold</th>
+			<th><span class="activate-tooltip" data-toggle="tooltip" title="This is the average word-by-word minimum edit distance from the bold to the query. This information is used by the bold filter.">Min. Edit Distance</span></th>
+		      </tr>
+		    </thead>
+		    <tbody class="clear-data" id="retrievedBoldsTable">
+		    </tbody>
+		    </table>
+		  </div>
+		</div>
+	      </div>
+	    </div>
+	  </div>
+
+	  <div class="panel panel-primary">
+	    <div class="panel-heading">
+	      <h4 class="panel-title">
+		<a data-toggle="collapse" href="#collapseFilteredBolds"><span class="activate-tooltip" data-toggle="tooltip" title="Bolds are filtered according to their edit distance. Only bolds whose edit distance is under a threshold (defualt 0.7) are kept.">Filtered Bolds</span></a>
+	      </h4>
+	    </div>
+	    <div id="collapseFilteredBolds" class="panel-collapse collapse">
+	      <div class="panel-body">
+		<p>Bolds surviving the edit distance filter.</p>
+	      </div>
+	      <div class="container-fluid">
+		<div class="row">
+		  <div class="col-lg-4 col-lg-offset-4">
+		    <table class="table">
+		    <thead>
+		      <tr>
+			<th>Bold</th>
+		      </tr>
+		    </thead>
+		    <tbody class="clear-data" id="filteredBoldsTable">
+		    </tbody>
+		    </table>
+		  </div>
+		</div>
+	      </div>
+	    </div>
+	  </div>
+
+	  <div class="panel panel-primary">
+	    <div class="panel-heading">
+	      <h4 class="panel-title">
+		<a data-toggle="collapse" href="#collapseAnnotations"><span class="activate-tooltip" data-toggle="tooltip" title="Bolds that survived the edit distance filter are issued to WAT, that may assign them an entity. Entities are chosen maximising coherence.">Annotations</span></a>
+	      </h4>
+	    </div>
+	    <div id="collapseAnnotations" class="panel-collapse collapse">
+	      <div class="panel-body">
+		<p>Annotations found by WAT</p>
+	      </div>
+ 	      <div class="container-fluid">
+		<div class="row">
+		  <div class="col-lg-10 col-lg-offset-1">
+		    <table class="table">
+		    <thead>
+		      <tr>
+			<th>Bold</th>
+			<th>Wikipedia-ID</th>
+			<th>Entity</th>
+			<th><span class="activate-tooltip" data-toggle="tooltip" title="These are the features used by the entity pruner (and SVM binary classifier) to decide whether to accept or reject the entity.">Features</span></th>
+			<th><span class="activate-tooltip" data-toggle="tooltip" title="Has the entity been accepted or discarded by the pruner?">Accepted</span></th>
+		      </tr>
+		    </thead>
+		    <tbody class="clear-data" id="annotationsTable">
+		    </tbody>
+		    </table>
+		  </div>
+		</div>
+	      </div>
+	    </div>
+	  </div>
+	</div>
+      </div><!-- /.row -->
+
+      <div class="row">
+	<div class="col-lg-10 col-lg-offset-1">
+	  <div>
+	    <h1>Source 2 - NormalSearch</h1>
+	  </div>
+	  <div class="panel panel-primary">
+	    <div class="panel-heading">
+	      <h4 class="panel-title">
+		<a data-toggle="collapse" href="#collapsePagesSource2"><span class="activate-tooltip" data-toggle="tooltip" title="The input query is issued to the search engine, results are fetched, if they contain Wikipedia urls, the corresponding entity becomes a candidate for Source 2.">Pages</span></a>
+	      </h4>
+	    </div>
+	    <div id="collapsePagesSource2" class="panel-collapse collapse">
+	      <div class="panel-body">
+		<p>Pages found by the Search Engine</p>
+	      </div>
+ 	      <div class="container-fluid">
+		<div class="row">
+		  <div class="col-lg-10 col-lg-offset-1">
+		    <table class="table">
+		      <thead>
+			<tr>
+			  <th><span class="activate-tooltip" data-toggle="tooltip" title="Result rank">Rank</span></th>
+			  <th>URL</th>
+			  <th>Wid</th>
+			  <th>Entity</th>
+			  <th><span class="activate-tooltip" data-toggle="tooltip" title="These are the features used by the entity pruner (and SVM binary classifier) to decide whether to accept or reject the entity.">Features</span></th>
+			  <th><span class="activate-tooltip" data-toggle="tooltip" title="Has the entity been accepted or discarded by the pruner?">Accepted</span></th>
+			</tr>
+		      </thead>
+		      <tbody class="clear-data" id="pagesSource2Table">
+		      </tbody>
+		    </table>
+		  </div>
+		</div>
+	      </div>
+	    </div>
+	  </div> <!-- /.panel -->
+	</div><!-- /.col-lg-10 -->
+      </div><!-- /.row -->
+
+      <div class="row">
+	<div class="col-lg-10 col-lg-offset-1">
+	<div>
+	  <h1>Source 3 - WikiSearch</h1>
+	</div>
+	<div class="panel panel-primary">
+	    <div class="panel-heading">
+	      <h4 class="panel-title">
+		<a data-toggle="collapse" href="#collapsePagesSource3"><span class="activate-tooltip" data-toggle="tooltip" title="The input query is concatenated with the word 'wikipedia' and issued to the search engine, results are fetched, if they contain Wikipedia urls, the corresponding entity becomes a candidate for Source 3.">Pages</span></a>
+	      </h4>
+	    </div>
+	    <div id="collapsePagesSource3" class="panel-collapse collapse">
+	      <div class="panel-body">
+		<p>Pages found by the Search Engine</p>
+	      </div>
+ 	      <div class="container-fluid">
+		<div class="row">
+		  <div class="col-lg-10 col-lg-offset-1">
+		    <table class="table">
+		    <thead>
+		      <tr>
+			<th><span class="activate-tooltip" data-toggle="tooltip" title="Result rank">Rank</span></th>
+			<th>URL</th>
+			<th>Wid</th>
+			<th>Entity</th>
+			<th><span class="activate-tooltip" data-toggle="tooltip" title="These are the features used by the entity pruner (and SVM binary classifier) to decide whether to accept or reject the entity.">Features</span></th>
+			<th><span class="activate-tooltip" data-toggle="tooltip" title="Has the entity been accepted or discarded by the pruner?">Accepted</span></th>
+		      </tr>
+		    </thead>
+		    <tbody class="clear-data" id="pagesSource3Table">
+		    </tbody>
+		  </div>
+		</div>
+	      </div>
+	      </table>
+	    </div>
+	  </div>
+	</div><!-- /.col-lg-10 -->
+      </div><!-- /.row -->
+    </div><!-- /.container -->
+
+    
+
+    <!-- Bootstrap core JavaScript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+    <script src="js/bootstrap.min.js"></script>
+
+    <script src="custom.js"></script>
+
+  </body>
+</html>
