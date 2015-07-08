@@ -19,8 +19,8 @@
 			<version>0.3</version>
 		</dependency>
 		<dependency>
-			<groupId>RankLib</groupId>
-			<artifactId>RankLib</artifactId>
+			<groupId>ranklib.plus</groupId>
+			<artifactId>ranklib</artifactId>
 			<version>2.1</version>
 		</dependency>
 		<dependency>
@@ -51,9 +51,9 @@
 		</dependency>
 
 		<dependency>
-			<groupId>it.acubelab.batframework</groupId>
+			<groupId>it.unipi.di.acube</groupId>
 			<artifactId>bat-framework</artifactId>
-			<version>0.1</version>
+			<version>1.0</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.httpcomponents</groupId>
@@ -121,9 +121,9 @@
 			<version>3.3.2</version>
 		</dependency>
 		<dependency>
-			<groupId>org.trie4j</groupId>
+			<groupId>com.github.takawitter</groupId>
 			<artifactId>trie4j</artifactId>
-			<version>0.5.0</version>
+			<version>0.9.0</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.commons</groupId>

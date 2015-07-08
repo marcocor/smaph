@@ -16,18 +16,18 @@
 
 package it.cnr.isti.hpc.erd.rest;
 
-import it.acubelab.batframework.data.ScoredAnnotation;
-import it.acubelab.batframework.systemPlugins.WATAnnotator;
-import it.acubelab.batframework.utils.WikipediaApiInterface;
+import it.unipi.di.acube.batframework.data.ScoredAnnotation;
+import it.unipi.di.acube.batframework.systemPlugins.WATAnnotator;
+import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
+import it.unipi.di.acube.smaph.SmaphAnnotator;
+import it.unipi.di.acube.smaph.SmaphAnnotatorDebugger;
+import it.unipi.di.acube.smaph.SmaphConfig;
+import it.unipi.di.acube.smaph.boldfilters.FrequencyBoldFilter;
+import it.unipi.di.acube.smaph.entityfilters.LibSvmEntityFilter;
+import it.unipi.di.acube.smaph.learn.featurePacks.EntityFeaturePack;
+import it.unipi.di.acube.smaph.learn.normalizer.ScaleFeatureNormalizer;
+import it.unipi.di.acube.smaph.linkback.DummyLinkBack;
 import it.unipi.di.acube.BingInterface;
-import it.acubelab.smaph.SmaphAnnotator;
-import it.acubelab.smaph.SmaphAnnotatorDebugger;
-import it.acubelab.smaph.SmaphConfig;
-import it.acubelab.smaph.boldfilters.FrequencyBoldFilter;
-import it.acubelab.smaph.entityfilters.LibSvmEntityFilter;
-import it.acubelab.smaph.learn.featurePacks.EntityFeaturePack;
-import it.acubelab.smaph.learn.normalizer.ScaleFeatureNormalizer;
-import it.acubelab.smaph.linkback.DummyLinkBack;
 import it.cnr.isti.hpc.erd.Annotation;
 import it.cnr.isti.hpc.erd.Annotator;
 
@@ -103,12 +103,7 @@ public class RestService {
 	}
 
 	private WikipediaApiInterface getDefaultWikiInterface() {
-		try {
-			return new WikipediaApiInterface("wid.cache", "redirect.cache");
-		} catch (ClassNotFoundException | IOException e) {
-			e.printStackTrace();
-			throw new RuntimeException(e);
-		}
+		return new WikipediaApiInterface("wid.cache", "redirect.cache");
 	}
 
 	private SmaphAnnotator getDefaultAnnotator(WikipediaApiInterface wikiApi) {
