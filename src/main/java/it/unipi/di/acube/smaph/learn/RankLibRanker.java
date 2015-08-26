@@ -6,6 +6,7 @@ import it.unipi.di.acube.smaph.learn.normalizer.FeatureNormalizer;
 import java.util.List;
 
 import ciir.umass.edu.learning.DataPoint;
+import ciir.umass.edu.learning.RankList;
 import ciir.umass.edu.learning.Ranker;
 import ciir.umass.edu.learning.RankerFactory;
 import ciir.umass.edu.utilities.Sorter;
@@ -19,12 +20,11 @@ public class RankLibRanker{
 	}
 
 	private static DataPoint featuresToDatapointString(double[] features) {
-		String str = String.format("1 id ");
+		String str = String.format("1 qid:1 ");
 		for (int i = 0; i < features.length; i++) {
 			str += String.format("%d:%.9f", i + 1, features[i]);
 			if (i != features.length - 1)
 				str += " ";
-			i++;
 		}
 		return new DataPoint(str);
 	}
@@ -36,10 +36,20 @@ public class RankLibRanker{
 		return scores;
 	}
 
+	/**
+	 * @param features a list of feature packs.
+	 * @param fn the feature normalizer.
+	 * @return indexes of the feature list, from best to least rank.
+	 */
 	public int[] getRanking(List<FeaturePack> features, FeatureNormalizer fn) {
 		return Sorter.sort(getScores(features, fn), false);
 	}
 
+	/**
+	 * @param features a list of feature packs.
+	 * @param fn the feature normalizer.
+	 * @return the index of the best feature pack.
+	 */
 	public int getHighestRank(List<FeaturePack> features, FeatureNormalizer fn) {
 		return getRanking(features, fn)[0];
 	}

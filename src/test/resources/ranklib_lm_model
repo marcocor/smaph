@@ -1,0 +1,63 @@
+## LambdaMART
+## No. of trees = 1000
+## No. of leaves = 10
+## No. of threshold candidates = 256
+## Learning rate = 0.1
+## Stop early = 100
+
+<ensemble>
+	<tree id="1" weight="0.1">
+		<split>
+			<feature> 2 </feature>
+			<threshold> 0.8 </threshold>
+			<split pos="left">
+				<feature> 2 </feature>
+				<threshold> 0.5 </threshold>
+				<split pos="left">
+					<feature> 1 </feature>
+					<threshold> 0.5 </threshold>
+					<split pos="left">
+						<output> 2.0 </output>
+					</split>
+					<split pos="right">
+						<feature> 1 </feature>
+						<threshold> 0.6 </threshold>
+						<split pos="left">
+							<output> 1.2946417331695557 </output>
+						</split>
+						<split pos="right">
+							<output> -2.0 </output>
+						</split>
+					</split>
+				</split>
+				<split pos="right">
+					<feature> 1 </feature>
+					<threshold> 0.0 </threshold>
+					<split pos="left">
+						<output> -2.0 </output>
+					</split>
+					<split pos="right">
+						<feature> 2 </feature>
+						<threshold> 0.7 </threshold>
+						<split pos="left">
+							<output> -1.9875705242156982 </output>
+						</split>
+						<split pos="right">
+							<feature> 1 </feature>
+							<threshold> 0.5 </threshold>
+							<split pos="left">
+								<output> -1.8086456060409546 </output>
+							</split>
+							<split pos="right">
+								<output> -2.0 </output>
+							</split>
+						</split>
+					</split>
+				</split>
+			</split>
+			<split pos="right">
+				<output> 2.0 </output>
+			</split>
+		</split>
+	</tree>
+</ensemble>
