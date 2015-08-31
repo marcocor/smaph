@@ -269,7 +269,7 @@ public class ExampleGatherer<T extends Serializable, G extends Serializable> {
 					featureVectorsAndTargetGroups.get(groupId));
 			Collections.sort(featureVectorsAndGolds,
 					new SmaphUtils.ComparePairsBySecondElement());
-			Collections.reverse(featureVectorsAndGolds);
+			//Element with highest rank is our favorite, so let's start with lowest rank.
 			int rank = 0;
 			double lastVal = Double.NaN;
 			for (Pair<FeaturePack<T>, Double> pair : featureVectorsAndGolds) {
