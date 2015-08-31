@@ -6,6 +6,7 @@ import it.unipi.di.acube.batframework.metrics.MatchRelation;
 import it.unipi.di.acube.batframework.metrics.MentionAnnotationMatch;
 import it.unipi.di.acube.batframework.metrics.Metrics;
 import it.unipi.di.acube.batframework.metrics.MetricsResultSet;
+import it.unipi.di.acube.batframework.metrics.StrongAnnotationMatch;
 import it.unipi.di.acube.batframework.metrics.StrongMentionAnnotationMatch;
 import it.unipi.di.acube.batframework.metrics.StrongTagMatch;
 import it.unipi.di.acube.batframework.metrics.WeakAnnotationMatch;
@@ -34,11 +35,10 @@ public abstract class SolutionComputer <T extends Serializable, G extends Object
 	public abstract double candidateScore(T candidate, G gold) throws IOException;
 
 	public static class TagSetSolutionComputer extends SolutionComputer<Tag, HashSet<Tag>>{
-		private WikipediaApiInterface wikiApi;
-		private StrongTagMatch stm = new StrongTagMatch(wikiApi);
+		private StrongTagMatch stm;
 			
 		public  TagSetSolutionComputer(WikipediaApiInterface wikiApi){
-			this.wikiApi = wikiApi;
+			stm = new StrongTagMatch(wikiApi);
 		}
 		
 		@Override
@@ -71,13 +71,12 @@ public abstract class SolutionComputer <T extends Serializable, G extends Object
 	}
 	
 	public static class AnnotationSetSolutionComputer extends SolutionComputer<Annotation, HashSet<Annotation>>{
-		private WikipediaApiInterface wikiApi;
 		private double threshold;
-		private MatchRelation<Annotation> am = new StrongMentionAnnotationMatch();
+		private MatchRelation<Annotation> am;
 			
 		public  AnnotationSetSolutionComputer(WikipediaApiInterface wikiApi, double threshold){
-			this.wikiApi = wikiApi;
 			this.threshold = threshold;
+			this.am = new StrongAnnotationMatch(wikiApi);
 		}
 		
 		@Override
@@ -87,10 +86,8 @@ public abstract class SolutionComputer <T extends Serializable, G extends Object
 			
 			List<HashSet<Annotation>> solutionList = new Vector<>();
 			for (List<Pair<Annotation, Double>> candidateAndPred : candidateAndPreds) {
-				HashSet<Annotation> computedSolution = ProblemReduction
-						.Sa2WToA2W(SvmIndividualAnnotationLinkBack.getResult(
-								candidateAndPred, threshold));
-			solutionList.add(computedSolution);
+				HashSet<Annotation> computedSolution = ProblemReduction.Sa2WToA2W(SvmIndividualAnnotationLinkBack.getResult(candidateAndPred, threshold));
+				solutionList.add(computedSolution);
 			}
 
             if (gold.size() != solutionList.size())
@@ -114,11 +111,10 @@ public abstract class SolutionComputer <T extends Serializable, G extends Object
 	}
 
 	public static class BindingSolutionComputer extends SolutionComputer<HashSet<Annotation>, HashSet<Annotation>> {
-		private WikipediaApiInterface wikiApi;
-		private MatchRelation<Annotation> wam = new WeakAnnotationMatch(wikiApi);
+		private MatchRelation<Annotation> wam;
 
 		public  BindingSolutionComputer(WikipediaApiInterface wikiApi){
-			this.wikiApi = wikiApi;
+			this.wam = new WeakAnnotationMatch(wikiApi);
 		}
 		
 		@Override
