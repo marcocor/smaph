@@ -432,7 +432,7 @@ public class Annotator {
 
 			SmaphAnnotator smaph = null;
 			try {
-				smaph = GenerateTrainingAndTest.getDefaultBingAnnotatorAFRegressor(wikiApi, 0.06, bingKey, AFmodel, AFrange, -0.65);
+				smaph = GenerateTrainingAndTest.getDefaultBingAnnotatorIndividualLBLiblinear(wikiApi, 0.06, bingKey, AFmodel, AFrange, -0.65);
 			} catch (Exception e) {
 				e.printStackTrace();
 			}

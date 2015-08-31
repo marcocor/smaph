@@ -43,6 +43,7 @@ import org.trie4j.louds.MapTailLOUDSTrie;
 import org.trie4j.patricia.MapPatriciaTrie;
 
 public class EntityToAnchors {
+	public static final String DEFAULT_INPUT = "./data/anchors.gz";
 	public static final String DATASET_FILENAME = "./mapdb/e2a_dataset";
 	private static EntityToAnchors e2a;
 
@@ -259,7 +260,7 @@ public class EntityToAnchors {
 
 	public static void main(String[] args) throws Exception{
 		logger.info("Creating E2A database... ");
-		createDB(args[0]);
+		createDB(args.length > 0 ? args[0] : DEFAULT_INPUT);
 		logger.info("Done.");
 		
 /*		EntityToAnchors.e2a();

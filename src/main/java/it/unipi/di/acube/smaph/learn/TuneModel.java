@@ -160,7 +160,7 @@ public class TuneModel {
 
 			SmaphAnnotator bingAnnotator = GenerateTrainingAndTest
 					.getDefaultBingAnnotatorGatherer(wikiApi, 
-							boldFilterThr, bingKey);
+							boldFilterThr, bingKey, true, true, true);
 
 			ExampleGatherer<Tag, HashSet<Tag>> trainEntityFilterGatherer = new ExampleGatherer<Tag, HashSet<Tag>>();
 			ExampleGatherer<Tag, HashSet<Tag>> develEntityFilterGatherer = new ExampleGatherer<Tag, HashSet<Tag>>();
@@ -267,11 +267,11 @@ public class TuneModel {
 				  optProfile, optProfileThreshold, scoreboardFtrSelection, wikiApi)
 				  .run();
 				 
-				/*new IncrementalFeatureSelector(bestwPos, bestwNeg, gamma, C,
-						boldFilterThreshold, trainGatherer, develGatherer,featuresToInclude,
-						optProfile, optProfileThreshold, scoreboardFtrSelection)
-						.run();*/
-				bestFtr = ModelConfigurationResult
+/*				new IncrementalFeatureSelector(bestwPos, bestwNeg, bestGamma,
+						bestC, trainGatherer, develGatherer, optProfile,
+						optProfileThreshold, scoreboardFtrSelection, wikiApi)
+						.run();
+*/				bestFtr = ModelConfigurationResult
 						.findBest(scoreboardFtrSelection, optProfile,
 								optProfileThreshold);
 				globalScoreboard.addAll(scoreboardFtrSelection);
@@ -726,7 +726,7 @@ public class TuneModel {
 		private WikipediaApiInterface wikiApi;
 
 		public IncrementalFeatureSelector(double wPos, double wNeg,
-				double gamma, double C, double editDistanceThreshold,
+				double gamma, double C,
 				ExampleGatherer<Tag, HashSet<Tag>> trainGatherer,
 				ExampleGatherer<Tag, HashSet<Tag>> testGatherer,
 				OptimizaionProfiles optProfile, double optProfileThreshold,
@@ -737,7 +737,6 @@ public class TuneModel {
 			this.trainGatherer = trainGatherer;
 			this.testGatherer = testGatherer;
 			this.optProfile = optProfile;
-			this.editDistanceThreshold = editDistanceThreshold;
 			this.scoreboard = scoreboard;
 			this.gamma = gamma;
 			this.C = C;

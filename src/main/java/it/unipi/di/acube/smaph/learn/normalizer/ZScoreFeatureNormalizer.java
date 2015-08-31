@@ -49,7 +49,7 @@ public class ZScoreFeatureNormalizer extends FeatureNormalizer {
 		double avg = avgs.get(ftrName);
 		double stdDev = stdDevs.get(ftrName);
 		if (Double.isNaN(avg) || Double.isNaN(stdDev))
-			throw new RuntimeException("You are trying to normalize a feature that has never been observed before.");
+			throw new RuntimeException("You are trying to normalize feature " + ftrName + " that has never been observed before.");
 		if (stdDev == 0.0)
 			return fp.getFeature(ftrName) - avg;
 		return (fp.getFeature(ftrName) - avg) / stdDev;
@@ -86,7 +86,7 @@ public class ZScoreFeatureNormalizer extends FeatureNormalizer {
 		}
 	}
 
-	public void dump(String file, FeaturePack<?> fp) throws IOException {
+	public void dump(String file) throws IOException {
 		BufferedWriter br = new BufferedWriter(new FileWriter(file));
 		for (String ftrName : avgs.keySet()) {
 			br.write(String.format("%s %f %f%n", ftrName, avgs.get(ftrName),

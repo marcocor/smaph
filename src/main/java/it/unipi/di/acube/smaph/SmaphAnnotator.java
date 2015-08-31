@@ -1235,9 +1235,8 @@ public class SmaphAnnotator implements Sa2WSystem {
 		}
 		// Generate examples for advanced annotation filter
 		if (advancedAnnVectorsToPresence != null) {
-			//TODO: WATCH OUT! you should use StrongAnnotationMatch here!!!
 			List<Triple<Annotation, AdvancedAnnotationFeaturePack, Boolean>> annotationsAndFtrAndPresences = getAdvancedARToFtrsAndPresence(
-					query, qi, goldStandardAnn, new StrongMentionAnnotationMatch(), anchorMaxED);
+					query, qi, goldStandardAnn, new StrongAnnotationMatch(wikiApi), anchorMaxED);
 			for (Triple<Annotation, AdvancedAnnotationFeaturePack, Boolean> annotationsAndFtrAndPresence : annotationsAndFtrAndPresences) {
 				AdvancedAnnotationFeaturePack features = annotationsAndFtrAndPresence.getMiddle();
 				Annotation ann = annotationsAndFtrAndPresence.getLeft();

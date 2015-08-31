@@ -121,8 +121,7 @@ public class BindingFeaturePack extends FeaturePack<HashSet<Annotation>> {
 					entitySetFeatures.put("max_" + ftrName, Math.max(
 							entitySetFeatures.get("max_" + ftrName), ftrValue));
 					entitySetFeatures.put("avg_" + ftrName,
-							entitySetFeatures.get("avg_" + ftrName) + ftrValue
-									/ ftrCount.get(ftrName));
+							entitySetFeatures.get("avg_" + ftrName) + ftrValue / ftrCount.get(ftrName));
 
 				} else if (ftrName.startsWith("is_")) {
 					String key = "count_" + ftrName;
@@ -136,9 +135,12 @@ public class BindingFeaturePack extends FeaturePack<HashSet<Annotation>> {
 	}
 
 	private static HashMap<String, Double> getFeatures(
-			HashSet<Annotation> binding, String query,
-			HashMap<Tag, String[]> entitiesToBolds,HashMap<Tag, String> entityToTitle,
-			HashMap<Tag, List<HashMap<String, Double>>> entityToFeatureVectors, HashMap<Annotation,Double> annotationRegressorScores) {
+			HashSet<Annotation> binding,
+			String query,
+			HashMap<Tag, String[]> entitiesToBolds,
+			HashMap<Tag, String> entityToTitle,
+			HashMap<Tag, List<HashMap<String, Double>>> entityToFeatureVectors,
+			HashMap<Annotation, Double> annotationRegressorScores) {
 		HashSet<Tag> selectedEntities = new HashSet<>();
 		for (Annotation ann : binding)
 			selectedEntities.add(new Tag(ann.getConcept()));
