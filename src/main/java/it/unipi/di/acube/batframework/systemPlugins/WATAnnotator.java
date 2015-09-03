@@ -20,6 +20,7 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 
+import org.apache.log4j.Logger;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
@@ -56,6 +57,7 @@ public class WATAnnotator implements Sa2WSystem, MentionSpotter,
 	private static long flushCounter = 0;
 	private static final int FLUSH_EVERY = 200;
 	private static String resultsCacheFilename = null;
+	private static Logger logger = Logger.getLogger(WATAnnotator.class);
 
 	public static synchronized void increaseFlushCounter()
 			throws FileNotFoundException, IOException {
@@ -443,9 +445,16 @@ public class WATAnnotator implements Sa2WSystem, MentionSpotter,
 			String cacheKey = wikiSenseApi.toExternalForm()
 					+ parameters.toString();
 			byte[] compressed = url2jsonCache.get(cacheKey);
-			if (compressed != null)
-				return new JSONObject(SmaphUtils.decompress(compressed));
-
+			if (compressed != null){
+				try {
+					String jsonString = SmaphUtils.decompress(compressed);
+					return new JSONObject(jsonString);
+				} catch (IOException e)	{
+					logger.warn("Broken Gzip, re-downloading");
+				}
+				
+			}
+				
 			HttpURLConnection slConnection = (HttpURLConnection) wikiSenseApi
 					.openConnection();
 			slConnection.setReadTimeout(0);
