@@ -44,8 +44,6 @@ public class FrequencyBoldFilter implements BoldFilter {
 		for (String spot : positions.keySet())
 			if (getFrequency(positions.get(spot).size(), resultsCount) >= this.minSpotFreq) {
 				spots.add(spot);
-				SmaphAnnotatorDebugger.out.printf("%s -> %d%n", spot, positions.get(spot)
-						.size());
 			}
 		return spots;
 	}
