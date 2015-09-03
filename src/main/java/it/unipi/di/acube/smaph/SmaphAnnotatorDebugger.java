@@ -1,6 +1,10 @@
 package it.unipi.di.acube.smaph;
 
+import it.unipi.di.acube.batframework.data.Annotation;
 import it.unipi.di.acube.batframework.data.Tag;
+import it.unipi.di.acube.batframework.metrics.MatchRelation;
+import it.unipi.di.acube.batframework.metrics.Metrics;
+import it.unipi.di.acube.batframework.metrics.StrongAnnotationMatch;
 import it.unipi.di.acube.batframework.utils.Pair;
 import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
 import it.unipi.di.acube.smaph.learn.featurePacks.EntityFeaturePack;
@@ -8,12 +12,15 @@ import it.unipi.di.acube.smaph.learn.featurePacks.EntityFeaturePack;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.URLEncoder;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.Vector;
 
+import org.apache.commons.collections4.comparators.ReverseComparator;
 import org.apache.commons.lang3.tuple.ImmutableTriple;
 import org.apache.commons.lang3.tuple.Triple;
 import org.codehaus.jettison.json.JSONArray;
@@ -39,6 +46,7 @@ public class SmaphAnnotatorDebugger {
 	private HashMap<String, HashSet<Integer>> result = new HashMap<>();
 	private HashMap<String, List<Pair<String, Vector<Pair<Integer, Integer>>>>> snippetsToBolds = new HashMap<>();
 	private HashMap<String, Set<Integer>> candidateEntities = new HashMap<String, Set<Integer>>(); 
+	private HashMap<String, List<Triple<HashMap<Annotation, HashMap<String, Double>>, HashMap<String, Double>, Double>>> linkBackAnnotationFeaturesAndBindingFeaturesAndScore = new HashMap<>();
 
 	public void addProcessedQuery(String query) {
 		processedQueries.add(query);
@@ -395,4 +403,108 @@ public class SmaphAnnotatorDebugger {
 			wids.add(candidateEntity.getConcept());
 		candidateEntities.put(query, wids);
 	}
+
+	public void addLinkbackBindingFeatures(
+			String query,
+			HashMap<Annotation, HashMap<String, Double>> debugAnnotationFeatures,
+			HashMap<String, Double> debugBindingFeatures, double predictedScore) {
+		if (!linkBackAnnotationFeaturesAndBindingFeaturesAndScore.containsKey(query))
+			linkBackAnnotationFeaturesAndBindingFeaturesAndScore.put(query, new Vector<Triple<HashMap<Annotation,HashMap<String,Double>>,HashMap<String,Double>,Double>>());
+		linkBackAnnotationFeaturesAndBindingFeaturesAndScore.get(query).add(new ImmutableTriple<HashMap<Annotation,HashMap<String,Double>>, HashMap<String,Double>, Double>(debugAnnotationFeatures, debugBindingFeatures, predictedScore));
+	}
+	
+	public JSONArray getLinkbackBindingFeatures(String query, HashSet<Annotation> goldStandard, WikipediaApiInterface wikiApi) throws JSONException, IOException {
+		MatchRelation<Annotation> sam = new StrongAnnotationMatch(wikiApi);
+		Metrics<Annotation> m = new Metrics<Annotation>();
+		float bestScore = -1;
+		if (goldStandard != null)
+			bestScore = getBestScore(this.linkBackAnnotationFeaturesAndBindingFeaturesAndScore.get(query), goldStandard, sam);
+		
+		Vector<Pair<JSONObject, Double>> res = new Vector<>();
+		for (Triple<HashMap<Annotation, HashMap<String, Double>>, HashMap<String, Double>, Double> t : this.linkBackAnnotationFeaturesAndBindingFeaturesAndScore.get(query)) {
+			JSONObject tripleJs = new JSONObject();
+			res.add(new Pair<JSONObject, Double>(tripleJs, t.getRight()));
+			JSONArray annotationsJs = new JSONArray();
+			tripleJs.put("annotations", annotationsJs);
+			for (Annotation a: SmaphUtils.sorted(t.getLeft().keySet())){
+				JSONObject annotationJs = new JSONObject();
+				annotationsJs.put(annotationJs);
+				annotationJs.put("mention", query.substring(a.getPosition(), a.getPosition()+a.getLength()));
+				annotationJs.put("wid", a.getConcept());
+				annotationJs.put("title", wikiApi.getTitlebyId(a.getConcept()));
+				annotationJs.put("url", widToUrl(a.getConcept(), wikiApi));
+				JSONObject annotationFeaturesJs = new JSONObject();
+				annotationJs.put("annotation_features", annotationFeaturesJs);
+				for (String fName: SmaphUtils.sorted(t.getLeft().get(a).keySet()))
+					annotationFeaturesJs.put(fName, t.getLeft().get(a).get(fName));
+			}
+			
+			JSONObject bindingFeaturesJs = new JSONObject();
+			tripleJs.put("binding_features", bindingFeaturesJs);
+			for (String fName: SmaphUtils.sorted(t.getMiddle().keySet(), new CompareFeatureName()))
+				bindingFeaturesJs.put(fName, t.getMiddle().get(fName));
+
+			tripleJs.put("predicted_score", t.getRight());
+			
+			if (goldStandard != null){
+				float f1 = m.getSingleF1(goldStandard, new HashSet<Annotation>(t.getLeft().keySet()), sam);
+				float prec = m.getSinglePrecision(goldStandard, new HashSet<Annotation>(t.getLeft().keySet()), sam);
+				float rec = m.getSingleRecall(goldStandard, new HashSet<Annotation>(t.getLeft().keySet()), sam);
+				tripleJs.put("strong_f1", f1);
+				tripleJs.put("strong_prec", prec);
+				tripleJs.put("strong_rec", rec);
+				tripleJs.put("is_best_solution", bestScore == f1);
+				tripleJs.put("strong_f1_best_score", bestScore);
+			}
+		}
+		
+		Collections.sort(res, new ReverseComparator<>(new SmaphUtils.ComparePairsBySecondElement()));
+		
+		JSONArray resJs = new JSONArray();
+		for (Pair<JSONObject, Double> p : res)
+			resJs.put(p.first);
+
+		return resJs;
+	}
+	
+	private float getBestScore(
+			List<Triple<HashMap<Annotation, HashMap<String, Double>>, HashMap<String, Double>, Double>> list,
+			HashSet<Annotation> goldStandard, MatchRelation<Annotation> sam) {
+		float best = 0f;
+		Metrics<Annotation> m = new Metrics<>();
+		for (Triple<HashMap<Annotation, HashMap<String, Double>>, HashMap<String, Double>, Double> t : list){
+			float f1 = m.getSingleF1(goldStandard, new HashSet<Annotation>(t.getLeft().keySet()), sam);
+			best = Math.max(best, f1);
+		}
+		return best;
+	}
+
+	public static class CompareFeatureName implements Comparator<String> {
+		@Override
+		public int compare(String fn1, String fn2) {
+			int prefix1 = 0, prefix2 = 0;
+			switch (fn1.substring(0,4)){
+			case "min_": prefix1 = 1; break;
+			case "max_": prefix1 = 2; break;
+			case "avg_": prefix1 = 3; break;
+			}
+			switch (fn2.substring(0,4)){
+			case "min_": prefix2 = 1; break;
+			case "max_": prefix2 = 2; break;
+			case "avg_": prefix2 = 3; break;
+			}
+			
+			if (prefix1 == 0 && prefix2 == 0)
+				return fn1.compareTo(fn2);
+			else if (prefix1 == 0)
+				return 1;
+			else if (prefix2 == 0)
+				return -1;
+			else if (!fn1.substring(4).equals(fn2.substring(4))) //different feature names
+				return fn1.substring(4).compareTo(fn2.substring(4));
+			else //same feature name
+				return prefix1 - prefix2;
+		}
+	}
+
 }
