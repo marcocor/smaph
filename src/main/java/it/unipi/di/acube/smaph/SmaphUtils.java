@@ -30,7 +30,9 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -381,7 +383,7 @@ public class SmaphUtils {
 			HashMap<Tag, List<String>> tagToBoldsS6, Set<Tag> entityToKeep) {
 		HashMap<Tag, String[]> res = new HashMap<>();
 		for (Tag t : tagToBoldsS6.keySet())
-			if (entityToKeep.contains(t))
+			if (entityToKeep == null || entityToKeep.contains(t))
 				res.put(t, tagToBoldsS6.get(t).toArray(new String[]{}));
 		return res;
 	}
@@ -625,5 +627,15 @@ public class SmaphUtils {
 		}
 		return res;
 	}
+	
+	public static <T extends Comparable<? super T>> List<T> sorted(Collection<T> c, Comparator<T> comp) {
+		List<T> list = new ArrayList<T>(c);
+		Collections.sort(list, comp);
+		return list;
+	}
+	public static <T extends Comparable<? super T>> List<T> sorted(Collection<T> c) {
+		return sorted(c, null);
+	}
+
 }
 
