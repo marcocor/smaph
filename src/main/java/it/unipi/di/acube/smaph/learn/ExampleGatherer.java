@@ -252,14 +252,6 @@ public class ExampleGatherer<T extends Serializable, G extends Serializable> {
 		wr.write(line + "\n");
 	}
 
-	private void writeLineRankLib(double[] ftrVect, BufferedWriter wr,
-			int rank, int groupid) throws IOException {
-		String line = String.format("%d qid:%d ", rank, groupid);
-		for (int ftr = 0; ftr < ftrVect.length; ftr++)
-			line += String.format("%d:%.9f ", ftr + 1, ftrVect[ftr]);
-		wr.write(line + "\n");
-	}
-
 	public void dumpExamplesRankLib(String filename, FeatureNormalizer fn)
 			throws IOException {
 		BufferedWriter wr = new BufferedWriter(new FileWriter(filename, false));
@@ -277,10 +269,9 @@ public class ExampleGatherer<T extends Serializable, G extends Serializable> {
 					lastVal = pair.second;
 					rank++;
 				}
-				writeLineRankLib(fn.ftrToNormalizedFtrArray(pair.first), wr,
-						rank, groupId);
+				wr.write(RankLibRanker.ftrVectToString(fn.ftrToNormalizedFtrArray(pair.first), rank, groupId));
+				wr.write("\n");
 			}
-
 		}
 		wr.close();
 	}

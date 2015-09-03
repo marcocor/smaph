@@ -6,7 +6,6 @@ import it.unipi.di.acube.smaph.learn.normalizer.FeatureNormalizer;
 import java.util.List;
 
 import ciir.umass.edu.learning.DataPoint;
-import ciir.umass.edu.learning.RankList;
 import ciir.umass.edu.learning.Ranker;
 import ciir.umass.edu.learning.RankerFactory;
 import ciir.umass.edu.utilities.Sorter;
@@ -19,14 +18,18 @@ public class RankLibRanker{
 		ranker = rFact.loadRanker(modelFile);
 	}
 
-	private static DataPoint featuresToDatapointString(double[] features) {
-		String str = String.format("1 qid:1 ");
-		for (int i = 0; i < features.length; i++) {
-			str += String.format("%d:%.9f", i + 1, features[i]);
-			if (i != features.length - 1)
-				str += " ";
+	public static String ftrVectToString(double[] ftrVect, int rank, int groupid) {
+		StringBuilder sb = new StringBuilder();
+		sb.append(rank).append(" qid:").append(groupid).append(" ");
+		for (int ftr = 0; ftr < ftrVect.length; ftr++){
+			sb.append(ftr + 1);
+			sb.append(String.format(":%.9f ", ftrVect[ftr]));
 		}
-		return new DataPoint(str);
+		return sb.toString();
+	}
+
+	private static DataPoint featuresToDatapointString(double[] features) {
+		return new DataPoint(ftrVectToString(features, 1, 1));
 	}
 
 	private double[] getScores(List<FeaturePack> features, FeatureNormalizer fn) {
