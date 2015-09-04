@@ -736,7 +736,7 @@ public class GenerateModel {
 		String filename = "/tmp/feature_list_"+getFtrListRepresentation(ftrs);
 		FileWriter fw = new FileWriter(filename);
 		for (int f : ftrs)
-			fw.write(f);
+			fw.write(String.format("%d%n", f));
 		fw.close();
 		return filename;
 	}
