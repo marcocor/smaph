@@ -502,4 +502,9 @@ public class SmaphUtilsTest {
 		
 	}
 
+	@Test
+	public void testGetAllFtrVectIntIntArray() throws Exception {
+		assertArrayEquals(new int[] { 2, 6 }, SmaphUtils.getAllFtrVect(6, new int[] { 1, 3, 4, 5 }));
+	}
+
 }
