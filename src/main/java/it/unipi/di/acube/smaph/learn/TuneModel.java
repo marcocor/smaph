@@ -29,11 +29,16 @@ import it.unipi.di.acube.smaph.SmaphAnnotator;
 import it.unipi.di.acube.smaph.SmaphConfig;
 import it.unipi.di.acube.smaph.SmaphUtils;
 import it.unipi.di.acube.smaph.learn.GenerateTrainingAndTest.OptDataset;
+import it.unipi.di.acube.smaph.learn.SolutionComputer.BindingSolutionComputer;
 import it.unipi.di.acube.smaph.learn.featurePacks.EntityFeaturePack;
 import it.unipi.di.acube.smaph.learn.featurePacks.FeaturePack;
 import it.unipi.di.acube.smaph.learn.normalizer.FeatureNormalizer;
 import it.unipi.di.acube.smaph.learn.normalizer.ScaleFeatureNormalizer;
 import it.unipi.di.acube.smaph.learn.normalizer.ZScoreFeatureNormalizer;
+import it.unipi.di.acube.smaph.models.entityfilters.EntityFilter;
+import it.unipi.di.acube.smaph.models.entityfilters.LibSvmEntityFilter;
+import it.unipi.di.acube.smaph.models.linkback.annotationRegressor.AnnotationRegressor;
+import it.unipi.di.acube.smaph.models.linkback.bindingRegressor.BindingRegressor;
 import it.unipi.di.acube.BingInterface;
 import it.cnr.isti.hpc.erd.WikipediaToFreebase;
 
@@ -375,18 +380,18 @@ public class TuneModel {
 			this.wikiApi = wikiApi;
 		}
 		
-		public static <T extends Serializable, G extends Serializable> MetricsResultSet testLibSvmModel(svm_model model, ExampleGatherer<T, G> testGatherer, int[] features, FeatureNormalizer scaleFn, SolutionComputer<T, G> sc){
+		public static MetricsResultSet testEntityFilter(EntityFilter model, ExampleGatherer<Tag, HashSet<Tag>> testGatherer, int[] features, FeatureNormalizer scaleFn, SolutionComputer<Tag, HashSet<Tag>> sc){
 			
-			List<Pair<Vector<Pair<svm_node[], T>>, G>> ftrsAndDatasAndGolds = testGatherer.getDataAndNodesAndGoldOnePerInstance(features, scaleFn);
+			List<Pair<Vector<Pair<FeaturePack<Tag>, Tag>>, HashSet<Tag>>> ftrsAndDatasAndGolds = testGatherer.getDataAndFeaturePacksAndGoldOnePerInstance();
 
-			List<G> golds = new Vector<>();
-			List<List<Pair<T, Double>>> candidateAndPreds = new Vector<>();
-			for (Pair<Vector<Pair<svm_node[], T>>, G> ftrsAndDatasAndGold : ftrsAndDatasAndGolds) {
+			List<HashSet<Tag>> golds = new Vector<>();
+			List<List<Pair<Tag, Double>>> candidateAndPreds = new Vector<>();
+			for (Pair<Vector<Pair<FeaturePack<Tag>, Tag>>, HashSet<Tag>> ftrsAndDatasAndGold : ftrsAndDatasAndGolds) {
 				golds.add(ftrsAndDatasAndGold.second);
-				List<Pair<T, Double>> candidateAndPred = new Vector<>();
+				List<Pair<Tag, Double>> candidateAndPred = new Vector<>();
 				candidateAndPreds.add(candidateAndPred);
-				for (Pair<svm_node[], T> p : ftrsAndDatasAndGold.first)
-					candidateAndPred.add(new Pair<T, Double>(p.second, svm.svm_predict(model, p.first)));
+				for (Pair<FeaturePack<Tag>, Tag> p : ftrsAndDatasAndGold.first)
+					candidateAndPred.add(new Pair<Tag, Double>(p.second, model.filterEntity(p.first, scaleFn)? 1.0 : 0.0));
 			}
 
 			try {
@@ -397,16 +402,16 @@ public class TuneModel {
 		}
 
 		
-		public static <T extends Serializable, G extends Serializable> MetricsResultSet testLibLinearModel(LibLinearModel model, ExampleGatherer<T, G> testGatherer, FeatureNormalizer scaleFn, SolutionComputer<T, G> sc) throws IOException{
-			List<G> golds = new Vector<>();
-			List<List<Pair<T, Double>>> candidateAndPreds = new Vector<>();
-			for (Pair<Vector<Pair<FeaturePack<T>, T>>, G> ftrsAndDatasAndGold : testGatherer.getDataAndFeaturePacksAndGoldOnePerInstance()) {
+		public static MetricsResultSet testAnnotationRegressorModel(AnnotationRegressor model, ExampleGatherer<Annotation, HashSet<Annotation>> testGatherer, FeatureNormalizer scaleFn, SolutionComputer<Annotation, HashSet<Annotation>> sc) throws IOException{
+			List<HashSet<Annotation>> golds = new Vector<>();
+			List<List<Pair<Annotation, Double>>> candidateAndPreds = new Vector<>();
+			for (Pair<Vector<Pair<FeaturePack<Annotation>, Annotation>>, HashSet<Annotation>> ftrsAndDatasAndGold : testGatherer.getDataAndFeaturePacksAndGoldOnePerInstance()) {
 				golds.add(ftrsAndDatasAndGold.second);
-				List<Pair<T, Double>> candidateAndPred = new Vector<>();
+				List<Pair<Annotation, Double>> candidateAndPred = new Vector<>();
 				candidateAndPreds.add(candidateAndPred);
-				for (Pair<FeaturePack<T>, T> p : ftrsAndDatasAndGold.first){
+				for (Pair<FeaturePack<Annotation>, Annotation> p : ftrsAndDatasAndGold.first){
 					double predictedScore = model.predictScore(p.first, scaleFn);
-					candidateAndPred.add(new Pair<T, Double>(p.second, predictedScore));
+					candidateAndPred.add(new Pair<Annotation, Double>(p.second, predictedScore));
 				}
 			}
 			
@@ -417,7 +422,26 @@ public class TuneModel {
 			}
 		}
 
-		
+		public static MetricsResultSet testBindingRegressorModel(BindingRegressor model, ExampleGatherer<HashSet<Annotation>, HashSet<Annotation>> testGatherer, FeatureNormalizer scaleFn, BindingSolutionComputer sc) throws IOException{
+			List<HashSet<Annotation>> golds = new Vector<>();
+			List<List<Pair<HashSet<Annotation>, Double>>> candidateAndPreds = new Vector<>();
+			for (Pair<Vector<Pair<FeaturePack<HashSet<Annotation>>, HashSet<Annotation>>>, HashSet<Annotation>> ftrsAndDatasAndGold : testGatherer.getDataAndFeaturePacksAndGoldOnePerInstance()) {
+				golds.add(ftrsAndDatasAndGold.second);
+				List<Pair<HashSet<Annotation>, Double>> candidateAndPred = new Vector<>();
+				candidateAndPreds.add(candidateAndPred);
+				for (Pair<FeaturePack<HashSet<Annotation>>, HashSet<Annotation>> p : ftrsAndDatasAndGold.first){
+					double predictedScore = model.predictScore(p.first, scaleFn);
+					candidateAndPred.add(new Pair<HashSet<Annotation>, Double>(p.second, predictedScore));
+				}
+			}
+			
+			try {
+				return sc.getResults(candidateAndPreds, golds);
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
+		}
+
 
 		@Override
 		public ModelConfigurationResult call() throws Exception {
@@ -429,8 +453,9 @@ public class TuneModel {
 
 			svm_model model = trainModel(param,
 					trainProblem);
+			EntityFilter ef = new LibSvmEntityFilter(model);
 
-			MetricsResultSet metrics = testLibSvmModel(model, testGatherer, this.features, scaleFn, new SolutionComputer.TagSetSolutionComputer(wikiApi));
+			MetricsResultSet metrics = testEntityFilter(ef, testGatherer, this.features, scaleFn, new SolutionComputer.TagSetSolutionComputer(wikiApi));
 			
 			int tp = metrics.getGlobalTp();
 			int fp = metrics.getGlobalFp();
