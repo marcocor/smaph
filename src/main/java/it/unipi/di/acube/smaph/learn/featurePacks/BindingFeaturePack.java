@@ -2,6 +2,8 @@ package it.unipi.di.acube.smaph.learn.featurePacks;
 
 import it.unipi.di.acube.batframework.data.Annotation;
 import it.unipi.di.acube.batframework.data.Tag;
+import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
+import it.unipi.di.acube.smaph.QueryInformation;
 import it.unipi.di.acube.smaph.SmaphUtils;
 import it.unipi.di.acube.smaph.WATRelatednessComputer;
 
@@ -9,19 +11,19 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.Vector;
 
-import org.apache.commons.lang3.tuple.ImmutableTriple;
 import org.apache.commons.lang3.tuple.Triple;
 
 public class BindingFeaturePack extends FeaturePack<HashSet<Annotation>> {
 	private static final long serialVersionUID = 1L;
-
+	public static String[] ftrNames = null;
+	
 	public BindingFeaturePack(
 			HashSet<Annotation> binding, String query,
-			HashMap<Tag, String[]> entitiesToBolds,HashMap<Tag, String> entityToTitle,
-			HashMap<Tag, List<HashMap<String, Double>>> entityToFeatureVectors, HashMap<Annotation,Double> annotationRegressorScores){
-		super(getFeatures(binding, query, entitiesToBolds, entityToTitle, entityToFeatureVectors, annotationRegressorScores));
+			QueryInformation qi, Set<Tag> acceptedEntities, WikipediaApiInterface wikiApi, HashMap<Annotation, HashMap<String, Double>> debugAnnotationFeatures, HashMap<String, Double> debugBindingFeatures){
+		super(getFeatures(binding, query, qi, acceptedEntities, wikiApi, debugAnnotationFeatures, debugBindingFeatures));
 	}
 
 	public BindingFeaturePack() {
@@ -33,41 +35,30 @@ public class BindingFeaturePack extends FeaturePack<HashSet<Annotation>> {
 		return getFeatureNamesStatic();
 	}
 
-	public static String[] getFeatureNamesStatic() {
-		List<String> ftrNames = new Vector<>();
-		ftrNames.add("min_relatedness");
-		ftrNames.add("max_relatedness");
-		ftrNames.add("avg_relatedness");
-		
-		ftrNames.add("min_annotation_regressor_score");
-		ftrNames.add("max_annotation_regressor_score");
-		ftrNames.add("avg_annotation_regressor_score");
+	private static String[] getFeatureNamesStatic() {
+		if (ftrNames == null) {
+			List<String> ftrNamesVect = new Vector<>();
+			ftrNamesVect.add("min_relatedness");
+			ftrNamesVect.add("max_relatedness");
+			ftrNamesVect.add("avg_relatedness");
 
-		ftrNames.add("min_min_edit_distance_bold");
-		ftrNames.add("max_min_edit_distance_bold");
-		ftrNames.add("avg_min_edit_distance_bold");
+			ftrNamesVect.add("query_tokens");
+			ftrNamesVect.add("annotation_count");
+			ftrNamesVect.add("covered_tokens");
 
-		ftrNames.add("min_min_edit_distance_title");
-		ftrNames.add("max_min_edit_distance_title");
-		ftrNames.add("avg_min_edit_distance_title");
+			for (String ftrName : AdvancedAnnotationFeaturePack
+					.getFeatureNamesStatic())
+				if (ftrName.startsWith("is_")) {
+					ftrNamesVect.add("count_" + ftrName);
+				} else {
+					ftrNamesVect.add("min_" + ftrName);
+					ftrNamesVect.add("max_" + ftrName);
+					ftrNamesVect.add("avg_" + ftrName);
+				}
 
-		ftrNames.add("query_tokens");
-		ftrNames.add("annotation_count");
-		ftrNames.add("covered_tokens");
-
-		for (String ftrName : EntityFeaturePack.ftrNames)
-			if (/*ftrName.startsWith("s1_") || */ftrName.startsWith("s2_")
-					|| ftrName.startsWith("s3_")|| ftrName.startsWith("s6_")) {
-				ftrNames.add("min_" + ftrName);
-				ftrNames.add("max_" + ftrName);
-				ftrNames.add("avg_" + ftrName);
-			}
-		for (String ftrName : EntityFeaturePack.ftrNames)
-			if (ftrName.startsWith("is_")) {
-				ftrNames.add("count_" + ftrName);
-			}
-
-		return ftrNames.toArray(new String[] {});
+			ftrNames = ftrNamesVect.toArray(new String[] {});
+		}
+		return ftrNames;
 	}
 
 	@Override
@@ -82,16 +73,16 @@ public class BindingFeaturePack extends FeaturePack<HashSet<Annotation>> {
 	
 
 	/**
-	 * Given a list of feature vectors associated to an entity, return a single
+	 * Given a list of feature vectors, return a single
 	 * feature vector (in hashmap form). This vector will contain the max,
 	 * min, and avg of for [0,1] features and the sum for counting features.
 	 * 
 	 * @param allFtrVects
 	 * @return a single representation
 	 */
-	private static HashMap<String, Double> collapseEntityFeatures(
+	private static HashMap<String, Double> collapseFeatures(
 			List<HashMap<String, Double>> allFtrVects) {
-		// count
+		// count feature presence
 		HashMap<String, Integer> ftrCount = new HashMap<>();
 		for (HashMap<String, Double> ftrVectToMerge : allFtrVects)
 			for (String ftrName : ftrVectToMerge.keySet()) {
@@ -100,12 +91,16 @@ public class BindingFeaturePack extends FeaturePack<HashSet<Annotation>> {
 				ftrCount.put(ftrName, ftrCount.get(ftrName) + 1);
 			}
 
-		//min, max, avg
+		// compute min, max, avg, count
 		HashMap<String, Double> entitySetFeatures = new HashMap<>();
 		for (HashMap<String, Double> ftrVectToMerge : allFtrVects) {
 			for (String ftrName : ftrVectToMerge.keySet()) {
-				if (/*ftrName.startsWith("s1_") || */ftrName.startsWith("s2_")
-						|| ftrName.startsWith("s6_")|| ftrName.startsWith("s3_")) {
+				if (ftrName.startsWith("is_")) {
+					String key = "count_" + ftrName;
+					if (!entitySetFeatures.containsKey(key))
+						entitySetFeatures.put(key, 0.0);
+					entitySetFeatures.put(key, entitySetFeatures.get(key) + ftrVectToMerge.get(ftrName));
+				} else {
 					if (!entitySetFeatures.containsKey("min_" + ftrName))
 						entitySetFeatures.put("min_" + ftrName,
 								Double.POSITIVE_INFINITY);
@@ -121,13 +116,8 @@ public class BindingFeaturePack extends FeaturePack<HashSet<Annotation>> {
 					entitySetFeatures.put("max_" + ftrName, Math.max(
 							entitySetFeatures.get("max_" + ftrName), ftrValue));
 					entitySetFeatures.put("avg_" + ftrName,
-							entitySetFeatures.get("avg_" + ftrName) + ftrValue / ftrCount.get(ftrName));
-
-				} else if (ftrName.startsWith("is_")) {
-					String key = "count_" + ftrName;
-					if (!entitySetFeatures.containsKey(key))
-						entitySetFeatures.put(key, 0.0);
-					entitySetFeatures.put(key, entitySetFeatures.get(key) + 1);
+							entitySetFeatures.get("avg_" + ftrName) + ftrValue
+									/ ftrCount.get(ftrName));
 				}
 			}
 		}
@@ -137,46 +127,30 @@ public class BindingFeaturePack extends FeaturePack<HashSet<Annotation>> {
 	private static HashMap<String, Double> getFeatures(
 			HashSet<Annotation> binding,
 			String query,
-			HashMap<Tag, String[]> entitiesToBolds,
-			HashMap<Tag, String> entityToTitle,
-			HashMap<Tag, List<HashMap<String, Double>>> entityToFeatureVectors,
-			HashMap<Annotation, Double> annotationRegressorScores) {
-		HashSet<Tag> selectedEntities = new HashSet<>();
+			QueryInformation qi, Set<Tag> acceptedEntities, WikipediaApiInterface wikiApi, HashMap<Annotation, HashMap<String, Double>> debugAnnotationFeatures, HashMap<String, Double> debugBindingFeatures) {
+		
+		List<HashMap<String, Double>> allAnnotationsFeatures = new Vector<>();
+		
+		for (Annotation ann : binding) {
+			HashMap<String, Double> annFeatures = AdvancedAnnotationFeaturePack
+					.getFeaturesStatic(ann, query, qi, wikiApi);
+			allAnnotationsFeatures.add(annFeatures);
+			if (debugAnnotationFeatures != null)
+				debugAnnotationFeatures.put(ann, annFeatures);
+		}
+
+/*		HashSet<Tag> selectedEntities = new HashSet<>();
 		for (Annotation ann : binding)
 			selectedEntities.add(new Tag(ann.getConcept()));
 		
 		List<HashMap<String, Double>> allEntitiesFeatures = new Vector<>();
 		for (Tag t : selectedEntities)
-			allEntitiesFeatures.addAll(entityToFeatureVectors.get(t));
-		HashMap<String, Double> bindingFeatures = collapseEntityFeatures(
-				allEntitiesFeatures);
+			allEntitiesFeatures.addAll(qi.entityToFtrVects.get(t));
+		
+*/
+		HashMap<String, Double> bindingFeatures = collapseFeatures(
+				allAnnotationsFeatures);
 
-		Vector<Double> minEdsBold = new Vector<>();
-		Vector<Double> minEdsTitle= new Vector<>();
-		for (Annotation a : binding) {
-			Tag t = new Tag(a.getConcept());
-			double minEDBold = 1.0;
-			if (entitiesToBolds.containsKey(t))
-				for (String bold : entitiesToBolds.get(t)){
-					minEDBold = Math.min(SmaphUtils.getMinEditDist(
-							query.substring(a.getPosition(), a.getPosition()
-									+ a.getLength()), bold), minEDBold);
-					minEDBold = Math.min(SmaphUtils.getMinEditDist(bold,
-							query.substring(a.getPosition(), a.getPosition()
-									+ a.getLength())), minEDBold);
-				}
-			minEdsBold.add(minEDBold);
-			
-			double minEDTitle = 1.0;
-			String title = entityToTitle.get(t);
-			minEDTitle = Math.min(SmaphUtils.getMinEditDist(title,
-							query.substring(a.getPosition(), a.getPosition()
-									+ a.getLength())), minEDTitle);
-				
-			minEdsTitle.add(minEDTitle);
-		}
-		
-		
 		/*Vector<Double> mutualInfos = new Vector<>();
 		for (Annotation a : binding) {
 			Tag t = new Tag(a.getConcept());
@@ -190,16 +164,6 @@ public class BindingFeaturePack extends FeaturePack<HashSet<Annotation>> {
 		}
 		*/
 
-		Triple<Double, Double, Double> minMaxAvgEDBold = SmaphUtils.getMinMaxAvg(minEdsBold);
-		bindingFeatures.put("min_min_edit_distance_bold", minMaxAvgEDBold.getLeft());
-		bindingFeatures.put("max_min_edit_distance_bold", minMaxAvgEDBold.getMiddle());
-		bindingFeatures.put("avg_min_edit_distance_bold", minMaxAvgEDBold.getRight());
-		
-		Triple<Double, Double, Double> minMaxAvgEDTitle = SmaphUtils.getMinMaxAvg(minEdsTitle);
-		bindingFeatures.put("min_min_edit_distance_title", minMaxAvgEDTitle.getLeft());
-		bindingFeatures.put("max_min_edit_distance_title", minMaxAvgEDTitle.getMiddle());
-		bindingFeatures.put("avg_min_edit_distance_title", minMaxAvgEDTitle.getRight());
-
 		/*Triple<Double, Double, Double> minMaxAvgMI = getMinMaxAvg(mutualInfos);
 		features.put("min_mutual_info", minMaxAvgMI.getLeft());
 		features.put("avg_mutual_info", minMaxAvgMI.getRight());
@@ -212,21 +176,6 @@ public class BindingFeaturePack extends FeaturePack<HashSet<Annotation>> {
 		for (Annotation a: binding)
 			coveredTokens += SmaphUtils.tokenize(query.substring(a.getPosition(), a.getPosition()+a.getLength())).size();
 		bindingFeatures.put("covered_tokens", (double)coveredTokens/(double) SmaphUtils.tokenize(query).size());
-		
-		/* Add features derived from the Annotation Regressor */
-		if (annotationRegressorScores != null /*&& binding.size() >= 2*/) {
-			List<Double> scores = new Vector<>();
-			for (Annotation ann : binding)
-				scores.add(annotationRegressorScores.get(ann));
-
-			Triple<Double, Double, Double> minMaxAvgAcores = SmaphUtils.getMinMaxAvg(scores);
-			bindingFeatures.put("min_annotation_regressor_score",
-					minMaxAvgAcores.getLeft());
-			bindingFeatures.put("max_annotation_regressor_score",
-					minMaxAvgAcores.getMiddle());
-			bindingFeatures.put("avg_annotation_regressor_score",
-					minMaxAvgAcores.getRight());
-		}
 		
 		/* Add relatedness among entities (only if there are more than two entities)*/
 		Vector<Double> relatednessPairs = new Vector<>();
@@ -243,8 +192,9 @@ public class BindingFeaturePack extends FeaturePack<HashSet<Annotation>> {
 			bindingFeatures.put("avg_relatedness", minMaxAvgRel.getRight());
 		}
 		
+		if (debugBindingFeatures != null)
+			debugBindingFeatures.putAll(bindingFeatures);
+		
 		return bindingFeatures;
 	}
-	
-	
 }
