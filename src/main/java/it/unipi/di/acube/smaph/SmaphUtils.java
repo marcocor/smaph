@@ -23,7 +23,7 @@ import it.unipi.di.acube.batframework.utils.Pair;
 import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
 import it.unipi.di.acube.smaph.learn.featurePacks.AnnotationFeaturePack;
 import it.unipi.di.acube.smaph.learn.normalizer.FeatureNormalizer;
-import it.unipi.di.acube.smaph.linkback.annotationRegressor.Regressor;
+import it.unipi.di.acube.smaph.models.linkback.annotationRegressor.AnnotationRegressor;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
@@ -453,7 +453,7 @@ public class SmaphUtils {
 		}
 	}
 
-	public static HashMap<Annotation, Double> predictBestScores(Regressor ar, FeatureNormalizer fn,
+	public static HashMap<Annotation, Double> predictBestScores(AnnotationRegressor ar, FeatureNormalizer fn,
 			List<HashSet<Annotation>> allBindings, String query,
 			HashMap<Tag, List<HashMap<String, Double>>> entityToFtrVects,
 			HashMap<Tag, String[]> entitiesToBoldsS1,

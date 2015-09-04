@@ -10,10 +10,10 @@ import ciir.umass.edu.learning.Ranker;
 import ciir.umass.edu.learning.RankerFactory;
 import ciir.umass.edu.utilities.Sorter;
 
-public class RankLibRanker{
+public class RankLibModel <T>{
 	Ranker ranker;
 
-	public RankLibRanker(String modelFile) {
+	public RankLibModel(String modelFile) {
 		RankerFactory rFact = new RankerFactory();
 		ranker = rFact.loadRanker(modelFile);
 	}
@@ -32,7 +32,7 @@ public class RankLibRanker{
 		return new DataPoint(ftrVectToString(features, 1, 1));
 	}
 
-	private double[] getScores(List<FeaturePack> features, FeatureNormalizer fn) {
+	private double[] getScores(List<FeaturePack<T>> features, FeatureNormalizer fn) {
 		double[] scores = new double[features.size()];
 		for (int j = 0; j < features.size(); j++)
 			scores[j] = ranker.eval(featuresToDatapointString(fn.ftrToNormalizedFtrArray(features.get(j))));
@@ -44,7 +44,7 @@ public class RankLibRanker{
 	 * @param fn the feature normalizer.
 	 * @return indexes of the feature list, from best to least rank.
 	 */
-	public int[] getRanking(List<FeaturePack> features, FeatureNormalizer fn) {
+	public int[] getRanking(List<FeaturePack<T>> features, FeatureNormalizer fn) {
 		return Sorter.sort(getScores(features, fn), false);
 	}
 
@@ -53,11 +53,11 @@ public class RankLibRanker{
 	 * @param fn the feature normalizer.
 	 * @return the index of the best feature pack.
 	 */
-	public int getHighestRank(List<FeaturePack> features, FeatureNormalizer fn) {
+	public int getHighestRank(List<FeaturePack<T>> features, FeatureNormalizer fn) {
 		return getRanking(features, fn)[0];
 	}
 
-	public double predictScore(FeaturePack featuresArray, FeatureNormalizer fn) {
+	public double predictScore(FeaturePack<T> featuresArray, FeatureNormalizer fn) {
 		return ranker.eval(featuresToDatapointString(fn.ftrToNormalizedFtrArray(featuresArray)));
 	}
 

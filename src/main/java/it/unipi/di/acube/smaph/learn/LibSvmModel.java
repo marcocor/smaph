@@ -20,7 +20,6 @@ import it.unipi.di.acube.smaph.learn.featurePacks.FeaturePack;
 import it.unipi.di.acube.smaph.learn.normalizer.FeatureNormalizer;
 
 import java.io.IOException;
-import java.util.Vector;
 
 import libsvm.svm;
 import libsvm.svm_model;
@@ -32,7 +31,7 @@ import libsvm.svm_node;
  * @author Marco Cornolti
  *
  */
-public abstract class LibSvmModel {
+public abstract class LibSvmModel <T> {
 	private svm_model model;
 	String modelFile;
 	
@@ -51,7 +50,11 @@ public abstract class LibSvmModel {
 		setModel(modelFile);
 	}
 
-	public boolean predict(FeaturePack fp, FeatureNormalizer fn) {
+	public LibSvmModel(svm_model model) {
+		this.model = model;
+	}
+
+	public boolean predict(FeaturePack<T> fp, FeatureNormalizer fn) {
 		return predictScore(fp, fn) > 0.0;
 	}
 
@@ -63,7 +66,7 @@ public abstract class LibSvmModel {
 		return res;
 	}
 	
-	public double predictScore(FeaturePack fp, FeatureNormalizer fn) {
+	public double predictScore(FeaturePack<T> fp, FeatureNormalizer fn) {
 		svm_node[] ftrVect = featuresArrayToNode(fn
 				.ftrToNormalizedFtrArray(fp), getUsedFtr());
 		return svm.svm_predict(model, ftrVect);

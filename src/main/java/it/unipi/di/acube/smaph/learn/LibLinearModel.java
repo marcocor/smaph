@@ -11,7 +11,7 @@ import de.bwaldvogel.liblinear.FeatureNode;
 import de.bwaldvogel.liblinear.Linear;
 import de.bwaldvogel.liblinear.Model;
 
-public abstract class LibLinearModel {
+public abstract class LibLinearModel<T> {
 	Model model;
 
 	public LibLinearModel(String modelFile){
@@ -22,7 +22,7 @@ public abstract class LibLinearModel {
 			throw new RuntimeException(e);
 		}
 	}
-	public double predictScore(FeaturePack<?> fp, FeatureNormalizer fn) {
+	public double predictScore(FeaturePack<T> fp, FeatureNormalizer fn) {
 		return Linear.predict(model, featureMapToFeatures(fn.ftrToNormalizedFtrArray(fp)));
 	}
 

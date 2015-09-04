@@ -14,8 +14,9 @@
  *  limitations under the License.
  */
 
-package it.unipi.di.acube.smaph.entityfilters;
+package it.unipi.di.acube.smaph.models.entityfilters;
 
+import it.unipi.di.acube.batframework.data.Tag;
 import it.unipi.di.acube.smaph.SmaphAnnotatorDebugger;
 import it.unipi.di.acube.smaph.learn.LibSvmModel;
 import it.unipi.di.acube.smaph.learn.featurePacks.FeaturePack;
@@ -23,18 +24,24 @@ import it.unipi.di.acube.smaph.learn.normalizer.FeatureNormalizer;
 
 import java.io.IOException;
 
+import libsvm.svm_model;
+
 /**
  * An SVM-based entity filter.
  */
-public class LibSvmEntityFilter extends LibSvmModel implements EntityFilter {
+public class LibSvmEntityFilter extends LibSvmModel<Tag> implements EntityFilter {
 
 	
 	public LibSvmEntityFilter(String modelFile) throws IOException {
 		super(modelFile);
 	}
 
+	public LibSvmEntityFilter(svm_model model) {
+		super(model);
+	}
+
 	@Override
-	public boolean filterEntity(FeaturePack fp, FeatureNormalizer fn) {
+	public boolean filterEntity(FeaturePack<Tag> fp, FeatureNormalizer fn) {
 		boolean result = predict(fp, fn);
 		String ftrDesc = "";
 		for (String key : fp.getFeatureNames())
