@@ -36,20 +36,20 @@ import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
 import it.unipi.di.acube.smaph.boldfilters.BoldFilter;
 import it.unipi.di.acube.smaph.boldfilters.FrequencyBoldFilter;
 import it.unipi.di.acube.smaph.boldfilters.RankWeightBoldFilter;
-import it.unipi.di.acube.smaph.entityfilters.EntityFilter;
-import it.unipi.di.acube.smaph.learn.GenerateModel;
 import it.unipi.di.acube.smaph.learn.featurePacks.AdvancedAnnotationFeaturePack;
 import it.unipi.di.acube.smaph.learn.featurePacks.AnnotationFeaturePack;
 import it.unipi.di.acube.smaph.learn.featurePacks.BindingFeaturePack;
 import it.unipi.di.acube.smaph.learn.featurePacks.EntityFeaturePack;
 import it.unipi.di.acube.smaph.learn.featurePacks.FeaturePack;
 import it.unipi.di.acube.smaph.learn.normalizer.FeatureNormalizer;
+import it.unipi.di.acube.smaph.linkback.CollectiveLinkBack;
 import it.unipi.di.acube.smaph.linkback.LinkBack;
-import it.unipi.di.acube.smaph.linkback.SvmAdvancedIndividualSingleLinkback;
-import it.unipi.di.acube.smaph.linkback.SvmIndividualAnnotationLinkBack;
-import it.unipi.di.acube.smaph.linkback.annotationRegressor.Regressor;
+import it.unipi.di.acube.smaph.linkback.AdvancedIndividualLinkback;
+import it.unipi.di.acube.smaph.linkback.IndividualAnnotationLinkBack;
 import it.unipi.di.acube.smaph.linkback.bindingGenerator.BindingGenerator;
 import it.unipi.di.acube.smaph.main.ERDDatasetFilter;
+import it.unipi.di.acube.smaph.models.entityfilters.EntityFilter;
+import it.unipi.di.acube.smaph.models.linkback.annotationRegressor.AnnotationRegressor;
 import it.unipi.di.acube.smaph.snippetannotationfilters.SnippetAnnotationFilter;
 import it.unipi.di.acube.smaph.wikiAnchors.EntityToAnchors;
 import it.cnr.isti.hpc.erd.WikipediaToFreebase;
@@ -57,6 +57,7 @@ import it.cnr.isti.hpc.erd.WikipediaToFreebase;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -174,6 +175,7 @@ public class SmaphAnnotator implements Sa2WSystem {
 	 */
 	public void setDebugger(SmaphAnnotatorDebugger debugger) {
 		this.debugger = debugger;
+		this.linkBack.setDebugger(debugger);
 	}
 
 	@Override
@@ -293,7 +295,7 @@ public class SmaphAnnotator implements Sa2WSystem {
 			e.printStackTrace();
 			throw new RuntimeException(e);
 		}
-		SmaphAnnotatorDebugger.out.printf("*** END :%s ***%n", query);
+		SmaphAnnotatorDebugger.out.printf("*** FINISHED PROCESSING QUERY [%s] ***%n", query);
 
 		return annotations;
 
@@ -515,7 +517,6 @@ public class SmaphAnnotator implements Sa2WSystem {
 			String spot = field.subSequence(startIdx + 1, stopIdx)
 					.toString();
 			boldsAndRanks.add(new Pair<String, Integer>(spot, rankI));
-			SmaphAnnotatorDebugger.out.printf("Rank:%d Bold:%s%n", rankI, spot);
 			snippet += field.substring(lastStop + 1, startIdx);
 			boldPosInSnippet.add(new Pair<Integer, Integer>(snippet
 					.length(), spot.length()));
@@ -1171,7 +1172,7 @@ public class SmaphAnnotator implements Sa2WSystem {
 			List<Pair<FeaturePack<Annotation>, Boolean>> advancedAnnVectorsToPresence,
 			List<Annotation> ARCandidates, boolean keepNEOnly,
 			BindingGenerator bg,
-			Regressor arLevel1,
+			AnnotationRegressor arLevel1,
 			FeatureNormalizer arNormLevel1,
 			WikipediaToFreebase wikiToFreeb, double anchorMaxED)
 			throws Exception {
@@ -1202,7 +1203,7 @@ public class SmaphAnnotator implements Sa2WSystem {
 		// Generate examples for linkBack
 		if (lbVectorsToF1 != null) {
 			List<Triple<HashSet<Annotation>, BindingFeaturePack, Double>> bindingsToFtrAndF1 = getLBBindingToFtrsAndF1(
-					query, qi, bg, arLevel1, arNormLevel1, goldStandardAnn, new StrongAnnotationMatch(
+					query, qi, bg, goldStandardAnn, new StrongAnnotationMatch(
 							wikiApi));
 			for (Triple<HashSet<Annotation>, BindingFeaturePack, Double> bindingAndFtrsAndF1 : bindingsToFtrAndF1) {
 				BindingFeaturePack features = bindingAndFtrsAndF1.getMiddle();
@@ -1235,6 +1236,7 @@ public class SmaphAnnotator implements Sa2WSystem {
 		}
 		// Generate examples for advanced annotation filter
 		if (advancedAnnVectorsToPresence != null) {
+			
 			List<Triple<Annotation, AdvancedAnnotationFeaturePack, Boolean>> annotationsAndFtrAndPresences = getAdvancedARToFtrsAndPresence(
 					query, qi, goldStandardAnn, new StrongAnnotationMatch(wikiApi), anchorMaxED);
 			for (Triple<Annotation, AdvancedAnnotationFeaturePack, Boolean> annotationsAndFtrAndPresence : annotationsAndFtrAndPresences) {
@@ -1258,7 +1260,7 @@ public class SmaphAnnotator implements Sa2WSystem {
 			MatchRelation<Annotation> annotationMatch, double anchorMaxED) {
 		
 		List<Triple<Annotation, AdvancedAnnotationFeaturePack, Boolean>> annAndFtrsAndPresence = new Vector<>();
-		for (Annotation a : SvmAdvancedIndividualSingleLinkback.getAnnotations(query,
+		for (Annotation a : AdvancedIndividualLinkback.getAnnotations(query,
 				qi.entityToFtrVects.keySet(), qi, anchorMaxED)) {
 			boolean inGold = false;
 			for (Annotation goldAnn : goldStandardAnn)
@@ -1266,16 +1268,11 @@ public class SmaphAnnotator implements Sa2WSystem {
 					inGold = true;
 					break;
 				}
-			for (HashMap<String, Double> entityFeatures : qi.entityToFtrVects.get(new Tag(a.getConcept()))) {
-				if (EntityToAnchors.e2a().containsId(a.getConcept())) {
-					AdvancedAnnotationFeaturePack features = new AdvancedAnnotationFeaturePack(a, query, EntityToAnchors.e2a()
-							.getAnchors(a.getConcept()), entityFeatures);
-
-					annAndFtrsAndPresence.add(new ImmutableTriple<Annotation, AdvancedAnnotationFeaturePack, Boolean>(a,
-							features, inGold));
-				} else
-					logger.debug("No anchors found for id=" + a.getConcept());
-			}
+			if (EntityToAnchors.e2a().containsId(a.getConcept())) {
+				AdvancedAnnotationFeaturePack features = new AdvancedAnnotationFeaturePack(a, query, qi, wikiApi);
+				annAndFtrsAndPresence.add(new ImmutableTriple<Annotation, AdvancedAnnotationFeaturePack, Boolean>(a, features, inGold));
+			} else
+				logger.debug("No anchors found for id=" + a.getConcept());
 		}
 
 		return annAndFtrsAndPresence;
@@ -1300,7 +1297,7 @@ public class SmaphAnnotator implements Sa2WSystem {
 		EnglishStemmer stemmer = new EnglishStemmer();
 
 		List<Triple<Annotation, AnnotationFeaturePack, Boolean>> annAndFtrsAndPresence = new Vector<>();
-		for (Annotation a : SvmIndividualAnnotationLinkBack.getAnnotations(query,
+		for (Annotation a : IndividualAnnotationLinkBack.getAnnotations(query,
 				qi.entityToFtrVects.keySet(), qi)) {
 			boolean inGold = false;
 			for (Annotation goldAnn : goldStandardAnn)
@@ -1323,41 +1320,19 @@ public class SmaphAnnotator implements Sa2WSystem {
 	}
 
 	private List<Triple<HashSet<Annotation>, BindingFeaturePack, Double>> getLBBindingToFtrsAndF1(
-			String query, QueryInformation qi, BindingGenerator bg, Regressor ar, FeatureNormalizer annFn,
+			String query, QueryInformation qi, BindingGenerator bg,
 			HashSet<Annotation> goldStandardAnn, MatchRelation<Annotation> match) {
-		HashMap<Tag, String> entityToTitles = SmaphUtils.getEntitiesToTitles(qi.entityToFtrVects.keySet(), wikiApi);
 		
-		HashMap<Tag, String[]> entityToBolds;
-		if (qi.boldToEntityS1 != null)
-			entityToBolds = SmaphUtils.getEntitiesToBolds(qi.boldToEntityS1,
-					qi.entityToFtrVects.keySet());
-		else
-			entityToBolds = SmaphUtils.getEntitiesToBoldsList(qi.tagToBoldsS6,
-					qi.entityToFtrVects.keySet());
+		Collection<Pair<HashSet<Annotation>, BindingFeaturePack>> bindingAndFeaturePacks = CollectiveLinkBack.getBindingFeaturePacks(query, qi.entityToFtrVects.keySet(), qi, bg, wikiApi, debugger);
 		
-		List<HashSet<Annotation>> allBindings = bg.getBindings(query, qi,
-				qi.entityToFtrVects.keySet(), wikiApi);
-		
-		// Precompute annotation regressor scores
-		HashMap<Annotation, Double> regressorScores = null;
-		if (ar != null){
-			regressorScores = SmaphUtils.predictBestScores(ar, annFn, allBindings, query,
-					qi.entityToFtrVects, entityToBolds, entityToTitles,
-					new EnglishStemmer());
-		}
-
 		List<Triple<HashSet<Annotation>, BindingFeaturePack, Double>> res = new Vector<>();
-		for (HashSet<Annotation> binding : allBindings) {
-			Metrics<Annotation> m = new Metrics<>();
-			int tp = m.getSingleTp(goldStandardAnn, binding, match).size();
-			int fp = m.getSingleFp(goldStandardAnn, binding, match).size();
-			int fn = m.getSingleFn(goldStandardAnn, binding, match).size();
-			float f1 = Metrics.F1(Metrics.recall(tp, fp, fn),
-					Metrics.precision(tp, fp));
+		for (Pair<HashSet<Annotation>, BindingFeaturePack> bindingAndFeaturePack : bindingAndFeaturePacks) {
+			HashSet<Annotation> binding = bindingAndFeaturePack.first;
+			BindingFeaturePack bindingFeatures = bindingAndFeaturePack.second;
 
-			BindingFeaturePack bindingFeatures = new BindingFeaturePack(binding,
-					query, entityToBolds, entityToTitles,
-					qi.entityToFtrVects, regressorScores);
+			Metrics<Annotation> m = new Metrics<>();
+			float f1 = m.getSingleF1(goldStandardAnn, binding, match);
+			
 			res.add(new ImmutableTriple<HashSet<Annotation>, BindingFeaturePack, Double>(
 					binding, bindingFeatures, (double) f1));
 		}
@@ -1386,7 +1361,7 @@ public class SmaphAnnotator implements Sa2WSystem {
 			throws Exception {
 		QueryInformation qi = getQueryInformation(query);
 		List<Triple<HashSet<Annotation>, BindingFeaturePack, Double>> bindingToFtrsAndF1 = getLBBindingToFtrsAndF1(
-				query, qi, bg, null, null, goldStandardAnn, new StrongAnnotationMatch(
+				query, qi, bg, goldStandardAnn, new StrongAnnotationMatch(
 						wikiApi));
 		HashSet<Annotation> bestBinding = null;
 		double bestF1 = Double.NEGATIVE_INFINITY;
@@ -1410,7 +1385,7 @@ public class SmaphAnnotator implements Sa2WSystem {
 			throws Exception {
 		QueryInformation qi = getQueryInformation(query);
 		List<Triple<HashSet<Annotation>, BindingFeaturePack, Double>> bindingToFtrsAndF1 = getLBBindingToFtrsAndF1(
-				query, qi, bg, null, null, goldStandardAnn,
+				query, qi, bg, goldStandardAnn,
 				new StrongMentionAnnotationMatch());
 		HashSet<Annotation> bestBinding = null;
 		double bestF1 = Double.NEGATIVE_INFINITY;
