@@ -3,13 +3,10 @@ package it.unipi.di.acube.smaph.learn;
 import it.unipi.di.acube.batframework.data.Annotation;
 import it.unipi.di.acube.batframework.data.Tag;
 import it.unipi.di.acube.batframework.metrics.MatchRelation;
-import it.unipi.di.acube.batframework.metrics.MentionAnnotationMatch;
 import it.unipi.di.acube.batframework.metrics.Metrics;
 import it.unipi.di.acube.batframework.metrics.MetricsResultSet;
 import it.unipi.di.acube.batframework.metrics.StrongAnnotationMatch;
-import it.unipi.di.acube.batframework.metrics.StrongMentionAnnotationMatch;
 import it.unipi.di.acube.batframework.metrics.StrongTagMatch;
-import it.unipi.di.acube.batframework.metrics.WeakAnnotationMatch;
 import it.unipi.di.acube.batframework.utils.Pair;
 import it.unipi.di.acube.batframework.utils.ProblemReduction;
 import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
@@ -17,7 +14,6 @@ import it.unipi.di.acube.smaph.linkback.SvmIndividualAnnotationLinkBack;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Vector;
@@ -111,10 +107,10 @@ public abstract class SolutionComputer <T extends Serializable, G extends Object
 	}
 
 	public static class BindingSolutionComputer extends SolutionComputer<HashSet<Annotation>, HashSet<Annotation>> {
-		private MatchRelation<Annotation> wam;
+		private MatchRelation<Annotation> sam;
 
 		public  BindingSolutionComputer(WikipediaApiInterface wikiApi){
-			this.wam = new WeakAnnotationMatch(wikiApi);
+			this.sam = new StrongAnnotationMatch(wikiApi);
 		}
 		
 		@Override
@@ -138,7 +134,7 @@ public abstract class SolutionComputer <T extends Serializable, G extends Object
 			if (gold.size() !=  solutionList.size())
 				throw new RuntimeException();
 			Metrics<Annotation> m = new Metrics<>();
-			return m.getResult(solutionList, gold, wam);
+			return m.getResult(solutionList, gold, sam);
 		}
 
 		@Override
@@ -148,7 +144,7 @@ public abstract class SolutionComputer <T extends Serializable, G extends Object
 			List<HashSet<Annotation>> lG = new Vector<HashSet<Annotation>>();
 			lG.add(gold);
 
-			return new Metrics<Annotation>().getResult(lC, lG, wam).getF1s(0);
+			return new Metrics<Annotation>().getResult(lC, lG, sam).getF1s(0);
 		}
 
 	}
