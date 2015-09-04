@@ -6,6 +6,7 @@ import it.unipi.di.acube.smaph.learn.normalizer.FeatureNormalizer;
 import java.util.List;
 
 import ciir.umass.edu.learning.DataPoint;
+import ciir.umass.edu.learning.DenseDataPoint;
 import ciir.umass.edu.learning.Ranker;
 import ciir.umass.edu.learning.RankerFactory;
 import ciir.umass.edu.utilities.Sorter;
@@ -15,7 +16,7 @@ public class RankLibModel <T>{
 
 	public RankLibModel(String modelFile) {
 		RankerFactory rFact = new RankerFactory();
-		ranker = rFact.loadRanker(modelFile);
+		ranker = rFact.loadRankerFromFile(modelFile);
 	}
 
 	public static String ftrVectToString(double[] ftrVect, int rank, int groupid) {
@@ -29,7 +30,7 @@ public class RankLibModel <T>{
 	}
 
 	private static DataPoint featuresToDatapointString(double[] features) {
-		return new DataPoint(ftrVectToString(features, 1, 1));
+		return new DenseDataPoint(ftrVectToString(features, 1, 1));
 	}
 
 	private double[] getScores(List<FeaturePack<T>> features, FeatureNormalizer fn) {
