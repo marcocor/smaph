@@ -5,10 +5,11 @@ import it.unipi.di.acube.batframework.data.Tag;
 import it.unipi.di.acube.batframework.utils.Pair;
 import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
 import it.unipi.di.acube.smaph.QueryInformation;
+import it.unipi.di.acube.smaph.SmaphAnnotatorDebugger;
 import it.unipi.di.acube.smaph.SmaphUtils;
-import it.unipi.di.acube.smaph.entityfilters.LibSvmEntityFilter;
 import it.unipi.di.acube.smaph.learn.featurePacks.EntityFeaturePack;
 import it.unipi.di.acube.smaph.learn.normalizer.FeatureNormalizer;
+import it.unipi.di.acube.smaph.models.entityfilters.LibSvmEntityFilter;
 
 import java.util.Collections;
 import java.util.Comparator;
@@ -17,12 +18,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Vector;
 
-public class SvmSingleEntityLinkBack implements LinkBack {
+public class SingleEntityLinkBack implements LinkBack {
 	private LibSvmEntityFilter ef;
 	private WikipediaApiInterface wikiApi;
 	private FeatureNormalizer fn;
 
-	public SvmSingleEntityLinkBack(LibSvmEntityFilter ef, FeatureNormalizer fn,
+	public SingleEntityLinkBack(LibSvmEntityFilter ef, FeatureNormalizer fn,
 			WikipediaApiInterface wikiApi) {
 		this.ef = ef;
 		this.wikiApi = wikiApi;
@@ -125,6 +126,10 @@ public class SvmSingleEntityLinkBack implements LinkBack {
 			else
 				return 1;
 		}
+	}
+
+	@Override
+	public void setDebugger(SmaphAnnotatorDebugger debugger) {
 	}
 
 }

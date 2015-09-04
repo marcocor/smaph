@@ -6,29 +6,28 @@ import it.unipi.di.acube.batframework.data.Tag;
 import it.unipi.di.acube.batframework.utils.Pair;
 import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
 import it.unipi.di.acube.smaph.QueryInformation;
+import it.unipi.di.acube.smaph.SmaphAnnotatorDebugger;
 import it.unipi.di.acube.smaph.SmaphUtils;
 import it.unipi.di.acube.smaph.learn.featurePacks.AdvancedAnnotationFeaturePack;
-import it.unipi.di.acube.smaph.learn.featurePacks.AnnotationFeaturePack;
 import it.unipi.di.acube.smaph.learn.normalizer.FeatureNormalizer;
-import it.unipi.di.acube.smaph.linkback.annotationRegressor.Regressor;
+import it.unipi.di.acube.smaph.models.linkback.annotationRegressor.AnnotationRegressor;
 import it.unipi.di.acube.smaph.wikiAnchors.EntityToAnchors;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.Vector;
 
-public class SvmAdvancedIndividualSingleLinkback implements LinkBack {
-	private Regressor ar;
+public class AdvancedIndividualLinkback implements LinkBack {
+	private AnnotationRegressor ar;
 	private FeatureNormalizer annFn;
 	private WikipediaApiInterface wikiApi;
 	private double threshold;
 	private double edthreshold;
 
-	public SvmAdvancedIndividualSingleLinkback(Regressor ar, FeatureNormalizer annFn, WikipediaApiInterface wikiApi,
+	public AdvancedIndividualLinkback(AnnotationRegressor ar, FeatureNormalizer annFn, WikipediaApiInterface wikiApi,
 			double threshold, double edthreshold) throws FileNotFoundException, IOException {
 		this.ar = ar;
 		this.annFn = annFn;
@@ -58,18 +57,18 @@ public class SvmAdvancedIndividualSingleLinkback implements LinkBack {
 	@Override
 	public HashSet<ScoredAnnotation> linkBack(String query, HashSet<Tag> acceptedEntities, QueryInformation qi) {
 
-		HashMap<Tag, String> entityToTitle = SmaphUtils.getEntitiesToTitles(acceptedEntities, wikiApi);
-
 		List<Pair<Annotation, Double>> scoreAndAnnotations = new Vector<>();
 		for (Annotation a : getAnnotations(query, acceptedEntities, qi, edthreshold)) {
-			for (HashMap<String, Double> entityFeatures : qi.entityToFtrVects.get(new Tag(a.getConcept()))) {
-				double score = ar.predictScore(new AdvancedAnnotationFeaturePack(a, query, EntityToAnchors.e2a().getAnchors(a.getConcept()), entityFeatures),
+			double score = ar.predictScore(new AdvancedAnnotationFeaturePack(a, query, qi, wikiApi),
 					annFn);
 			scoreAndAnnotations.add(new Pair<Annotation, Double>(a, score));
-			}
 		}
 
-		return SvmIndividualAnnotationLinkBack.getResult(scoreAndAnnotations, threshold);
+		return IndividualAnnotationLinkBack.getResult(scoreAndAnnotations, threshold);
+	}
+
+	@Override
+	public void setDebugger(SmaphAnnotatorDebugger debugger) {
 	}
 
 }

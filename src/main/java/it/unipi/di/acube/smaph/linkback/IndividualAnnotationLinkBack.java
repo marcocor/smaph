@@ -6,10 +6,11 @@ import it.unipi.di.acube.batframework.data.Tag;
 import it.unipi.di.acube.batframework.utils.Pair;
 import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
 import it.unipi.di.acube.smaph.QueryInformation;
+import it.unipi.di.acube.smaph.SmaphAnnotatorDebugger;
 import it.unipi.di.acube.smaph.SmaphUtils;
 import it.unipi.di.acube.smaph.learn.featurePacks.AnnotationFeaturePack;
 import it.unipi.di.acube.smaph.learn.normalizer.FeatureNormalizer;
-import it.unipi.di.acube.smaph.linkback.annotationRegressor.Regressor;
+import it.unipi.di.acube.smaph.models.linkback.annotationRegressor.AnnotationRegressor;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -20,13 +21,13 @@ import java.util.Vector;
 
 import org.tartarus.snowball.ext.EnglishStemmer;
 
-public class SvmIndividualAnnotationLinkBack implements LinkBack {
-	private Regressor ar;
+public class IndividualAnnotationLinkBack implements LinkBack {
+	private AnnotationRegressor ar;
 	private FeatureNormalizer annFn;
 	private WikipediaApiInterface wikiApi;
 	private double threshold;
 
-	public SvmIndividualAnnotationLinkBack(Regressor ar,
+	public IndividualAnnotationLinkBack(AnnotationRegressor ar,
 			FeatureNormalizer annFn, WikipediaApiInterface wikiApi,
 			double threshold) {
 		this.ar = ar;
@@ -105,6 +106,10 @@ public class SvmIndividualAnnotationLinkBack implements LinkBack {
 		//TODO: shall we collapse bindings?
 		//return SmaphUtils.collapseBinding(res);
 		return res;
+	}
+
+	@Override
+	public void setDebugger(SmaphAnnotatorDebugger debugger) {
 	}
 
 }

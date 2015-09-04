@@ -2,6 +2,7 @@ package it.unipi.di.acube.smaph.linkback;
 
 import it.unipi.di.acube.batframework.data.*;
 import it.unipi.di.acube.smaph.QueryInformation;
+import it.unipi.di.acube.smaph.SmaphAnnotatorDebugger;
 
 import java.util.*;
 
@@ -14,5 +15,9 @@ public class DummyLinkBack implements LinkBack {
 		for (Tag entity : acceptedEntities)
 			res.add(new ScoredAnnotation(0, 1, entity.getConcept(), 1));
 		return res;
+	}
+
+	@Override
+	public void setDebugger(SmaphAnnotatorDebugger debugger) {
 	}
 }

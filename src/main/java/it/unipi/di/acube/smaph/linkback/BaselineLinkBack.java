@@ -2,6 +2,7 @@ package it.unipi.di.acube.smaph.linkback;
 
 import it.unipi.di.acube.batframework.data.*;
 import it.unipi.di.acube.smaph.QueryInformation;
+import it.unipi.di.acube.smaph.SmaphAnnotatorDebugger;
 import it.unipi.di.acube.smaph.SmaphUtils;
 
 import java.util.*;
@@ -108,5 +109,9 @@ public class BaselineLinkBack implements LinkBack {
 			i++;
 		}
 		return result;
+	}
+
+	@Override
+	public void setDebugger(SmaphAnnotatorDebugger debugger) {
 	}
 }
