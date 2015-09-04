@@ -10,7 +10,7 @@ import it.unipi.di.acube.batframework.metrics.StrongTagMatch;
 import it.unipi.di.acube.batframework.utils.Pair;
 import it.unipi.di.acube.batframework.utils.ProblemReduction;
 import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
-import it.unipi.di.acube.smaph.linkback.SvmIndividualAnnotationLinkBack;
+import it.unipi.di.acube.smaph.linkback.IndividualAnnotationLinkBack;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -82,7 +82,7 @@ public abstract class SolutionComputer <T extends Serializable, G extends Object
 			
 			List<HashSet<Annotation>> solutionList = new Vector<>();
 			for (List<Pair<Annotation, Double>> candidateAndPred : candidateAndPreds) {
-				HashSet<Annotation> computedSolution = ProblemReduction.Sa2WToA2W(SvmIndividualAnnotationLinkBack.getResult(candidateAndPred, threshold));
+				HashSet<Annotation> computedSolution = ProblemReduction.Sa2WToA2W(IndividualAnnotationLinkBack.getResult(candidateAndPred, threshold));
 				solutionList.add(computedSolution);
 			}
 
