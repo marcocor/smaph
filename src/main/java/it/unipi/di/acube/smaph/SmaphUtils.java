@@ -154,9 +154,10 @@ public class SmaphUtils {
 	 *         (included), except those in excludedFeatures.
 	 */
 	public static int[] getAllFtrVect(int ftrCount, int[] excludedFeatures) {
+		Arrays.sort(excludedFeatures);
 		Vector<Integer> res = new Vector<>();
 		for (int i = 1; i < ftrCount + 1; i++)
-			if (Arrays.asList(excludedFeatures).indexOf(i) < 0)
+			if (Arrays.binarySearch(excludedFeatures, i) < 0)
 				res.add(i);
 		return ArrayUtils.toPrimitive(res.toArray(new Integer[] {}));
 	}
