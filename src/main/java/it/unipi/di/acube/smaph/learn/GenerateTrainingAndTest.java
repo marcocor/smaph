@@ -27,16 +27,12 @@ import it.unipi.di.acube.batframework.utils.Pair;
 import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
 import it.unipi.di.acube.smaph.SmaphAnnotator;
 import it.unipi.di.acube.smaph.boldfilters.FrequencyBoldFilter;
-import it.unipi.di.acube.smaph.entityfilters.EntityFilter;
-import it.unipi.di.acube.smaph.entityfilters.LibSvmEntityFilter;
-import it.unipi.di.acube.smaph.entityfilters.NoEntityFilter;
 import it.unipi.di.acube.smaph.learn.featurePacks.AdvancedAnnotationFeaturePack;
 import it.unipi.di.acube.smaph.learn.featurePacks.AnnotationFeaturePack;
 import it.unipi.di.acube.smaph.learn.featurePacks.BindingFeaturePack;
 import it.unipi.di.acube.smaph.learn.featurePacks.EntityFeaturePack;
 import it.unipi.di.acube.smaph.learn.featurePacks.FeaturePack;
 import it.unipi.di.acube.smaph.learn.normalizer.FeatureNormalizer;
-import it.unipi.di.acube.smaph.learn.normalizer.NoFeatureNormalizer;
 import it.unipi.di.acube.smaph.learn.normalizer.ScaleFeatureNormalizer;
 import it.unipi.di.acube.smaph.learn.normalizer.ZScoreFeatureNormalizer;
 import it.unipi.di.acube.smaph.linkback.DummyLinkBack;
@@ -45,12 +41,15 @@ import it.unipi.di.acube.smaph.linkback.SvmAdvancedIndividualSingleLinkback;
 import it.unipi.di.acube.smaph.linkback.SvmCollectiveLinkBack;
 import it.unipi.di.acube.smaph.linkback.SvmIndividualAnnotationLinkBack;
 import it.unipi.di.acube.smaph.linkback.SvmSingleEntityLinkBack;
-import it.unipi.di.acube.smaph.linkback.annotationRegressor.LibLinearRegressor;
-import it.unipi.di.acube.smaph.linkback.annotationRegressor.Regressor;
 import it.unipi.di.acube.smaph.linkback.bindingGenerator.DefaultBindingGenerator;
-import it.unipi.di.acube.smaph.linkback.bindingRegressor.LibLinearBindingRegressor;
-import it.unipi.di.acube.smaph.linkback.bindingRegressor.RankLibBindingRegressor;
 import it.unipi.di.acube.smaph.main.ERDDatasetFilter;
+import it.unipi.di.acube.smaph.models.entityfilters.EntityFilter;
+import it.unipi.di.acube.smaph.models.entityfilters.LibSvmEntityFilter;
+import it.unipi.di.acube.smaph.models.entityfilters.NoEntityFilter;
+import it.unipi.di.acube.smaph.models.linkback.annotationRegressor.AnnotationRegressor;
+import it.unipi.di.acube.smaph.models.linkback.annotationRegressor.LibLinearAnnotatorRegressor;
+import it.unipi.di.acube.smaph.models.linkback.bindingRegressor.LibLinearBindingRegressor;
+import it.unipi.di.acube.smaph.models.linkback.bindingRegressor.RankLibBindingRegressor;
 import it.unipi.di.acube.smaph.snippetannotationfilters.FrequencyAnnotationFilter;
 import it.unipi.di.acube.BingInterface;
 import it.cnr.isti.hpc.erd.WikipediaToFreebase;
@@ -66,13 +65,13 @@ public class GenerateTrainingAndTest {
 	public enum OptDataset {ERD_CHALLENGE, SMAPH_DATASET}
 	public static void gatherExamples(SmaphAnnotator bingAnnotator,
 			A2WDataset ds, ExampleGatherer<Tag, HashSet<Tag>> entityFilterGatherer, ExampleGatherer<Annotation, HashSet<Annotation>> annotationLevel1Gatherer, ExampleGatherer<HashSet<Annotation>, HashSet<Annotation>> linkBackLevel2Gatherer, ExampleGatherer<HashSet<Annotation>, HashSet<Annotation>> linkBackCollectiveGatherer, ExampleGatherer<Annotation, HashSet<Annotation>> individualAnnotationGatherer, ExampleGatherer<Annotation, HashSet<Annotation>> advancedIndividualAnnotationGatherer,
-			WikipediaToFreebase wikiToFreeb, Regressor ar, FeatureNormalizer annFn, boolean keepNEOnly, double anchorMaxED) throws Exception {
+			WikipediaToFreebase wikiToFreeb, AnnotationRegressor ar, FeatureNormalizer annFn, boolean keepNEOnly, double anchorMaxED) throws Exception {
 		gatherExamples(bingAnnotator, ds, entityFilterGatherer,annotationLevel1Gatherer,
 				linkBackLevel2Gatherer, linkBackCollectiveGatherer, individualAnnotationGatherer, advancedIndividualAnnotationGatherer, wikiToFreeb, ar,annFn, keepNEOnly, -1, anchorMaxED);
 	}
 	public static void gatherExamples(SmaphAnnotator bingAnnotator,
 			A2WDataset ds, ExampleGatherer<Tag, HashSet<Tag>> entityFilterGatherer,ExampleGatherer<Annotation, HashSet<Annotation>> annotationLevel1Gatherer, ExampleGatherer<HashSet<Annotation>, HashSet<Annotation>> linkBackLevel2Gatherer, ExampleGatherer<HashSet<Annotation>, HashSet<Annotation>> linkBackCollectiveGatherer,ExampleGatherer<Annotation, HashSet<Annotation>> annotationRegressorGatherer,ExampleGatherer<Annotation, HashSet<Annotation>> advancedAnnotationRegressorGatherer,
-			WikipediaToFreebase wikiToFreeb, Regressor arLevel1, FeatureNormalizer arNormLevel1, boolean keepNEOnly, int limit, double anchorMaxED) throws Exception {
+			WikipediaToFreebase wikiToFreeb, AnnotationRegressor arLevel1, FeatureNormalizer arNormLevel1, boolean keepNEOnly, int limit, double anchorMaxED) throws Exception {
 			limit = limit ==-1? ds.getSize() : Math.min(limit, ds.getSize());
 		for (int i = 0; i < limit; i++) {
 			String query = ds.getTextInstanceList().get(i);
@@ -146,7 +145,7 @@ public class GenerateTrainingAndTest {
 			ExampleGatherer<Annotation, HashSet<Annotation>> develIndividualAnnotationGatherer,
 			ExampleGatherer<Annotation, HashSet<Annotation>> trainIndividualAdvancedAnnotationGatherer,
 			ExampleGatherer<Annotation, HashSet<Annotation>> develIndividualAdvancedAnnotationGatherer,
-			Regressor arLevel1, FeatureNormalizer arNormLevel1,
+			AnnotationRegressor arLevel1, FeatureNormalizer arNormLevel1,
 			WikipediaApiInterface wikiApi, WikipediaToFreebase wikiToFreebase,
 			FreebaseApi freebApi, OptDataset opt, double anchorMaxED) throws Exception {
 		if (trainEntityFilterGatherer != null || trainLinkBackCollectiveGatherer != null || trainLinkBackLevel2Gatherer != null || trainIndividualAnnotationGatherer != null || trainIndividualAdvancedAnnotationGatherer != null) {
@@ -313,16 +312,6 @@ public class GenerateTrainingAndTest {
 			 editDistanceSpotFilterThreshold, 
 			 bingKey, new LibSvmEntityFilter(EFModelFileBase+".model"), new ZScoreFeatureNormalizer(EFModelFileBase+".zscore", new EntityFeaturePack()), new DummyLinkBack(), false, true, true, true);
 	}
-	public static SmaphAnnotator getDefaultBingAnnotatorLBStacked(
-			WikipediaApiInterface wikiApi, 
-			double editDistanceSpotFilterThreshold, 
-			String bingKey, String LBLevel2model, String LBLevel2Range, String ARLevel1Model, String AFLevel1Range) throws FileNotFoundException,
-			ClassNotFoundException, IOException {
-		SvmCollectiveLinkBack lb = new SvmCollectiveLinkBack(wikiApi, new DefaultBindingGenerator(), new LibLinearRegressor(ARLevel1Model), new LibLinearBindingRegressor(LBLevel2model), new ZScoreFeatureNormalizer(AFLevel1Range, new AnnotationFeaturePack()), new ZScoreFeatureNormalizer(LBLevel2Range, new BindingFeaturePack()));
-		return getDefaultBingAnnotatorParam( wikiApi, 
-			 editDistanceSpotFilterThreshold, 
-			 bingKey, new NoEntityFilter(), null, lb, false, true, true, true);
-	}
 	public static SmaphAnnotator getDefaultBingAnnotatorEFRegressor(
 			WikipediaApiInterface wikiApi, double editDistanceSpotFilterThreshold, String bingKey,
 			String EFModelFileBase) throws FileNotFoundException, ClassNotFoundException, IOException {
@@ -335,12 +324,12 @@ public class GenerateTrainingAndTest {
 			String AFModelFileBase, String AFScaleFile, double annotationFilterThreshold) throws FileNotFoundException, ClassNotFoundException, IOException {
 		return getDefaultBingAnnotatorParam( wikiApi, 
 				 editDistanceSpotFilterThreshold, 
-				 bingKey, new NoEntityFilter(), null, new SvmIndividualAnnotationLinkBack(new LibLinearRegressor(AFModelFileBase), new ZScoreFeatureNormalizer(AFScaleFile, new AnnotationFeaturePack()), wikiApi, annotationFilterThreshold), false, true, true, true);
+				 bingKey, new NoEntityFilter(), null, new SvmIndividualAnnotationLinkBack(new LibLinearAnnotatorRegressor(AFModelFileBase), new ZScoreFeatureNormalizer(AFScaleFile, new AnnotationFeaturePack()), wikiApi, annotationFilterThreshold), false, true, true, true);
 	}
 	public static SmaphAnnotator getDefaultBingAnnotatorCollectiveLBLiblinear(
 			WikipediaApiInterface wikiApi, double editDistanceSpotFilterThreshold, String bingKey,
 			String lBmodel, String lBrange) throws FileNotFoundException, ClassNotFoundException, IOException {
-		SvmCollectiveLinkBack lb = new SvmCollectiveLinkBack(wikiApi, new DefaultBindingGenerator(), null, new LibLinearBindingRegressor(lBmodel), null, new ZScoreFeatureNormalizer(lBrange, new BindingFeaturePack()));
+		SvmCollectiveLinkBack lb = new SvmCollectiveLinkBack(wikiApi, new DefaultBindingGenerator(), new LibLinearBindingRegressor(lBmodel), new ZScoreFeatureNormalizer(lBrange, new BindingFeaturePack()));
 		return getDefaultBingAnnotatorParam( wikiApi, 
 				 editDistanceSpotFilterThreshold, 
 				 bingKey, new NoEntityFilter(), null, lb, false, true, true, true);
@@ -348,7 +337,7 @@ public class GenerateTrainingAndTest {
 	public static SmaphAnnotator getDefaultBingAnnotatorCollectiveLBRanklib(
 			WikipediaApiInterface wikiApi, double editDistanceSpotFilterThreshold, String bingKey,
 			String lBmodel, String lbRange) throws FileNotFoundException, ClassNotFoundException, IOException {
-		SvmCollectiveLinkBack lb = new SvmCollectiveLinkBack(wikiApi, new DefaultBindingGenerator(), null, new RankLibBindingRegressor(lBmodel), null, new ZScoreFeatureNormalizer(lbRange, new BindingFeaturePack()));
+		SvmCollectiveLinkBack lb = new SvmCollectiveLinkBack(wikiApi, new DefaultBindingGenerator(), new RankLibBindingRegressor(lBmodel), new ZScoreFeatureNormalizer(lbRange, new BindingFeaturePack()));
 		return getDefaultBingAnnotatorParam( wikiApi, 
 				 editDistanceSpotFilterThreshold, 
 				 bingKey, new NoEntityFilter(), null, lb, false, false, false, true);
@@ -358,7 +347,7 @@ public class GenerateTrainingAndTest {
 			String AAFModelFileBase, String AAFScaleFile, double annotationFilterThreshold, double anchorMaxED) throws FileNotFoundException, ClassNotFoundException, IOException {
 		return getDefaultBingAnnotatorParam( wikiApi, 
 				 editDistanceSpotFilterThreshold, 
-				 bingKey, new NoEntityFilter(), null, new SvmAdvancedIndividualSingleLinkback(new LibLinearRegressor(AAFModelFileBase), new ZScoreFeatureNormalizer(AAFScaleFile, new AdvancedAnnotationFeaturePack()), wikiApi, annotationFilterThreshold, anchorMaxED), false, false, false, true);
+				 bingKey, new NoEntityFilter(), null, new SvmAdvancedIndividualSingleLinkback(new LibLinearAnnotatorRegressor(AAFModelFileBase), new ZScoreFeatureNormalizer(AAFScaleFile, new AdvancedAnnotationFeaturePack()), wikiApi, annotationFilterThreshold, anchorMaxED), false, false, false, true);
 	}
 	
 }
