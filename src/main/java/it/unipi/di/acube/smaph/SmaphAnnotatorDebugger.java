@@ -46,7 +46,8 @@ public class SmaphAnnotatorDebugger {
 	private HashMap<String, HashSet<Integer>> result = new HashMap<>();
 	private HashMap<String, List<Pair<String, Vector<Pair<Integer, Integer>>>>> snippetsToBolds = new HashMap<>();
 	private HashMap<String, Set<Integer>> candidateEntities = new HashMap<String, Set<Integer>>(); 
-	private HashMap<String, List<Triple<HashMap<Annotation, HashMap<String, Double>>, HashMap<String, Double>, Double>>> linkBackAnnotationFeaturesAndBindingFeaturesAndScore = new HashMap<>();
+	private HashMap<String, HashMap<HashSet<Annotation>, Pair<HashMap<Annotation, HashMap<String, Double>>, HashMap<String, Double>>>> linkBackAnnotationFeaturesAndBindingFeatures = new HashMap<>();
+	private HashMap<String, HashMap<HashSet<Annotation>, Double>> linkBackBindingScore = new HashMap<>();
 
 	public void addProcessedQuery(String query) {
 		processedQueries.add(query);
@@ -404,29 +405,37 @@ public class SmaphAnnotatorDebugger {
 		candidateEntities.put(query, wids);
 	}
 
-	public void addLinkbackBindingFeatures(
+	public void addLinkbackBindingScore(
 			String query,
-			HashMap<Annotation, HashMap<String, Double>> debugAnnotationFeatures,
-			HashMap<String, Double> debugBindingFeatures, double predictedScore) {
-		if (!linkBackAnnotationFeaturesAndBindingFeaturesAndScore.containsKey(query))
-			linkBackAnnotationFeaturesAndBindingFeaturesAndScore.put(query, new Vector<Triple<HashMap<Annotation,HashMap<String,Double>>,HashMap<String,Double>,Double>>());
-		linkBackAnnotationFeaturesAndBindingFeaturesAndScore.get(query).add(new ImmutableTriple<HashMap<Annotation,HashMap<String,Double>>, HashMap<String,Double>, Double>(debugAnnotationFeatures, debugBindingFeatures, predictedScore));
+			HashSet<Annotation> binding, double predictedScore) {
+		if (!linkBackBindingScore.containsKey(query))
+			linkBackBindingScore.put(query, new HashMap<HashSet<Annotation>,Double>());
+		linkBackBindingScore.get(query).put(binding, predictedScore);
+	}
+	
+	public void addLinkbackBindingFeatures(
+				String query, HashSet<Annotation> binding,
+				HashMap<Annotation, HashMap<String, Double>> debugAnnotationFeatures,
+				HashMap<String, Double> debugBindingFeatures) {
+		if (!linkBackAnnotationFeaturesAndBindingFeatures.containsKey(query))
+			linkBackAnnotationFeaturesAndBindingFeatures.put(query, new HashMap<HashSet<Annotation>, Pair<HashMap<Annotation, HashMap<String, Double>>, HashMap<String, Double>>>());
+		linkBackAnnotationFeaturesAndBindingFeatures.get(query).put(binding, new Pair<HashMap<Annotation,HashMap<String,Double>>, HashMap<String,Double>>(debugAnnotationFeatures, debugBindingFeatures));
 	}
 	
 	public JSONArray getLinkbackBindingFeatures(String query, HashSet<Annotation> goldStandard, WikipediaApiInterface wikiApi) throws JSONException, IOException {
 		MatchRelation<Annotation> sam = new StrongAnnotationMatch(wikiApi);
 		Metrics<Annotation> m = new Metrics<Annotation>();
-		float bestScore = -1;
+		float bestF1 = -1;
 		if (goldStandard != null)
-			bestScore = getBestScore(this.linkBackAnnotationFeaturesAndBindingFeaturesAndScore.get(query), goldStandard, sam);
+			bestF1 = getBestF1(this.linkBackBindingScore.get(query).keySet(), goldStandard, sam);
 		
 		Vector<Pair<JSONObject, Double>> res = new Vector<>();
-		for (Triple<HashMap<Annotation, HashMap<String, Double>>, HashMap<String, Double>, Double> t : this.linkBackAnnotationFeaturesAndBindingFeaturesAndScore.get(query)) {
+		for (HashSet<Annotation> binding : this.linkBackAnnotationFeaturesAndBindingFeatures.get(query).keySet()) {
+			Pair<HashMap<Annotation, HashMap<String, Double>>, HashMap<String, Double>> t = this.linkBackAnnotationFeaturesAndBindingFeatures.get(query).get(binding);
 			JSONObject tripleJs = new JSONObject();
-			res.add(new Pair<JSONObject, Double>(tripleJs, t.getRight()));
 			JSONArray annotationsJs = new JSONArray();
 			tripleJs.put("annotations", annotationsJs);
-			for (Annotation a: SmaphUtils.sorted(t.getLeft().keySet())){
+			for (Annotation a: SmaphUtils.sorted(t.first.keySet())){
 				JSONObject annotationJs = new JSONObject();
 				annotationsJs.put(annotationJs);
 				annotationJs.put("mention", query.substring(a.getPosition(), a.getPosition()+a.getLength()));
@@ -435,26 +444,28 @@ public class SmaphAnnotatorDebugger {
 				annotationJs.put("url", widToUrl(a.getConcept(), wikiApi));
 				JSONObject annotationFeaturesJs = new JSONObject();
 				annotationJs.put("annotation_features", annotationFeaturesJs);
-				for (String fName: SmaphUtils.sorted(t.getLeft().get(a).keySet()))
-					annotationFeaturesJs.put(fName, t.getLeft().get(a).get(fName));
+				for (String fName: SmaphUtils.sorted(t.first.get(a).keySet()))
+					annotationFeaturesJs.put(fName, t.first.get(a).get(fName));
 			}
 			
 			JSONObject bindingFeaturesJs = new JSONObject();
 			tripleJs.put("binding_features", bindingFeaturesJs);
-			for (String fName: SmaphUtils.sorted(t.getMiddle().keySet(), new CompareFeatureName()))
-				bindingFeaturesJs.put(fName, t.getMiddle().get(fName));
+			for (String fName: SmaphUtils.sorted(t.second.keySet(), new CompareFeatureName()))
+				bindingFeaturesJs.put(fName, t.second.get(fName));
 
-			tripleJs.put("predicted_score", t.getRight());
+			double score = this.linkBackBindingScore.get(query).get(binding);
+			res.add(new Pair<JSONObject, Double>(tripleJs, score));
+			tripleJs.put("predicted_score", score);
 			
 			if (goldStandard != null){
-				float f1 = m.getSingleF1(goldStandard, new HashSet<Annotation>(t.getLeft().keySet()), sam);
-				float prec = m.getSinglePrecision(goldStandard, new HashSet<Annotation>(t.getLeft().keySet()), sam);
-				float rec = m.getSingleRecall(goldStandard, new HashSet<Annotation>(t.getLeft().keySet()), sam);
+				float f1 = m.getSingleF1(goldStandard, new HashSet<Annotation>(t.first.keySet()), sam);
+				float prec = m.getSinglePrecision(goldStandard, new HashSet<Annotation>(t.first.keySet()), sam);
+				float rec = m.getSingleRecall(goldStandard, new HashSet<Annotation>(t.first.keySet()), sam);
 				tripleJs.put("strong_f1", f1);
 				tripleJs.put("strong_prec", prec);
 				tripleJs.put("strong_rec", rec);
-				tripleJs.put("is_best_solution", bestScore == f1);
-				tripleJs.put("strong_f1_best_score", bestScore);
+				tripleJs.put("is_best_solution", bestF1 == f1);
+				tripleJs.put("strong_f1_best_score", bestF1);
 			}
 		}
 		
@@ -467,13 +478,13 @@ public class SmaphAnnotatorDebugger {
 		return resJs;
 	}
 	
-	private float getBestScore(
-			List<Triple<HashMap<Annotation, HashMap<String, Double>>, HashMap<String, Double>, Double>> list,
+	private float getBestF1(
+			Set<HashSet<Annotation>> binding,
 			HashSet<Annotation> goldStandard, MatchRelation<Annotation> sam) {
 		float best = 0f;
 		Metrics<Annotation> m = new Metrics<>();
-		for (Triple<HashMap<Annotation, HashMap<String, Double>>, HashMap<String, Double>, Double> t : list){
-			float f1 = m.getSingleF1(goldStandard, new HashSet<Annotation>(t.getLeft().keySet()), sam);
+		for (HashSet<Annotation> t : binding){
+			float f1 = m.getSingleF1(goldStandard, t, sam);
 			best = Math.max(best, f1);
 		}
 		return best;
