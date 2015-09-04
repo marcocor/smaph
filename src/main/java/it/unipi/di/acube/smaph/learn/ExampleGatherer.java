@@ -269,7 +269,7 @@ public class ExampleGatherer<T extends Serializable, G extends Serializable> {
 					lastVal = pair.second;
 					rank++;
 				}
-				wr.write(RankLibRanker.ftrVectToString(fn.ftrToNormalizedFtrArray(pair.first), rank, groupId));
+				wr.write(RankLibModel.ftrVectToString(fn.ftrToNormalizedFtrArray(pair.first), rank, groupId));
 				wr.write("\n");
 			}
 		}
