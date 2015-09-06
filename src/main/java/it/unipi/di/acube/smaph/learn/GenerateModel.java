@@ -478,7 +478,6 @@ public class GenerateModel {
 
 		int[][] featuresSetsToTest = new int[][] {
 				SmaphUtils.getAllFtrVect(new BindingFeaturePack().getFeatureCount()),
-				SmaphUtils.getAllFtrVect(new BindingFeaturePack().getFeatureCount(), new int[]{127})
 		};
 
 		OptDataset opt = OptDataset.SMAPH_DATASET;
