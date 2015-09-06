@@ -25,11 +25,10 @@ import it.unipi.di.acube.smaph.learn.featurePacks.AnnotationFeaturePack;
 import it.unipi.di.acube.smaph.learn.normalizer.FeatureNormalizer;
 import it.unipi.di.acube.smaph.models.linkback.annotationRegressor.AnnotationRegressor;
 
-import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -426,31 +425,18 @@ public class SmaphUtils {
 				count ++;
 		return count;
 	}
-	
 
-	public static class ComparePairsByFirstElement implements Comparator<Pair<Double, ?>> {
+	public static class ComparePairsByFirstElement<E extends Serializable, T extends Comparable<T> & Serializable> implements Comparator<Pair<T, E>> {
 		@Override
-		public int compare(Pair<Double, ?> o1, Pair<Double, ?> o2) {
-			double diff = o1.first - o2.first;
-			if (diff < 0)
-				return -1;
-			else if (diff == 0)
-				return 0;
-			else
-				return 1;
+		public int compare(Pair<T, E> o1, Pair<T, E> o2) {
+			return o1.first.compareTo(o2.first);
 		}
 	}
 
-	public static class ComparePairsBySecondElement implements Comparator<Pair<?, Double>> {
+	public static class ComparePairsBySecondElement<E extends Serializable, T extends Comparable<T> & Serializable> implements Comparator<Pair<E, T>> {
 		@Override
-		public int compare(Pair<?, Double> o1, Pair<?, Double> o2) {
-			double diff = o1.second - o2.second;
-			if (diff < 0)
-				return -1;
-			else if (diff == 0)
-				return 0;
-			else
-				return 1;
+		public int compare(Pair<E, T> o1, Pair<E, T> o2) {
+			return o1.second.compareTo(o2.second);
 		}
 	}
 
