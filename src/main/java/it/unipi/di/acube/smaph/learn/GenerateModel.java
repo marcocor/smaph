@@ -61,6 +61,8 @@ import org.apache.commons.lang3.tuple.Triple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import ciir.umass.edu.eval.Evaluator;
+
 public class GenerateModel {
 	private static final String LIBLINEAR_BASE = "libs/liblinear-2.0";
 	private static String bingKey, freebKey, freebCache;
@@ -476,7 +478,7 @@ public class GenerateModel {
 
 		int[][] featuresSetsToTest = new int[][] {
 				SmaphUtils.getAllFtrVect(new BindingFeaturePack().getFeatureCount()),
-				SmaphUtils.getAllFtrVect(new BindingFeaturePack().getFeatureCount(), new int[]{1})
+				SmaphUtils.getAllFtrVect(new BindingFeaturePack().getFeatureCount(), new int[]{127})
 		};
 
 		OptDataset opt = OptDataset.SMAPH_DATASET;
@@ -595,16 +597,15 @@ public class GenerateModel {
 		for (int[] ftrs : featuresSetsToTest) {
 			String ftrListFile = generateFeatureListFile(ftrs);
 			for (int modelType : new int[] { 6 }) {
-				for (int ncdgTop : new int[] {1,2,3,5,10,15,20}){
+				for (int ncdgTop : new int[] {10}){
 					String optMetric = "NDCG@" + ncdgTop;
 					String rankModelBase = getModelFileNameBaseRL(ftrs, boldFilterThr) + ".full";
 					String modelFile = rankModelBase + "." + modelType+ "." + optMetric + ".model";
 					brNorm.dump(rankModelBase + ".zscore");
-					String cmd = String.format("java -jar libs/RankLib-2.5.jar -feature %s -ranker %d -metric2t %s -train %s -validate %s -save %s",
+					String cliOpts = String.format("-feature %s -ranker %d -metric2t %s -train %s -validate %s -save %s",
 							ftrListFile, modelType, optMetric, trainFile, develFile, modelFile);
-					System.out.println("Training rankLib model (binding)... "
-							+ cmd);
-					Runtime.getRuntime().exec(cmd).waitFor();
+					System.out.println("Training rankLib model (binding)... " + cliOpts);
+					Evaluator.main(cliOpts.split("\\s+"));
 					System.out.println("Model trained (binding).");
 
 					BindingRegressor br = new RankLibBindingRegressor(modelFile);
