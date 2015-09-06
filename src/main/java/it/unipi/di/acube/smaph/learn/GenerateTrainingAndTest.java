@@ -16,6 +16,7 @@
 
 package it.unipi.di.acube.smaph.learn;
 
+import it.unimi.dsi.logging.ProgressLogger;
 import it.unipi.di.acube.batframework.data.Annotation;
 import it.unipi.di.acube.batframework.data.Tag;
 import it.unipi.di.acube.batframework.datasetPlugins.SMAPHDataset;
@@ -60,8 +61,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Vector;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class GenerateTrainingAndTest {
-	
+	private static Logger logger = LoggerFactory.getLogger(GenerateTrainingAndTest.class);
+
 	public enum OptDataset {ERD_CHALLENGE, SMAPH_DATASET}
 	public static void gatherExamples(SmaphAnnotator bingAnnotator,
 			A2WDataset ds, ExampleGatherer<Tag, HashSet<Tag>> entityFilterGatherer, ExampleGatherer<Annotation, HashSet<Annotation>> annotationLevel1Gatherer, ExampleGatherer<HashSet<Annotation>, HashSet<Annotation>> linkBackLevel2Gatherer, ExampleGatherer<HashSet<Annotation>, HashSet<Annotation>> linkBackCollectiveGatherer, ExampleGatherer<Annotation, HashSet<Annotation>> individualAnnotationGatherer, ExampleGatherer<Annotation, HashSet<Annotation>> advancedIndividualAnnotationGatherer,
@@ -72,7 +77,9 @@ public class GenerateTrainingAndTest {
 	public static void gatherExamples(SmaphAnnotator bingAnnotator,
 			A2WDataset ds, ExampleGatherer<Tag, HashSet<Tag>> entityFilterGatherer,ExampleGatherer<Annotation, HashSet<Annotation>> annotationLevel1Gatherer, ExampleGatherer<HashSet<Annotation>, HashSet<Annotation>> linkBackLevel2Gatherer, ExampleGatherer<HashSet<Annotation>, HashSet<Annotation>> linkBackCollectiveGatherer,ExampleGatherer<Annotation, HashSet<Annotation>> annotationRegressorGatherer,ExampleGatherer<Annotation, HashSet<Annotation>> advancedAnnotationRegressorGatherer,
 			WikipediaToFreebase wikiToFreeb, AnnotationRegressor arLevel1, FeatureNormalizer arNormLevel1, boolean keepNEOnly, int limit, double anchorMaxED) throws Exception {
-			limit = limit ==-1? ds.getSize() : Math.min(limit, ds.getSize());
+		limit = limit ==-1? ds.getSize() : Math.min(limit, ds.getSize());
+		ProgressLogger plog = new ProgressLogger(logger, "document");
+		plog.start("Collecting examples.");
 		for (int i = 0; i < limit; i++) {
 			String query = ds.getTextInstanceList().get(i);
 			HashSet<Tag> goldStandard = ds.getC2WGoldStandardList().get(i);
@@ -84,7 +91,7 @@ public class GenerateTrainingAndTest {
 			List<Pair<FeaturePack<HashSet<Annotation>>, Double>> LbVectorsToF1 = null;
 			List<Pair<FeaturePack<Annotation>, Boolean>> annVectorsToPresence = null;
 			List<Pair<FeaturePack<Annotation>, Boolean>> advAnnVectorsToPresence = null;
-			
+
 			if (entityFilterGatherer != null){
 				EFVectorsToPresence = new Vector<>();
 				EFCandidates = new Vector<>();
@@ -118,8 +125,9 @@ public class GenerateTrainingAndTest {
 				linkBackCollectiveGatherer.addExample(LbVectorsToF1, BRCandidates, goldStandardAnn);
 			if (advancedAnnotationRegressorGatherer != null)
 				advancedAnnotationRegressorGatherer.addExample(goldBoolToDouble(advAnnVectorsToPresence), ARCandidates, goldStandardAnn);
-			
+			plog.lightUpdate();
 		}
+		plog.done();
 	}
 
 	private static <E extends Object> List<Pair<FeaturePack<E>, Double>> goldBoolToDouble(
@@ -184,7 +192,7 @@ public class GenerateTrainingAndTest {
 				A2WDataset yahoo = new ERDDatasetFilter(
 						new YahooWebscopeL24Dataset(
 								"datasets/yahoo_webscope_L24/ydata-search-query-log-to-entities-v1_0.xml"),
-						wikiApi, wikiToFreebase);
+								wikiApi, wikiToFreebase);
 				gatherExamples(bingAnnotator, yahoo, trainEntityFilterGatherer, null, trainLinkBackCollectiveGatherer,
 						trainLinkBackLevel2Gatherer, trainIndividualAnnotationGatherer,trainIndividualAdvancedAnnotationGatherer, wikiToFreebase, arLevel1, arNormLevel1, keepNEOnly, anchorMaxED);
 
@@ -224,16 +232,16 @@ public class GenerateTrainingAndTest {
 						trainAnnotationGatherer,  wikiToFreebase, ar, annFn, keepNEOnly);*/
 
 
-/*				A2WDataset yahoo = new YahooWebscopeL24Dataset(
+				/*				A2WDataset yahoo = new YahooWebscopeL24Dataset(
 						"datasets/yahoo_webscope_L24/ydata-search-query-log-to-entities-v1_0.xml");
 				gatherExamples(bingAnnotator, yahoo, trainEntityFilterGatherer,
 						trainLinkBackGatherer, wikiToFreebase);*/
-				
+
 				/*A2WDataset smaphSingle = new SMAPHDataset(
 						"datasets/smaph/single_test.xml", wikiApi);
 				gatherExamples(bingAnnotator, smaphSingle,
-						trainEntityFilterGatherer, trainLinkBackGatherer,
-						wikiToFreebase);*/
+						trainEntityFilterGatherer, trainLevel1AnnotationGatherer, null, trainLinkBackCollectiveGatherer,
+						trainIndividualAnnotationGatherer,trainIndividualAdvancedAnnotationGatherer, wikiToFreebase, arLevel1, arNormLevel1, keepNEOnly, anchorMaxED);*/
 			}
 		}
 		if (develEntityFilterGatherer != null || develLinkBackLevel2Gatherer != null || develLinkBackCollectiveGatherer != null|| develIndividualAnnotationGatherer != null || develIndividualAdvancedAnnotationGatherer != null) {
@@ -256,19 +264,19 @@ public class GenerateTrainingAndTest {
 				gatherExamples(bingAnnotator, smaphTest,
 						develEntityFilterGatherer, develEntityRegressorGatherer, develLinkBackGatherer,develAnnotationGatherer,
 						wikiToFreebase, ar, annFn, keepNEOnly);*/
-				
+
 				A2WDataset smaphDevel = new SMAPHDataset(
 						"datasets/smaph/smaph_devel.xml", wikiApi);
 				gatherExamples(bingAnnotator, smaphDevel,
 						develEntityFilterGatherer, develLevel1AnnotationGatherer, develLinkBackLevel2Gatherer, develLinkBackCollectiveGatherer,
 						develIndividualAnnotationGatherer,develIndividualAdvancedAnnotationGatherer,  wikiToFreebase, arLevel1, arNormLevel1, keepNEOnly, anchorMaxED);
-/*				A2WDataset smaphSingle = new SMAPHDataset(
+				/*A2WDataset smaphSingle = new SMAPHDataset(
 						"datasets/smaph/single_test.xml", wikiApi);
 				gatherExamples(bingAnnotator, smaphSingle,
-						develEntityFilterGatherer, develEntityRegressorGatherer,develLinkBackGatherer,develAnnotationGatherer,
-						wikiToFreebase);*/
+						develEntityFilterGatherer, develLevel1AnnotationGatherer, develLinkBackLevel2Gatherer, develLinkBackCollectiveGatherer,
+						develIndividualAnnotationGatherer,develIndividualAdvancedAnnotationGatherer,  wikiToFreebase, arLevel1, arNormLevel1, keepNEOnly, anchorMaxED);*/
 			}
-			
+
 		}
 
 		BingInterface.flush();
@@ -281,13 +289,13 @@ public class GenerateTrainingAndTest {
 			String bingKey, EntityFilter entityFilter,FeatureNormalizer efNorm, LinkBack lb,
 			boolean s1, boolean s2, boolean s3, boolean s6) throws FileNotFoundException,
 			ClassNotFoundException, IOException {
-				WATAnnotator wikiSense = new WATAnnotator("wikisense.mkapp.it", 80,
+		WATAnnotator wikiSense = new WATAnnotator("wikisense.mkapp.it", 80,
 				"base", "COMMONNESS", "jaccard", "0.6", "0.0"/* minlp */, false,
 				false, false);
 
-				WATAnnotator watDefault = new WATAnnotator(
-						"wikisense.mkapp.it", 80, "base", "COMMONNESS", "mw", "0.2",
-						"0.0", false, false, false);
+		WATAnnotator watDefault = new WATAnnotator(
+				"wikisense.mkapp.it", 80, "base", "COMMONNESS", "mw", "0.2",
+				"0.0", false, false, false);
 		return new SmaphAnnotator(wikiSense,
 				new FrequencyBoldFilter((float)editDistanceSpotFilterThreshold),entityFilter
 				, efNorm, lb, s1, s2, s3,
@@ -300,8 +308,8 @@ public class GenerateTrainingAndTest {
 			String bingKey, boolean s2, boolean s3, boolean s6) throws FileNotFoundException,
 			ClassNotFoundException, IOException {
 		return getDefaultBingAnnotatorParam( wikiApi, 
-			 editDistanceSpotFilterThreshold,  
-			 bingKey, new NoEntityFilter(), null, new DummyLinkBack(), false, s2, s3, s6);
+				editDistanceSpotFilterThreshold,  
+				bingKey, new NoEntityFilter(), null, new DummyLinkBack(), false, s2, s3, s6);
 	}
 	public static SmaphAnnotator getDefaultBingAnnotatorEF(
 			WikipediaApiInterface wikiApi, 
@@ -309,45 +317,45 @@ public class GenerateTrainingAndTest {
 			String bingKey, String EFModelFileBase) throws FileNotFoundException,
 			ClassNotFoundException, IOException {
 		return getDefaultBingAnnotatorParam( wikiApi, 
-			 editDistanceSpotFilterThreshold, 
-			 bingKey, new LibSvmEntityFilter(EFModelFileBase+".model"), new ZScoreFeatureNormalizer(EFModelFileBase+".zscore", new EntityFeaturePack()), new DummyLinkBack(), false, true, true, true);
+				editDistanceSpotFilterThreshold, 
+				bingKey, new LibSvmEntityFilter(EFModelFileBase+".model"), new ZScoreFeatureNormalizer(EFModelFileBase+".zscore", new EntityFeaturePack()), new DummyLinkBack(), false, true, true, true);
 	}
 	public static SmaphAnnotator getDefaultBingAnnotatorEFRegressor(
 			WikipediaApiInterface wikiApi, double editDistanceSpotFilterThreshold, String bingKey,
 			String EFModelFileBase) throws FileNotFoundException, ClassNotFoundException, IOException {
 		return getDefaultBingAnnotatorParam( wikiApi, 
-				 editDistanceSpotFilterThreshold, 
-				 bingKey, new NoEntityFilter(), null, new SingleEntityLinkBack(new LibSvmEntityFilter(EFModelFileBase), new ScaleFeatureNormalizer(EFModelFileBase+".range", new EntityFeaturePack()), wikiApi), false, true, true, true);
+				editDistanceSpotFilterThreshold, 
+				bingKey, new NoEntityFilter(), null, new SingleEntityLinkBack(new LibSvmEntityFilter(EFModelFileBase), new ScaleFeatureNormalizer(EFModelFileBase+".range", new EntityFeaturePack()), wikiApi), false, true, true, true);
 	}
 	public static SmaphAnnotator getDefaultBingAnnotatorIndividualLBLiblinear(
 			WikipediaApiInterface wikiApi, double editDistanceSpotFilterThreshold, String bingKey,
 			String AFModelFileBase, String AFScaleFile, double annotationFilterThreshold) throws FileNotFoundException, ClassNotFoundException, IOException {
 		return getDefaultBingAnnotatorParam( wikiApi, 
-				 editDistanceSpotFilterThreshold, 
-				 bingKey, new NoEntityFilter(), null, new IndividualAnnotationLinkBack(new LibLinearAnnotatorRegressor(AFModelFileBase), new ZScoreFeatureNormalizer(AFScaleFile, new AnnotationFeaturePack()), wikiApi, annotationFilterThreshold), false, true, true, true);
+				editDistanceSpotFilterThreshold, 
+				bingKey, new NoEntityFilter(), null, new IndividualAnnotationLinkBack(new LibLinearAnnotatorRegressor(AFModelFileBase), new ZScoreFeatureNormalizer(AFScaleFile, new AnnotationFeaturePack()), wikiApi, annotationFilterThreshold), false, true, true, true);
 	}
 	public static SmaphAnnotator getDefaultBingAnnotatorCollectiveLBLiblinear(
 			WikipediaApiInterface wikiApi, double editDistanceSpotFilterThreshold, String bingKey,
 			String lBmodel, String lBrange) throws FileNotFoundException, ClassNotFoundException, IOException {
 		CollectiveLinkBack lb = new CollectiveLinkBack(wikiApi, new DefaultBindingGenerator(), new LibLinearBindingRegressor(lBmodel), new ZScoreFeatureNormalizer(lBrange, new BindingFeaturePack()));
 		return getDefaultBingAnnotatorParam( wikiApi, 
-				 editDistanceSpotFilterThreshold, 
-				 bingKey, new NoEntityFilter(), null, lb, false, true, true, true);
+				editDistanceSpotFilterThreshold, 
+				bingKey, new NoEntityFilter(), null, lb, false, true, true, true);
 	}
 	public static SmaphAnnotator getDefaultBingAnnotatorCollectiveLBRanklib(
 			WikipediaApiInterface wikiApi, double editDistanceSpotFilterThreshold, String bingKey,
 			String lBmodel, String lbRange) throws FileNotFoundException, ClassNotFoundException, IOException {
 		CollectiveLinkBack lb = new CollectiveLinkBack(wikiApi, new DefaultBindingGenerator(), new RankLibBindingRegressor(lBmodel), new ZScoreFeatureNormalizer(lbRange, new BindingFeaturePack()));
 		return getDefaultBingAnnotatorParam( wikiApi, 
-				 editDistanceSpotFilterThreshold, 
-				 bingKey, new NoEntityFilter(), null, lb, false, false, false, true);
+				editDistanceSpotFilterThreshold, 
+				bingKey, new NoEntityFilter(), null, lb, false, false, false, true);
 	}
 	public static SmaphAnnotator getDefaultBingAnnotatorIndividualAdvancedAnnotationRegressor(
 			WikipediaApiInterface wikiApi, double editDistanceSpotFilterThreshold, String bingKey,
 			String AAFModelFileBase, String AAFScaleFile, double annotationFilterThreshold, double anchorMaxED) throws FileNotFoundException, ClassNotFoundException, IOException {
 		return getDefaultBingAnnotatorParam( wikiApi, 
-				 editDistanceSpotFilterThreshold, 
-				 bingKey, new NoEntityFilter(), null, new AdvancedIndividualLinkback(new LibLinearAnnotatorRegressor(AAFModelFileBase), new ZScoreFeatureNormalizer(AAFScaleFile, new AdvancedAnnotationFeaturePack()), wikiApi, annotationFilterThreshold, anchorMaxED), false, false, false, true);
+				editDistanceSpotFilterThreshold, 
+				bingKey, new NoEntityFilter(), null, new AdvancedIndividualLinkback(new LibLinearAnnotatorRegressor(AAFModelFileBase), new ZScoreFeatureNormalizer(AAFScaleFile, new AdvancedAnnotationFeaturePack()), wikiApi, annotationFilterThreshold, anchorMaxED), false, false, false, true);
 	}
-	
+
 }
