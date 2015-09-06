@@ -236,20 +236,31 @@ public class ExampleGatherer<T extends Serializable, G extends Serializable> {
 	public void dumpExamplesLibSvm(String filename, FeatureNormalizer fn, int[] selectedFeatures) throws IOException {
 		BufferedWriter wr = new BufferedWriter(new FileWriter(filename, false));
 
-		for (int i = 0; i < featureVectorsAndTargetGroups.size(); i++)
+		for (int i = 0; i < featureVectorsAndTargetGroups.size(); i++){
+			List<String> vectors = new Vector<String>();
+			
 			for (Pair<FeaturePack<T>, Double> vectAndGold : featureVectorsAndTargetGroups.get(i))
-				writeLineLibSvm(fn.ftrToNormalizedFtrArray(vectAndGold.first), wr, vectAndGold.second, i, selectedFeatures);
+				vectors.add(writeLineLibSvm(fn.ftrToNormalizedFtrArray(vectAndGold.first), wr, vectAndGold.second, i, selectedFeatures));
+
+			//This is just to make sure that lines are output always in the same order. (It seems that vector order does change the resulting model with some libraries.)
+			Collections.sort(vectors);
+			
+			for (String vectorLine: vectors){
+				wr.write(vectorLine);
+				wr.write("\n");
+			}
+		}			
 		wr.close();
 	}
 
-	private void writeLineLibSvm(double[] ftrVect, BufferedWriter wr, double gold, int id, int[] selectedFeatures)
+	private String writeLineLibSvm(double[] ftrVect, BufferedWriter wr, double gold, int id, int[] selectedFeatures)
 			throws IOException {
 		String line = String.format("%.5f ", gold);
 		for (int ftr = 0; ftr < ftrVect.length; ftr++)
 			if (selectedFeatures == null || ArrayUtils.contains(selectedFeatures, ftr + 1))
 				line += String.format("%d:%.9f ", ftr + 1, ftrVect[ftr]);
 		line += " #id=" + id;
-		wr.write(line + "\n");
+		return line;
 	}
 
 	public void dumpExamplesRankLib(String filename, FeatureNormalizer fn)
