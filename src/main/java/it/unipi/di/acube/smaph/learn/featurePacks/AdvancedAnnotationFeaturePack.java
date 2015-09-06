@@ -140,6 +140,7 @@ public class AdvancedAnnotationFeaturePack extends FeaturePack<Annotation> {
 	public static String[] getFeatureNamesStatic() {
 		if (ftrNames == null) {
 			Vector<String> v = new Vector<String>();
+			v.addAll(Arrays.asList(EntityFeaturePack.ftrNames));
 			v.add("edit_distance_anchor_segment_sqrt");
 			v.add("min_edit_distance_anchor_segment_sqrt");
 			v.add("min_edit_distance_anchor_segment_vv_sqrt");
@@ -148,7 +149,6 @@ public class AdvancedAnnotationFeaturePack extends FeaturePack<Annotation> {
 			v.add("min_edit_distance_anchor_segment_vv_sqrt_comm");
 			v.add("min_edit_distance_title");
 			v.add("min_edit_distance_bolds");
-			v.addAll(Arrays.asList(EntityFeaturePack.ftrNames));
 
 			ftrNames = v.toArray(new String[] {});
 		}
