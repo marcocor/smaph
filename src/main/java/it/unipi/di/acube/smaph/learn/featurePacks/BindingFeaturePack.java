@@ -18,7 +18,7 @@ import org.apache.commons.lang3.tuple.Triple;
 
 public class BindingFeaturePack extends FeaturePack<HashSet<Annotation>> {
 	private static final long serialVersionUID = 1L;
-	public static String[] ftrNames = null;
+	private static String[] ftrNames = null;
 	
 	public BindingFeaturePack(
 			HashSet<Annotation> binding, String query,
@@ -35,7 +35,7 @@ public class BindingFeaturePack extends FeaturePack<HashSet<Annotation>> {
 		return getFeatureNamesStatic();
 	}
 
-	private static String[] getFeatureNamesStatic() {
+	public static String[] getFeatureNamesStatic() {
 		if (ftrNames == null) {
 			List<String> ftrNamesVect = new Vector<>();
 			ftrNamesVect.add("min_relatedness");
