@@ -9,8 +9,8 @@ import it.unipi.di.acube.smaph.QueryInformation;
 import it.unipi.di.acube.smaph.SmaphAnnotatorDebugger;
 import it.unipi.di.acube.smaph.SmaphUtils;
 import it.unipi.di.acube.smaph.learn.featurePacks.AdvancedAnnotationFeaturePack;
+import it.unipi.di.acube.smaph.learn.models.linkback.annotationRegressor.AnnotationRegressor;
 import it.unipi.di.acube.smaph.learn.normalizer.FeatureNormalizer;
-import it.unipi.di.acube.smaph.models.linkback.annotationRegressor.AnnotationRegressor;
 import it.unipi.di.acube.smaph.wikiAnchors.EntityToAnchors;
 
 import java.io.FileNotFoundException;

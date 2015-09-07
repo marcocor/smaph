@@ -1,10 +1,10 @@
-package it.unipi.di.acube.smaph.models.linkback.bindingRegressor;
+package it.unipi.di.acube.smaph.learn.models.linkback.bindingRegressor;
 
 import java.util.HashSet;
 
 import it.unipi.di.acube.batframework.data.Annotation;
-import it.unipi.di.acube.smaph.learn.RankLibModel;
 import it.unipi.di.acube.smaph.learn.featurePacks.FeaturePack;
+import it.unipi.di.acube.smaph.learn.models.RankLibModel;
 import it.unipi.di.acube.smaph.learn.normalizer.FeatureNormalizer;
 
 public class RankLibBindingRegressor extends RankLibModel<HashSet<Annotation>> implements

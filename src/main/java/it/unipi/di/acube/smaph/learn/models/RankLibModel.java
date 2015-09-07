@@ -1,4 +1,4 @@
-package it.unipi.di.acube.smaph.learn;
+package it.unipi.di.acube.smaph.learn.models;
 
 import it.unipi.di.acube.smaph.learn.featurePacks.FeaturePack;
 import it.unipi.di.acube.smaph.learn.normalizer.FeatureNormalizer;

@@ -9,9 +9,9 @@ import it.unipi.di.acube.smaph.QueryInformation;
 import it.unipi.di.acube.smaph.SmaphAnnotatorDebugger;
 import it.unipi.di.acube.smaph.SmaphUtils;
 import it.unipi.di.acube.smaph.learn.featurePacks.BindingFeaturePack;
+import it.unipi.di.acube.smaph.learn.models.linkback.bindingRegressor.BindingRegressor;
 import it.unipi.di.acube.smaph.learn.normalizer.FeatureNormalizer;
 import it.unipi.di.acube.smaph.linkback.bindingGenerator.BindingGenerator;
-import it.unipi.di.acube.smaph.models.linkback.bindingRegressor.BindingRegressor;
 import it.unipi.di.acube.smaph.wikiAnchors.EntityToAnchors;
 
 import java.io.IOException;

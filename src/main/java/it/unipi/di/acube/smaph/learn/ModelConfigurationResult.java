@@ -16,7 +16,7 @@
 
 package it.unipi.di.acube.smaph.learn;
 
-import it.unipi.di.acube.smaph.learn.TuneModel.OptimizaionProfiles;
+import it.unipi.di.acube.smaph.learn.TuneModelLibSvm.OptimizaionProfiles;
 
 import java.io.Serializable;
 import java.util.List;

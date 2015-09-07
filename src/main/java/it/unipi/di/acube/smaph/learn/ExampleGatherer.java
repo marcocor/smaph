@@ -19,6 +19,8 @@ package it.unipi.di.acube.smaph.learn;
 import it.unipi.di.acube.batframework.utils.Pair;
 import it.unipi.di.acube.smaph.SmaphUtils;
 import it.unipi.di.acube.smaph.learn.featurePacks.FeaturePack;
+import it.unipi.di.acube.smaph.learn.models.LibSvmModel;
+import it.unipi.di.acube.smaph.learn.models.RankLibModel;
 import it.unipi.di.acube.smaph.learn.normalizer.FeatureNormalizer;
 
 import java.io.*;

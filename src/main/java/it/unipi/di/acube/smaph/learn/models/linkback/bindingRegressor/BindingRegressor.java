@@ -1,4 +1,4 @@
-package it.unipi.di.acube.smaph.models.linkback.bindingRegressor;
+package it.unipi.di.acube.smaph.learn.models.linkback.bindingRegressor;
 
 import java.util.HashSet;
 

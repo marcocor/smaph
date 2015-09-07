@@ -14,12 +14,12 @@
  *  limitations under the License.
  */
 
-package it.unipi.di.acube.smaph.models.entityfilters;
+package it.unipi.di.acube.smaph.learn.models.entityfilters;
 
 import it.unipi.di.acube.batframework.data.Tag;
 import it.unipi.di.acube.smaph.SmaphAnnotatorDebugger;
-import it.unipi.di.acube.smaph.learn.LibSvmModel;
 import it.unipi.di.acube.smaph.learn.featurePacks.FeaturePack;
+import it.unipi.di.acube.smaph.learn.models.LibSvmModel;
 import it.unipi.di.acube.smaph.learn.normalizer.FeatureNormalizer;
 
 import java.io.IOException;

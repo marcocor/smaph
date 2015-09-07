@@ -1,8 +1,8 @@
-package it.unipi.di.acube.smaph.models.linkback.bindingRegressor;
+package it.unipi.di.acube.smaph.learn.models.linkback.bindingRegressor;
 
 import it.unipi.di.acube.batframework.data.Annotation;
-import it.unipi.di.acube.smaph.learn.LibSvmModel;
 import it.unipi.di.acube.smaph.learn.featurePacks.FeaturePack;
+import it.unipi.di.acube.smaph.learn.models.LibSvmModel;
 import it.unipi.di.acube.smaph.learn.normalizer.FeatureNormalizer;
 
 import java.io.IOException;

@@ -14,20 +14,20 @@
  *  limitations under the License.
  */
 
-package it.unipi.di.acube.smaph.models.entityfilters;
+package it.unipi.di.acube.smaph.learn.models.entityfilters;
 
 import it.unipi.di.acube.batframework.data.Tag;
 import it.unipi.di.acube.smaph.learn.featurePacks.FeaturePack;
 import it.unipi.di.acube.smaph.learn.normalizer.FeatureNormalizer;
 
 /**
- * An entity filter that does nothing (accepts all entities).
+ * An interface to an Entity filter.
  */
-public class NoEntityFilter implements EntityFilter {
-
-	@Override
-	public boolean filterEntity(FeaturePack<Tag> fp, FeatureNormalizer fn) {
-		return true;
-	}
-
+public interface EntityFilter {
+	/**
+	 * @param fp
+	 *            not-yet-normalized features of the entity.
+	 * @return true iff the entity should be kept.
+	 */
+	public boolean filterEntity(FeaturePack<Tag> fp, FeatureNormalizer fn);
 }

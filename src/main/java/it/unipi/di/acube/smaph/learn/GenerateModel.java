@@ -32,16 +32,16 @@ import it.unipi.di.acube.smaph.learn.GenerateTrainingAndTest.OptDataset;
 import it.unipi.di.acube.smaph.learn.featurePacks.AdvancedAnnotationFeaturePack;
 import it.unipi.di.acube.smaph.learn.featurePacks.AnnotationFeaturePack;
 import it.unipi.di.acube.smaph.learn.featurePacks.BindingFeaturePack;
+import it.unipi.di.acube.smaph.learn.models.entityfilters.EntityFilter;
+import it.unipi.di.acube.smaph.learn.models.entityfilters.LibSvmEntityFilter;
+import it.unipi.di.acube.smaph.learn.models.linkback.annotationRegressor.AnnotationRegressor;
+import it.unipi.di.acube.smaph.learn.models.linkback.annotationRegressor.LibLinearAnnotatorRegressor;
+import it.unipi.di.acube.smaph.learn.models.linkback.bindingRegressor.BindingRegressor;
+import it.unipi.di.acube.smaph.learn.models.linkback.bindingRegressor.LibLinearBindingRegressor;
+import it.unipi.di.acube.smaph.learn.models.linkback.bindingRegressor.RankLibBindingRegressor;
 import it.unipi.di.acube.smaph.learn.normalizer.FeatureNormalizer;
 import it.unipi.di.acube.smaph.learn.normalizer.NoFeatureNormalizer;
 import it.unipi.di.acube.smaph.learn.normalizer.ZScoreFeatureNormalizer;
-import it.unipi.di.acube.smaph.models.entityfilters.EntityFilter;
-import it.unipi.di.acube.smaph.models.entityfilters.LibSvmEntityFilter;
-import it.unipi.di.acube.smaph.models.linkback.annotationRegressor.AnnotationRegressor;
-import it.unipi.di.acube.smaph.models.linkback.annotationRegressor.LibLinearAnnotatorRegressor;
-import it.unipi.di.acube.smaph.models.linkback.bindingRegressor.BindingRegressor;
-import it.unipi.di.acube.smaph.models.linkback.bindingRegressor.LibLinearBindingRegressor;
-import it.unipi.di.acube.smaph.models.linkback.bindingRegressor.RankLibBindingRegressor;
 
 import java.io.FileWriter;
 import java.io.IOException;
@@ -173,15 +173,15 @@ public class GenerateModel {
 								boldFilterThr, gamma, C) + filePrefix;
 
 						svm_problem trainProblem = trainEntityFilterGatherer.generateLibSvmProblem(ftrToTestArray, fNormEF);
-						svm_parameter param = TuneModel.getParametersEF(wPos,
+						svm_parameter param = TuneModelLibSvm.getParametersEF(wPos,
 								wNeg, gamma, C);						
 						System.out.println("Training binary classifier...");
-						svm_model model = TuneModel.trainModel(param,
+						svm_model model = TuneModelLibSvm.trainModel(param,
 								trainProblem);
 						svm.svm_save_model(fileBase + ".model", model);
 						fNormEF.dump(fileBase + ".zscore");
 						EntityFilter ef = new LibSvmEntityFilter(model);
-						MetricsResultSet metrics = TuneModel.ParameterTester.testEntityFilter(ef, develEntityFilterGatherer, ftrToTestArray, fNormEF, new SolutionComputer.TagSetSolutionComputer(wikiApi));
+						MetricsResultSet metrics = TuneModelLibSvm.ParameterTester.testEntityFilter(ef, develEntityFilterGatherer, ftrToTestArray, fNormEF, new SolutionComputer.TagSetSolutionComputer(wikiApi));
 
 						int tp = metrics.getGlobalTp();
 						int fp = metrics.getGlobalFp();
@@ -329,7 +329,7 @@ public class GenerateModel {
 								modelFileLevel1);
 
 						for (double thr = 0.24; thr < 0.24; thr += 0.02) {
-							MetricsResultSet metrics = TuneModel.ParameterTester
+							MetricsResultSet metrics = TuneModelLibSvm.ParameterTester
 									.testAnnotationRegressorModel(
 											annReg,
 											develLevel1AnnotationGatherer,
@@ -439,7 +439,7 @@ public class GenerateModel {
 						for (double thr = 0.0; thr <= 1.0; thr += 0.1) {
 							System.out.println("Testing threshold "+thr);
 
-							MetricsResultSet metrics = TuneModel.ParameterTester
+							MetricsResultSet metrics = TuneModelLibSvm.ParameterTester
 									.testAnnotationRegressorModel(
 											annReg,
 											develAdvancedAnnotationGatherer,
@@ -499,7 +499,7 @@ public class GenerateModel {
 			List<Triple<BindingRegressor, FeatureNormalizer, int[]>> regressors = getRanklibBindingRegressors(featuresSetsToTest, trainLinkBackGatherer, develLinkBackGatherer, mcrs, boldFilterThr);
 
 			for (Triple<BindingRegressor, FeatureNormalizer, int[]> t : regressors){
-				MetricsResultSet metrics = TuneModel.ParameterTester
+				MetricsResultSet metrics = TuneModelLibSvm.ParameterTester
 						.testBindingRegressorModel(
 								t.getLeft(),
 								develLinkBackGatherer,
@@ -675,7 +675,7 @@ public class GenerateModel {
 						LibLinearBindingRegressor brLevel2 = new LibLinearBindingRegressor(
 								modelFileLevel2);
 
-						MetricsResultSet metrics = TuneModel.ParameterTester
+						MetricsResultSet metrics = TuneModelLibSvm.ParameterTester
 								.testBindingRegressorModel(
 										brLevel2,
 										develLinkBackGatherer,

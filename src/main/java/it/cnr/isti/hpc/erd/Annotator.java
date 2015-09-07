@@ -28,11 +28,11 @@ import it.unipi.di.acube.smaph.boldfilters.*;
 import it.unipi.di.acube.smaph.learn.GenerateModel;
 import it.unipi.di.acube.smaph.learn.GenerateTrainingAndTest;
 import it.unipi.di.acube.smaph.learn.featurePacks.EntityFeaturePack;
+import it.unipi.di.acube.smaph.learn.models.entityfilters.*;
 import it.unipi.di.acube.smaph.learn.normalizer.ScaleFeatureNormalizer;
 import it.unipi.di.acube.smaph.learn.normalizer.ZScoreFeatureNormalizer;
 import it.unipi.di.acube.smaph.linkback.BaselineLinkBack;
 import it.unipi.di.acube.smaph.linkback.DummyLinkBack;
-import it.unipi.di.acube.smaph.models.entityfilters.*;
 import it.unipi.di.acube.smaph.snippetannotationfilters.FrequencyAnnotationFilter;
 
 import java.io.*;

@@ -32,13 +32,13 @@ import it.unipi.di.acube.smaph.learn.GenerateTrainingAndTest.OptDataset;
 import it.unipi.di.acube.smaph.learn.SolutionComputer.BindingSolutionComputer;
 import it.unipi.di.acube.smaph.learn.featurePacks.EntityFeaturePack;
 import it.unipi.di.acube.smaph.learn.featurePacks.FeaturePack;
+import it.unipi.di.acube.smaph.learn.models.entityfilters.EntityFilter;
+import it.unipi.di.acube.smaph.learn.models.entityfilters.LibSvmEntityFilter;
+import it.unipi.di.acube.smaph.learn.models.linkback.annotationRegressor.AnnotationRegressor;
+import it.unipi.di.acube.smaph.learn.models.linkback.bindingRegressor.BindingRegressor;
 import it.unipi.di.acube.smaph.learn.normalizer.FeatureNormalizer;
 import it.unipi.di.acube.smaph.learn.normalizer.ScaleFeatureNormalizer;
 import it.unipi.di.acube.smaph.learn.normalizer.ZScoreFeatureNormalizer;
-import it.unipi.di.acube.smaph.models.entityfilters.EntityFilter;
-import it.unipi.di.acube.smaph.models.entityfilters.LibSvmEntityFilter;
-import it.unipi.di.acube.smaph.models.linkback.annotationRegressor.AnnotationRegressor;
-import it.unipi.di.acube.smaph.models.linkback.bindingRegressor.BindingRegressor;
 import it.unipi.di.acube.BingInterface;
 import it.cnr.isti.hpc.erd.WikipediaToFreebase;
 
@@ -67,7 +67,7 @@ import libsvm.svm_node;
 import libsvm.svm_parameter;
 import libsvm.svm_problem;
 
-public class TuneModel {
+public class TuneModelLibSvm {
 	private static final int THREADS_NUM = 4;
 
 	public enum OptimizaionProfiles {
@@ -531,9 +531,9 @@ public class TuneModel {
 			double c, gamma;
 			for (int cI = 0; cI<steps; cI++)
 				for (int gammaI = 0; gammaI<steps ; gammaI++){
-					c = TuneModel.computeExpParameter(cMax, cMin, kappaC, cI,
+					c = TuneModelLibSvm.computeExpParameter(cMax, cMin, kappaC, cI,
 							steps);
-					gamma = TuneModel.computeExpParameter(gammaMax, gammaMin,
+					gamma = TuneModelLibSvm.computeExpParameter(gammaMax, gammaMin,
 							kappaGamma, gammaI, steps);
 					futures.add(execServ.submit(new ParameterTester(wPos, wNeg,
 							features, trainGatherer,
@@ -618,9 +618,9 @@ public class TuneModel {
 			List<Future<ModelConfigurationResult>> futures = new Vector<>();
 
 			double wPos, wNeg;
-			for (int posI = 0; (wPos = TuneModel.computeExpParameter(wPosMax, wPosMin,
+			for (int posI = 0; (wPos = TuneModelLibSvm.computeExpParameter(wPosMax, wPosMin,
 					kappaPos, posI, steps)) <= wPosMax; posI++)
-				for (int negI = 0; (wNeg = TuneModel.computeExpParameter(wNegMax, wNegMin,
+				for (int negI = 0; (wNeg = TuneModelLibSvm.computeExpParameter(wNegMax, wNegMin,
 						kappaNeg, negI, steps)) <= wNegMax; negI++)
 					futures.add(execServ.submit(new ParameterTester(wPos, wNeg,
 							features, trainGatherer,

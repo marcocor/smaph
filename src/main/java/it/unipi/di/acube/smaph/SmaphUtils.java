@@ -22,8 +22,8 @@ import it.unipi.di.acube.batframework.data.Tag;
 import it.unipi.di.acube.batframework.utils.Pair;
 import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
 import it.unipi.di.acube.smaph.learn.featurePacks.AnnotationFeaturePack;
+import it.unipi.di.acube.smaph.learn.models.linkback.annotationRegressor.AnnotationRegressor;
 import it.unipi.di.acube.smaph.learn.normalizer.FeatureNormalizer;
-import it.unipi.di.acube.smaph.models.linkback.annotationRegressor.AnnotationRegressor;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;

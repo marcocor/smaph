@@ -1,4 +1,4 @@
-package it.unipi.di.acube.smaph.learn;
+package it.unipi.di.acube.smaph.learn.models;
 
 import static java.lang.Thread.currentThread;
 
@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Vector;
 
 import it.unipi.di.acube.smaph.learn.featurePacks.FeaturePack;
+import it.unipi.di.acube.smaph.learn.models.RankLibModel;
 import it.unipi.di.acube.smaph.learn.normalizer.FeatureNormalizer;
 import it.unipi.di.acube.smaph.learn.normalizer.NoFeatureNormalizer;
 
