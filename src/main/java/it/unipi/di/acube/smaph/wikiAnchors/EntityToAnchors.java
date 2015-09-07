@@ -1,34 +1,24 @@
 package it.unipi.di.acube.smaph.wikiAnchors;
 
-import it.unipi.di.acube.batframework.utils.Pair;
-import it.unipi.di.acube.smaph.SmaphUtils;
 import it.unimi.dsi.fastutil.ints.Int2IntArrayMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
-import it.unimi.dsi.fastutil.objects.Object2IntArrayMap;
-import it.unimi.dsi.fastutil.objects.Object2IntMap;
-import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
+import it.unipi.di.acube.batframework.utils.Pair;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.Serializable;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.NavigableSet;
 import java.util.TreeSet;
 import java.util.Vector;
-import java.util.concurrent.ConcurrentNavigableMap;
 import java.util.zip.GZIPInputStream;
 
-import org.apache.commons.collections4.bidimap.TreeBidiMap;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONWriter;
 import org.mapdb.BTreeMap;
@@ -36,11 +26,8 @@ import org.mapdb.Bind;
 import org.mapdb.DB;
 import org.mapdb.DBMaker;
 import org.mapdb.Fun;
-import org.mapdb.HTreeMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.trie4j.louds.MapTailLOUDSTrie;
-import org.trie4j.patricia.MapPatriciaTrie;
 
 public class EntityToAnchors {
 	public static final String DEFAULT_INPUT = "./data/anchors.gz";
@@ -224,6 +211,10 @@ public class EntityToAnchors {
 	
 	public double getCommonness(String anchor, int entity){
 		return ((double)getFrequency(anchor, entity))/getAnchorGlobalOccurrences(anchor);
+	}
+
+	public double getCommonness(String anchor, int entity, int occurrences){
+		return ((double)occurrences)/getAnchorGlobalOccurrences(anchor);
 	}
 
 	private int getFrequency(String anchor, int entity) {
