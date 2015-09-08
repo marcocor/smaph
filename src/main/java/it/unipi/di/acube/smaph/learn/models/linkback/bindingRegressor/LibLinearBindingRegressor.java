@@ -1,6 +1,7 @@
 package it.unipi.di.acube.smaph.learn.models.linkback.bindingRegressor;
 
 import java.util.HashSet;
+import java.util.List;
 
 import it.unipi.di.acube.batframework.data.Annotation;
 import it.unipi.di.acube.smaph.learn.featurePacks.FeaturePack;
@@ -14,9 +15,11 @@ public class LibLinearBindingRegressor extends LibLinearModel<HashSet<Annotation
 	}
 
 	@Override
-	public double predictScore(FeaturePack<HashSet<Annotation>> features,
+	public double[] getScores(List<FeaturePack<HashSet<Annotation>>> features,
 			FeatureNormalizer fn) {
-		return super.predictScore(features, fn);
+		double[] scores = new double[features.size()];
+		for (int i = 0; i < features.size(); i++)
+			scores[i] =  super.predictScore(features.get(i), fn);
+		return scores;
 	}
-
 }

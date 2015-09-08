@@ -18,35 +18,28 @@ package it.unipi.di.acube.smaph.learn;
 
 import it.unipi.di.acube.batframework.data.Annotation;
 import it.unipi.di.acube.batframework.data.Tag;
-import it.unipi.di.acube.batframework.metrics.Metrics;
 import it.unipi.di.acube.batframework.metrics.MetricsResultSet;
 import it.unipi.di.acube.batframework.systemPlugins.WATAnnotator;
 import it.unipi.di.acube.batframework.utils.FreebaseApi;
 import it.unipi.di.acube.batframework.utils.Pair;
 import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
-import it.unipi.di.acube.smaph.IndexMatch;
 import it.unipi.di.acube.smaph.SmaphAnnotator;
 import it.unipi.di.acube.smaph.SmaphConfig;
 import it.unipi.di.acube.smaph.SmaphUtils;
 import it.unipi.di.acube.smaph.learn.GenerateTrainingAndTest.OptDataset;
 import it.unipi.di.acube.smaph.learn.SolutionComputer.BindingSolutionComputer;
-import it.unipi.di.acube.smaph.learn.featurePacks.EntityFeaturePack;
 import it.unipi.di.acube.smaph.learn.featurePacks.FeaturePack;
 import it.unipi.di.acube.smaph.learn.models.entityfilters.EntityFilter;
 import it.unipi.di.acube.smaph.learn.models.entityfilters.LibSvmEntityFilter;
 import it.unipi.di.acube.smaph.learn.models.linkback.annotationRegressor.AnnotationRegressor;
 import it.unipi.di.acube.smaph.learn.models.linkback.bindingRegressor.BindingRegressor;
 import it.unipi.di.acube.smaph.learn.normalizer.FeatureNormalizer;
-import it.unipi.di.acube.smaph.learn.normalizer.ScaleFeatureNormalizer;
 import it.unipi.di.acube.smaph.learn.normalizer.ZScoreFeatureNormalizer;
 import it.unipi.di.acube.BingInterface;
 import it.cnr.isti.hpc.erd.WikipediaToFreebase;
 
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.Serializable;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -58,12 +51,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import org.apache.commons.lang3.tuple.ImmutableTriple;
-import org.apache.commons.lang3.tuple.Triple;
-
 import libsvm.svm;
 import libsvm.svm_model;
-import libsvm.svm_node;
 import libsvm.svm_parameter;
 import libsvm.svm_problem;
 
@@ -427,12 +416,16 @@ public class TuneModelLibSvm {
 			List<List<Pair<HashSet<Annotation>, Double>>> candidateAndPreds = new Vector<>();
 			for (Pair<Vector<Pair<FeaturePack<HashSet<Annotation>>, HashSet<Annotation>>>, HashSet<Annotation>> ftrsAndDatasAndGold : testGatherer.getDataAndFeaturePacksAndGoldOnePerInstance()) {
 				golds.add(ftrsAndDatasAndGold.second);
+				
+				List<FeaturePack<HashSet<Annotation>>> packs = new Vector<>();
+				for (Pair<FeaturePack<HashSet<Annotation>>, HashSet<Annotation>> featuresAndBinding: ftrsAndDatasAndGold.first)
+					packs.add(featuresAndBinding.first);
+				
+				double[] scores = model.getScores(packs, scaleFn);
 				List<Pair<HashSet<Annotation>, Double>> candidateAndPred = new Vector<>();
 				candidateAndPreds.add(candidateAndPred);
-				for (Pair<FeaturePack<HashSet<Annotation>>, HashSet<Annotation>> p : ftrsAndDatasAndGold.first){
-					double predictedScore = model.predictScore(p.first, scaleFn);
-					candidateAndPred.add(new Pair<HashSet<Annotation>, Double>(p.second, predictedScore));
-				}
+				for (int i=0; i<scores.length; i++)
+					candidateAndPred.add(new Pair<HashSet<Annotation>, Double>(ftrsAndDatasAndGold.first.get(i).second, scores[i]));
 			}
 			
 			try {
@@ -746,7 +739,6 @@ public class TuneModelLibSvm {
 		private ExampleGatherer<Tag, HashSet<Tag>> trainGatherer;
 		private ExampleGatherer<Tag, HashSet<Tag>> testGatherer;
 		private OptimizaionProfiles optProfile;
-		private double editDistanceThreshold;
 		Vector<ModelConfigurationResult> scoreboard;
 		private WikipediaApiInterface wikiApi;
 

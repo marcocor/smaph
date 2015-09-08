@@ -9,13 +9,13 @@ import it.unipi.di.acube.smaph.QueryInformation;
 import it.unipi.di.acube.smaph.SmaphAnnotatorDebugger;
 import it.unipi.di.acube.smaph.SmaphUtils;
 import it.unipi.di.acube.smaph.learn.featurePacks.BindingFeaturePack;
+import it.unipi.di.acube.smaph.learn.featurePacks.FeaturePack;
 import it.unipi.di.acube.smaph.learn.models.linkback.bindingRegressor.BindingRegressor;
 import it.unipi.di.acube.smaph.learn.normalizer.FeatureNormalizer;
 import it.unipi.di.acube.smaph.linkback.bindingGenerator.BindingGenerator;
 import it.unipi.di.acube.smaph.wikiAnchors.EntityToAnchors;
 
 import java.io.IOException;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -37,7 +37,7 @@ public class CollectiveLinkBack implements LinkBack {
 		this.brFn = brFn;
 	}
 	
-	public static Collection<Pair<HashSet<Annotation>,BindingFeaturePack>> getBindingFeaturePacks(String query,
+	public static List<Pair<HashSet<Annotation>,BindingFeaturePack>> getBindingFeaturePacks(String query,
 			Set<Tag> acceptedEntities, QueryInformation qi, BindingGenerator bg, WikipediaApiInterface wikiApi, SmaphAnnotatorDebugger debugger){
 		List<Pair<HashSet<Annotation>,BindingFeaturePack>> featurePacks = new Vector<>();
 		// Generate all possible bindings
@@ -71,17 +71,21 @@ public class CollectiveLinkBack implements LinkBack {
 		// Predict a score and pick the best-performing
 		HashSet<Annotation> bestBinding = null;
 		double bestScore = Double.NEGATIVE_INFINITY;
-		for (Pair<HashSet<Annotation>, BindingFeaturePack> bindingAndFeatures: getBindingFeaturePacks(query, acceptedEntities, qi, bg, wikiApi, debugger)) {
-
-			double predictedScore = bindingRegressorModel
-					.predictScore(bindingAndFeatures.second, brFn);
-
-			if (predictedScore > bestScore) {
-				bestBinding = bindingAndFeatures.first;
-				bestScore = predictedScore;
+		
+		List<Pair<HashSet<Annotation>, BindingFeaturePack>> bindingFeaturePacks = getBindingFeaturePacks(query, acceptedEntities, qi, bg, wikiApi, debugger);
+		List<FeaturePack<HashSet<Annotation>>> packs = new Vector<>();
+		for (Pair<HashSet<Annotation>, BindingFeaturePack> bindingAndFeatures: bindingFeaturePacks)
+			packs.add(bindingAndFeatures.second);
+		
+		double[] scores = bindingRegressorModel.getScores(packs, brFn);
+		
+		for (int i=0; i<scores.length; i++){
+			if (scores[i] > bestScore) {
+				bestBinding = bindingFeaturePacks.get(i).first;
+				bestScore = scores[i];
 			}
 			if (debugger != null)
-				debugger.addLinkbackBindingScore(query, bindingAndFeatures.first, predictedScore);
+				debugger.addLinkbackBindingScore(query, bindingFeaturePacks.get(i).first, scores[i]);
 		}
 
 		HashSet<ScoredAnnotation> scoredBestBinding = new HashSet<>();
