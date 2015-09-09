@@ -585,9 +585,11 @@ public class GenerateModel {
 
 		String trainFile = "train_binding_ranking.dat";
 		String develFile = "devel_binding_ranking.dat";
+		String normFile = "models/train_binding_ranking.zscore";
 
 		System.out.println("Building normalizer...");
 		ZScoreFeatureNormalizer brNorm = new ZScoreFeatureNormalizer(trainLinkBackGatherer);
+		brNorm.dump(normFile);
 		System.out.println("Dumping binding training problems for ranking...");
 		trainLinkBackGatherer.dumpExamplesRankLib(trainFile, brNorm);
 		System.out.println("Dumping binding development problems for ranking...");
@@ -600,7 +602,6 @@ public class GenerateModel {
 					String optMetric = "NDCG@" + ncdgTop;
 					String rankModelBase = getModelFileNameBaseRL(ftrs, boldFilterThr) + ".full";
 					String modelFile = rankModelBase + "." + modelType+ "." + optMetric + ".model";
-					brNorm.dump(rankModelBase + ".zscore");
 					String cliOpts = String.format("-feature %s -ranker %d -metric2t %s -train %s -validate %s -save %s",
 							ftrListFile, modelType, optMetric, trainFile, develFile, modelFile);
 					System.out.println("Training rankLib model (binding)... " + cliOpts);
@@ -608,8 +609,8 @@ public class GenerateModel {
 					System.out.println("Model trained (binding).");
 
 					BindingRegressor br = new RankLibBindingRegressor(modelFile);
-
-					res.add(new ImmutableTriple<BindingRegressor, FeatureNormalizer, int[]>(br, brNorm, ftrs));
+					FeatureNormalizer brNormLoaded = new ZScoreFeatureNormalizer(normFile, new BindingFeaturePack());
+					res.add(new ImmutableTriple<BindingRegressor, FeatureNormalizer, int[]>(br, brNormLoaded, ftrs));
 				}
 			}
 		}
@@ -691,22 +692,21 @@ public class GenerateModel {
 						float macroPrec = metrics.getMacroPrecision();
 						int totVects = develLinkBackGatherer
 								.getExamplesCount();
-						mcrs.add(new ModelConfigurationResult(ftrs, -1, -1,
+						ModelConfigurationResult mcr = new ModelConfigurationResult(ftrs, -1, -1,
 								-1, c, tp, fp, fn, totVects - tp - fp - fn,
-								microF1, macroF1, macroRec, macroPrec));
+								microF1, macroF1, macroRec, macroPrec);
+						System.out.printf("%.5f%%\t%.5f%%\t%.5f%%%n",
+								mcr.getMacroPrecision() * 100, mcr.getMacroRecall() * 100,
+								mcr.getMacroF1() * 100);
+
+						mcrs.add(mcr);
 					}
 				}
 			}
 		}
 		for (ModelConfigurationResult mcr : mcrs)
-			System.out.printf("%.5f%%\t%.5f%%\t%.5f%%%n",
-					mcr.getMacroPrecision() * 100, mcr.getMacroRecall() * 100,
-					mcr.getMacroF1() * 100);
-		for (ModelConfigurationResult mcr : mcrs)
 			System.out.println(mcr.getReadable());
 	}
-
-
 
 	public static String getModelFileNameBaseRL(int[] ftrs,
 			double editDistance) {
