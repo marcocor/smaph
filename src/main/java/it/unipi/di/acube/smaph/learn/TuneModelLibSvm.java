@@ -415,17 +415,23 @@ public class TuneModelLibSvm {
 			List<HashSet<Annotation>> golds = new Vector<>();
 			List<List<Pair<HashSet<Annotation>, Double>>> candidateAndPreds = new Vector<>();
 			for (Pair<Vector<Pair<FeaturePack<HashSet<Annotation>>, HashSet<Annotation>>>, HashSet<Annotation>> ftrsAndDatasAndGold : testGatherer.getDataAndFeaturePacksAndGoldOnePerInstance()) {
-				golds.add(ftrsAndDatasAndGold.second);
+				Vector<Pair<FeaturePack<HashSet<Annotation>>, HashSet<Annotation>>> ftrsAndBindings = ftrsAndDatasAndGold.first;
+				HashSet<Annotation> gold = ftrsAndDatasAndGold.second; 
+				
+				golds.add(gold);
 				
 				List<FeaturePack<HashSet<Annotation>>> packs = new Vector<>();
-				for (Pair<FeaturePack<HashSet<Annotation>>, HashSet<Annotation>> featuresAndBinding: ftrsAndDatasAndGold.first)
-					packs.add(featuresAndBinding.first);
+				for (Pair<FeaturePack<HashSet<Annotation>>, HashSet<Annotation>> ftrsAndBinding: ftrsAndBindings)
+					packs.add(ftrsAndBinding.first);
 				
 				double[] scores = model.getScores(packs, scaleFn);
+				if (scores.length != ftrsAndDatasAndGold.first.size())
+					throw new RuntimeException("Invalid scores retrieved.");
+				
 				List<Pair<HashSet<Annotation>, Double>> candidateAndPred = new Vector<>();
 				candidateAndPreds.add(candidateAndPred);
-				for (int i=0; i<scores.length; i++)
-					candidateAndPred.add(new Pair<HashSet<Annotation>, Double>(ftrsAndDatasAndGold.first.get(i).second, scores[i]));
+				for (int i = 0; i < scores.length; i++)
+					candidateAndPred.add(new Pair<HashSet<Annotation>, Double>(ftrsAndBindings.get(i).second, scores[i]));
 			}
 			
 			try {
