@@ -36,8 +36,8 @@ public class DebugMain {
 		WATAnnotator.setCache("wikisense.cache");
 		WATRelatednessComputer.setCache("relatedness.cache");
 		
-		String rankLibBindingModel = "models/model_1-228_RL_0.060.full.6.NDCG@10.model";
-		String rankLibBindingNorm = "models/model_1-228_RL_0.060.full.zscore";
+		String rankLibBindingModel = "models/model_1-225_RL_0.060.full.6.NDCG@10.model";
+		String rankLibBindingNorm = "models/train_binding_ranking.zscore";
 
 		SmaphAnnotator ann = GenerateTrainingAndTest.getDefaultBingAnnotatorCollectiveLBRanklib(wikiApi, 0.06, bingKey, rankLibBindingModel, rankLibBindingNorm);
 		ann.appendName("-lb-collective-ranking");
