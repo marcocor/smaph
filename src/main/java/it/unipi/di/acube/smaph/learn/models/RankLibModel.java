@@ -24,7 +24,7 @@ public class RankLibModel <T>{
 		sb.append(rank).append(" qid:").append(groupid).append(" ");
 		for (int ftr = 0; ftr < ftrVect.length; ftr++){
 			sb.append(ftr + 1);
-			sb.append(String.format(":%.9f ", ftrVect[ftr]));
+			sb.append(String.format(":%.16f ", ftrVect[ftr]));
 		}
 		return sb.toString();
 	}
