@@ -1,5 +1,6 @@
 package it.unipi.di.acube.smaph.learn.normalizer;
 
+import it.unipi.di.acube.smaph.SmaphUtils;
 import it.unipi.di.acube.smaph.learn.ExampleGatherer;
 import it.unipi.di.acube.smaph.learn.featurePacks.FeaturePack;
 
@@ -88,8 +89,8 @@ public class ZScoreFeatureNormalizer extends FeatureNormalizer {
 
 	public void dump(String file) throws IOException {
 		BufferedWriter br = new BufferedWriter(new FileWriter(file));
-		for (String ftrName : avgs.keySet()) {
-			br.write(String.format("%s %f %f%n", ftrName, avgs.get(ftrName),
+		for (String ftrName : SmaphUtils.sorted(avgs.keySet())) {
+			br.write(String.format("%s %.16f %.16f%n", ftrName, avgs.get(ftrName),
 					stdDevs.get(ftrName)));
 		}
 
