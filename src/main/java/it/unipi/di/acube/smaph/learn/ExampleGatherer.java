@@ -270,19 +270,20 @@ public class ExampleGatherer<T extends Serializable, G extends Serializable> {
 		BufferedWriter wr = new BufferedWriter(new FileWriter(filename, false));
 
 		for (int groupId = 0; groupId < featureVectorsAndTargetGroups.size(); groupId++) {
-			List<Pair<FeaturePack<T>, Double>> featureVectorsAndGolds = new Vector<>(
+			List<Pair<FeaturePack<T>, Double>> featureVectorsAndTarget = new Vector<>(
 					featureVectorsAndTargetGroups.get(groupId));
-			Collections.sort(featureVectorsAndGolds,
-					new SmaphUtils.ComparePairsBySecondElement());
+			Collections.sort(featureVectorsAndTarget,
+					new SmaphUtils.ComparePairsBySecondElement<FeaturePack<T>, Double>());
 			//Element with highest rank is our favorite, so let's start with lowest rank.
 			int rank = 0;
 			double lastVal = Double.NaN;
-			for (Pair<FeaturePack<T>, Double> pair : featureVectorsAndGolds) {
+			for (Pair<FeaturePack<T>, Double> pair : featureVectorsAndTarget) {
 				if (pair.second != lastVal) {
 					lastVal = pair.second;
 					rank++;
 				}
 				wr.write(RankLibModel.ftrVectToString(fn.ftrToNormalizedFtrArray(pair.first), rank, groupId));
+				wr.write(" # F1="+pair.second);
 				wr.write("\n");
 			}
 		}
