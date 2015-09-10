@@ -46,7 +46,7 @@ def parse_line(l):
 
 def load_validate_f1s():
 	qid_cand_to_score = dict()
-	i = 0
+	i = None
 	last_qid = -1
 	with open(VALIDATE_DATA) as f:
 		for l in f:
@@ -58,7 +58,6 @@ def load_validate_f1s():
 				i += 1
 			qid_cand_to_score[(qid, i)] = f1
 	return qid_cand_to_score
-
 
 def get_valid_ftrs():
 	diverse_features = set()
@@ -87,14 +86,14 @@ def build_models(ftrs_to_try):
 		assert(os.path.isfile(filename))
 	return res
 
-def get_scores(scores_file, qid_cand_to_score):
+def get_scores(scores_file, qid_cand_to_f1):
 	qid_to_score_and_f1 = dict()
 	with open(scores_file) as f:
 		for l in f:
 			t = l.split()
 			qid, cand, p_score = int(t[0]), int(t[1]), float(t[2])
 			if qid not in qid_to_score_and_f1 or qid_to_score_and_f1[qid][0] < p_score:
-				qid_to_score_and_f1[qid] = (p_score, qid_cand_to_score[(qid, cand)])
+				qid_to_score_and_f1[qid] = (p_score, qid_cand_to_f1[(qid, cand)])
 	assert set(p[0] for p in qid_cand_to_score.keys()) == set(qid_to_score_and_f1.keys())
 	return numpy.mean(zip(*qid_to_score_and_f1.values())[1])
 				
@@ -142,9 +141,9 @@ while True:
 	else:
 		best_f1 = best_in_iteration
 		good_ftr = sorted(good_ftr + best_in_iteration[0])
-		ftr_left.remove(best_in_iteration[0])
+		ftr_buckets_left.remove(best_in_iteration[0])
 		print("iteration finished: found best F1={} adding feature {}".format(best_in_iteration[1], best_in_iteration[0]), file=sys.stderr)
-	if not ftr_left:
+	if not ftr_buckets_left:
 		print("no more features to try, stopping interations.", file=sys.stderr)
 		break
 
