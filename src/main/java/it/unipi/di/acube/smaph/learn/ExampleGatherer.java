@@ -27,8 +27,6 @@ import java.io.*;
 import java.util.*;
 
 import org.apache.commons.lang.ArrayUtils;
-import org.apache.commons.lang3.tuple.ImmutableTriple;
-import org.apache.commons.lang3.tuple.Triple;
 
 import libsvm.*;
 
@@ -270,19 +268,19 @@ public class ExampleGatherer<T extends Serializable, G extends Serializable> {
 		BufferedWriter wr = new BufferedWriter(new FileWriter(filename, false));
 
 		for (int groupId = 0; groupId < featureVectorsAndTargetGroups.size(); groupId++) {
-			List<Pair<FeaturePack<T>, Double>> featureVectorsAndTarget = new Vector<>(
-					featureVectorsAndTargetGroups.get(groupId));
-			Collections.sort(featureVectorsAndTarget,
-					new SmaphUtils.ComparePairsBySecondElement<FeaturePack<T>, Double>());
+			//Get rankings
+			HashMap<Double, Integer> scoreToRank = new HashMap<Double, Integer>();
+			double lastVal = Double.NEGATIVE_INFINITY;
+			int rank = 1;
 			//Element with highest rank is our favorite, so let's start with lowest rank.
-			int rank = 0;
-			double lastVal = Double.NaN;
-			for (Pair<FeaturePack<T>, Double> pair : featureVectorsAndTarget) {
-				if (pair.second != lastVal) {
-					lastVal = pair.second;
-					rank++;
+			for (Pair<FeaturePack<T>, Double> featureVectorAndTarget: SmaphUtils.sorted(featureVectorsAndTargetGroups.get(groupId), new SmaphUtils.ComparePairsBySecondElement<FeaturePack<T>, Double>()))
+				if (featureVectorAndTarget.second > lastVal){
+					lastVal = featureVectorAndTarget.second;
+					scoreToRank.put(lastVal, rank++);
 				}
-				wr.write(RankLibModel.ftrVectToString(fn.ftrToNormalizedFtrArray(pair.first), rank, groupId));
+			
+			for (Pair<FeaturePack<T>, Double> pair : featureVectorsAndTargetGroups.get(groupId)) {
+				wr.write(RankLibModel.ftrVectToString(fn.ftrToNormalizedFtrArray(pair.first), scoreToRank.get(pair.second), groupId));
 				wr.write(" # F1="+pair.second);
 				wr.write("\n");
 			}
