@@ -29,6 +29,8 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.Serializable;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -37,6 +39,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Scanner;
 import java.util.Set;
 import java.util.Vector;
 import java.util.zip.GZIPInputStream;
@@ -47,9 +50,11 @@ import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutableTriple;
 import org.apache.commons.lang3.tuple.Triple;
+import org.codehaus.jettison.json.JSONObject;
 import org.tartarus.snowball.ext.EnglishStemmer;
 
 public class SmaphUtils {
+	public static final String WIKITITLE_ENDPAR_REGEX = "\\s*\\([^\\)]*\\)\\s*$";
 
 	/**
 	 * For each word of bold, finds the word in query that has the minimum edit
@@ -316,7 +321,28 @@ public class SmaphUtils {
 		}
 		return positions;
 	}
-	
+
+	public static List<String> findSegmentsStrings(String text) {
+		Vector<String> words = new Vector<String>();
+		for (Pair<Integer, Integer> startEnd : findTokensPosition(text))
+			words.add(text.substring(startEnd.first, startEnd.second));
+		Vector<String> segments = new Vector<String>();
+		for (int start = 0; start < words.size(); start++) {
+			for (int end = 0; end < words.size(); end++){
+				if (start <= end) {
+					String segment = "";
+					for (int i = start; i <= end; i++) {
+						segment += words.get(i);
+						if (i != end)
+							segment += " ";
+					}
+					segments.add(segment);
+				}
+			}
+		}
+	return segments;
+	}
+
 	public static List<Pair<Integer, Integer>> findSegments(String text) {
 		List<Pair<Integer, Integer>> tokens = findTokensPosition(text);
 		List<Pair<Integer, Integer>> segments = new Vector<>();
@@ -622,6 +648,35 @@ public class SmaphUtils {
 	}
 	public static <T extends Comparable<? super T>> List<T> sorted(Collection<T> c) {
 		return sorted(c, null);
+	}
+
+	public static String removeTrailingParenthetical(String title) {
+		return title.replaceAll(WIKITITLE_ENDPAR_REGEX, "");
+	}
+
+	public static JSONObject httpQueryJson(String urlAddr) {
+		String resultStr = null;
+		try {
+			URL url = new URL(urlAddr);
+			HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+			conn.setRequestMethod("GET");
+
+			if (conn.getResponseCode() != 200) {
+				Scanner s = new Scanner(conn.getErrorStream())
+				.useDelimiter("\\A");
+				System.err.printf("Got HTTP error %d. Message is: %s%n",
+						conn.getResponseCode(), s.next());
+				s.close();
+			}
+
+			Scanner s = new Scanner(conn.getInputStream())
+			.useDelimiter("\\A");
+			resultStr = s.hasNext() ? s.next() : "";
+
+			return new JSONObject(resultStr);
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 }

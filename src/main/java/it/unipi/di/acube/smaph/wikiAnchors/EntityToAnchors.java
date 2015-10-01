@@ -3,6 +3,7 @@ package it.unipi.di.acube.smaph.wikiAnchors;
 import it.unimi.dsi.fastutil.ints.Int2IntArrayMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unipi.di.acube.batframework.utils.Pair;
+import it.unipi.di.acube.smaph.SmaphUtils;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -12,6 +13,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.NavigableSet;
@@ -188,7 +190,37 @@ public class EntityToAnchors {
 	public boolean containsId(int id){
 		return entityToAnchorIDs.containsKey(id);
 	}
-	
+
+	public List<Pair<String, Integer>> getAnchors(int id, double keepFreq) {
+		if (!containsId(id))
+			throw new RuntimeException("Anchors for page id=" + id
+					+ " not found.");
+		int[] anchors = entityToAnchorIDs.get(id);
+		int[] freqs = entityToFreqs.get(id);
+
+		int totalFreq = 0;
+		List<Pair<Integer, Integer>> anchorsAndFreq = new Vector<>();
+		for (int i=0; i<anchors.length; i++){
+			totalFreq += freqs[i];
+			anchorsAndFreq.add(new Pair<Integer, Integer>(anchors[i], freqs[i]));
+		}
+
+		Collections.sort(anchorsAndFreq, new SmaphUtils.ComparePairsBySecondElement<Integer, Integer>());
+
+		int gathered = 0;
+		List<Pair<String, Integer>> res = new Vector<Pair<String, Integer>>();
+		for (int i = anchorsAndFreq.size() - 1; i >= 0; i--)
+			if (gathered >= keepFreq * totalFreq)
+				break;
+			else {
+				int aid = anchorsAndFreq.get(i).first;
+				int freq = anchorsAndFreq.get(i).second;
+				res.add(new Pair<String, Integer>(idToAnchor(aid), freq));
+				gathered += freq;
+			}
+		return res;
+	}
+
 	public List<Pair<String, Integer>> getAnchors(int id) {
 		if (!containsId(id))
 			throw new RuntimeException("Anchors for page id=" + id
@@ -253,16 +285,5 @@ public class EntityToAnchors {
 		logger.info("Creating E2A database... ");
 		createDB(args.length > 0 ? args[0] : DEFAULT_INPUT);
 		logger.info("Done.");
-		
-/*		EntityToAnchors.e2a();
-		
-		int id = 36511;
-		List<Pair<String, Integer>> a = EntityToAnchors.e2a().getAnchors(id);
-		logger.info("Getting commonness.");
-		for (Pair<String, Integer> p : a){
-			double comm = EntityToAnchors.e2a().getCommonness(p.first, id);
-			System.out.printf("%.3f %d %s ->%d%n", comm, p.second, p, id);
-		}*/
-		
 	}
 }

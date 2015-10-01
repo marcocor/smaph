@@ -2,6 +2,7 @@ package it.unipi.di.acube.smaph.learn.featurePacks;
 
 import it.unipi.di.acube.batframework.data.Annotation;
 import it.unipi.di.acube.batframework.data.Tag;
+import it.unipi.di.acube.batframework.utils.Pair;
 import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
 import it.unipi.di.acube.smaph.QueryInformation;
 import it.unipi.di.acube.smaph.SmaphUtils;
@@ -55,6 +56,13 @@ public class BindingFeaturePack extends FeaturePack<HashSet<Annotation>> {
 					ftrNamesVect.add("max_" + ftrName);
 					ftrNamesVect.add("avg_" + ftrName);
 				}
+
+			ftrNamesVect.add("min_relatedness_mw");
+			ftrNamesVect.add("max_relatedness_mw");
+			ftrNamesVect.add("avg_relatedness_mw");
+			ftrNamesVect.add("segments_lp_sum");
+			ftrNamesVect.add("segments_lp_avg");
+			ftrNamesVect.add("webtotal");
 
 			ftrNames = ftrNamesVect.toArray(new String[] {});
 		}
@@ -178,23 +186,46 @@ public class BindingFeaturePack extends FeaturePack<HashSet<Annotation>> {
 		bindingFeatures.put("covered_tokens", (double)coveredTokens/(double) SmaphUtils.tokenize(query).size());
 		
 		/* Add relatedness among entities (only if there are more than two entities)*/
-		Vector<Double> relatednessPairs = new Vector<>();
+		Vector<Double> relatednessPairsJaccard = new Vector<>();
+		Vector<Double> relatednessPairsMW = new Vector<>();
 		for (Annotation a1 : binding)
 			for (Annotation a2 : binding)
-				if (a1.getConcept() != a2.getConcept())
-					relatednessPairs.add(WATRelatednessComputer.getRelatedness(a1.getConcept(), a2.getConcept()));
-		if (relatednessPairs.size() >= 1) {
-			Triple<Double, Double, Double> minMaxAvgRel = SmaphUtils
-					.getMinMaxAvg(relatednessPairs);
+				if (a1.getConcept() != a2.getConcept()){
+					relatednessPairsJaccard.add(WATRelatednessComputer.getJaccardRelatedness(a1.getConcept(), a2.getConcept()));
+					relatednessPairsMW.add(WATRelatednessComputer.getMwRelatedness(a1.getConcept(), a2.getConcept()));
+				}
+		if (relatednessPairsJaccard.size() >= 1){
+			Triple<Double, Double, Double> minMaxAvgRelJaccard = SmaphUtils.getMinMaxAvg(relatednessPairsJaccard);
+			bindingFeatures.put("min_relatedness", minMaxAvgRelJaccard.getLeft());
+			bindingFeatures.put("max_relatedness", minMaxAvgRelJaccard.getMiddle());
+			bindingFeatures.put("avg_relatedness", minMaxAvgRelJaccard.getRight());
 
-			bindingFeatures.put("min_relatedness", minMaxAvgRel.getLeft());
-			bindingFeatures.put("max_relatedness", minMaxAvgRel.getMiddle());
-			bindingFeatures.put("avg_relatedness", minMaxAvgRel.getRight());
+			Triple<Double, Double, Double> minMaxAvgRelMW = SmaphUtils.getMinMaxAvg(relatednessPairsMW);
+			bindingFeatures.put("min_relatedness_mw", minMaxAvgRelMW.getLeft());
+			bindingFeatures.put("max_relatedness_mw", minMaxAvgRelMW.getMiddle());
+			bindingFeatures.put("avg_relatedness_mw", minMaxAvgRelMW.getRight());
 		}
+		
+		Pair<Double, Double> lpSumAndAvg = getLpSumAvg(query);
+		bindingFeatures.put("segments_lp_sum", lpSumAndAvg.first);
+		bindingFeatures.put("segments_lp_avg", lpSumAndAvg.second);
+
+		bindingFeatures.put("webtotal", qi.webtotal);		
 		
 		if (debugBindingFeatures != null)
 			debugBindingFeatures.putAll(bindingFeatures);
 		
 		return bindingFeatures;
+	}
+
+	private static Pair<Double, Double> getLpSumAvg(String query) {
+		List<String> segments = SmaphUtils.findSegmentsStrings(query);
+		double sum = 0;
+		int count = 0;
+		for (String s : segments) {
+			sum += WATRelatednessComputer.getLp(s);
+			count++;
+		}
+		return new Pair<Double, Double>(sum, sum / count);
 	}
 }
