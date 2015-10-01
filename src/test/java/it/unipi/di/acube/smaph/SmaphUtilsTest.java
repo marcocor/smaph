@@ -507,4 +507,25 @@ public class SmaphUtilsTest {
 		assertArrayEquals(new int[] { 2, 6 }, SmaphUtils.getAllFtrVect(6, new int[] { 1, 3, 4, 5 }));
 	}
 
+	@Test
+	public void testRemoveTrailingParenthetical() throws Exception {
+		assertEquals("Maradona", SmaphUtils.removeTrailingParenthetical("Maradona (Philosophy)"));
+		assertEquals("Maradona", SmaphUtils.removeTrailingParenthetical("Maradona"));
+		assertEquals("Maradona", SmaphUtils.removeTrailingParenthetical("Maradona  (Player)"));
+		assertEquals("Maradona (aaa)", SmaphUtils.removeTrailingParenthetical("Maradona (aaa)  (Player)"));
+	}
+
+	@Test
+	public void testFindSegmentsStrings() throws Exception {
+		Vector<String> segments = new Vector<String>();
+		segments.add("aaa");
+		segments.add("aaa bbb");
+		segments.add("aaa bbb ccc");
+		segments.add("bbb");
+		segments.add("bbb ccc");
+		segments.add("ccc");
+		assertEquals(segments,
+				SmaphUtils.findSegmentsStrings("  ;;;aaa bbb   ,., ccc"));
+	}
+
 }
