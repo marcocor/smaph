@@ -615,7 +615,7 @@ public class SmaphUtils {
 		return res;
 	}
 	
-	public static <T extends Comparable<? super T>> List<T> sorted(Collection<T> c, Comparator<T> comp) {
+	public static <T> List<T> sorted(Collection<T> c, Comparator<T> comp) {
 		List<T> list = new ArrayList<T>(c);
 		Collections.sort(list, comp);
 		return list;
