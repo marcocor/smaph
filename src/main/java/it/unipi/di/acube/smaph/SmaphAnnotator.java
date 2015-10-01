@@ -79,7 +79,6 @@ import org.xml.sax.SAXException;
 
 public class SmaphAnnotator implements Sa2WSystem {
 	private static final String WIKI_URL_LEADING = "http://en.wikipedia.org/wiki/";
-	public static final String WIKITITLE_ENDPAR_REGEX = "\\s*\\([^\\)]*\\)\\s*$";
 	private WikipediaApiInterface wikiApi;
 	private static WikipediaToFreebase wikiToFreebase = new WikipediaToFreebase("mapdb");;
 	private BingInterface bingInterface = null;
@@ -350,8 +349,7 @@ public class SmaphAnnotator implements Sa2WSystem {
 			try {
 				String title = wikiApi.getTitlebyId(wid);
 				if (title != null) {
-					title = title.replaceAll(WIKITITLE_ENDPAR_REGEX, "");
-
+					SmaphUtils.removeTrailingParenthetical(title);
 					res.put(title, new Pair<Integer, Integer>(wid, rank));
 				}
 			} catch (IOException e) {
@@ -684,8 +682,7 @@ public class SmaphAnnotator implements Sa2WSystem {
 				SmaphUtils.getMinEditDist(query, title));
 		result.put(
 				sourceName + "_editDistanceNoPar",
-				SmaphUtils.getMinEditDist(query,
-						title.replaceAll(WIKITITLE_ENDPAR_REGEX, "")));
+				SmaphUtils.getMinEditDist(query, SmaphUtils.removeTrailingParenthetical(title)));
 
 		double minEdDist = 1.0;
 		double capitalized = 0;
@@ -1020,6 +1017,7 @@ public class SmaphAnnotator implements Sa2WSystem {
 		qi.boldToEntityS1 = boldToEntity;
 		qi.tagToBoldsS6 = tagToBolds;
 		qi.entityToBoldS2S3 = entityToBoldsS2S3;
+		qi.webtotal = webTotalNS;
 		return qi;
 	}
 	

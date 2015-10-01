@@ -62,6 +62,7 @@ public class BindingFeaturePack extends FeaturePack<HashSet<Annotation>> {
 			ftrNamesVect.add("avg_relatedness_mw");
 			ftrNamesVect.add("segments_lp_sum");
 			ftrNamesVect.add("segments_lp_avg");
+			ftrNamesVect.add("webtotal");
 
 			ftrNames = ftrNamesVect.toArray(new String[] {});
 		}
@@ -208,7 +209,8 @@ public class BindingFeaturePack extends FeaturePack<HashSet<Annotation>> {
 		Pair<Double, Double> lpSumAndAvg = getLpSumAvg(query);
 		bindingFeatures.put("segments_lp_sum", lpSumAndAvg.first);
 		bindingFeatures.put("segments_lp_avg", lpSumAndAvg.second);
-		
+
+		bindingFeatures.put("webtotal", qi.webtotal);		
 		
 		if (debugBindingFeatures != null)
 			debugBindingFeatures.putAll(bindingFeatures);
