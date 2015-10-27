@@ -469,7 +469,7 @@ public class SmaphAnnotatorDebugger {
 			}
 		}
 		
-		Collections.sort(res, new ReverseComparator<>(new SmaphUtils.ComparePairsBySecondElement()));
+		Collections.sort(res, new ReverseComparator<>(new SmaphUtils.ComparePairsBySecondElement<JSONObject, Double>()));
 		
 		JSONArray resJs = new JSONArray();
 		for (Pair<JSONObject, Double> p : res)
