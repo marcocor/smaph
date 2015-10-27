@@ -1,7 +1,6 @@
 package it.unipi.di.acube.smaph.learn.featurePacks;
 
 import it.unipi.di.acube.batframework.data.Annotation;
-import it.unipi.di.acube.batframework.data.Tag;
 import it.unipi.di.acube.batframework.utils.Pair;
 import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
 import it.unipi.di.acube.smaph.QueryInformation;
@@ -12,7 +11,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.Vector;
 
 import org.apache.commons.lang3.tuple.Triple;
@@ -23,8 +21,8 @@ public class BindingFeaturePack extends FeaturePack<HashSet<Annotation>> {
 	
 	public BindingFeaturePack(
 			HashSet<Annotation> binding, String query,
-			QueryInformation qi, Set<Tag> acceptedEntities, WikipediaApiInterface wikiApi, HashMap<Annotation, HashMap<String, Double>> debugAnnotationFeatures, HashMap<String, Double> debugBindingFeatures){
-		super(getFeatures(binding, query, qi, acceptedEntities, wikiApi, debugAnnotationFeatures, debugBindingFeatures));
+			QueryInformation qi, WikipediaApiInterface wikiApi, HashMap<Annotation, HashMap<String, Double>> debugAnnotationFeatures, HashMap<String, Double> debugBindingFeatures){
+		super(getFeatures(binding, query, qi, wikiApi, debugAnnotationFeatures, debugBindingFeatures));
 	}
 
 	public BindingFeaturePack() {
@@ -63,7 +61,10 @@ public class BindingFeaturePack extends FeaturePack<HashSet<Annotation>> {
 			ftrNamesVect.add("segments_lp_sum");
 			ftrNamesVect.add("segments_lp_avg");
 			ftrNamesVect.add("webtotal");
-
+			ftrNamesVect.add("bolds_number");
+			ftrNamesVect.add("distinct_bolds");
+			ftrNamesVect.add("bolds_query_mined_avg");
+			
 			ftrNames = ftrNamesVect.toArray(new String[] {});
 		}
 		return ftrNames;
@@ -77,8 +78,6 @@ public class BindingFeaturePack extends FeaturePack<HashSet<Annotation>> {
 				throw new RuntimeException("Feature " + ftrName
 						+ " does not exist!");
 	}
-
-	
 
 	/**
 	 * Given a list of feature vectors, return a single
@@ -135,7 +134,7 @@ public class BindingFeaturePack extends FeaturePack<HashSet<Annotation>> {
 	private static HashMap<String, Double> getFeatures(
 			HashSet<Annotation> binding,
 			String query,
-			QueryInformation qi, Set<Tag> acceptedEntities, WikipediaApiInterface wikiApi, HashMap<Annotation, HashMap<String, Double>> debugAnnotationFeatures, HashMap<String, Double> debugBindingFeatures) {
+			QueryInformation qi, WikipediaApiInterface wikiApi, HashMap<Annotation, HashMap<String, Double>> debugAnnotationFeatures, HashMap<String, Double> debugBindingFeatures) {
 		
 		List<HashMap<String, Double>> allAnnotationsFeatures = new Vector<>();
 		
@@ -212,6 +211,11 @@ public class BindingFeaturePack extends FeaturePack<HashSet<Annotation>> {
 
 		bindingFeatures.put("webtotal", qi.webtotal);		
 		
+		bindingFeatures.put("bolds_number", (double) qi.allBoldsNS.size());
+		bindingFeatures.put("distinct_bolds", (double) new HashSet<String>(qi.allBoldsNS).size());
+		
+		bindingFeatures.put("bolds_query_mined_avg", boldQueryMinED(qi.allBoldsNS, query));
+		
 		if (debugBindingFeatures != null)
 			debugBindingFeatures.putAll(bindingFeatures);
 		
@@ -219,7 +223,7 @@ public class BindingFeaturePack extends FeaturePack<HashSet<Annotation>> {
 	}
 
 	private static Pair<Double, Double> getLpSumAvg(String query) {
-		List<String> segments = SmaphUtils.findSegmentsStrings(query);
+		List<String> segments = SmaphUtils.findSegmentsStrings(query.toLowerCase());
 		double sum = 0;
 		int count = 0;
 		for (String s : segments) {
@@ -227,5 +231,12 @@ public class BindingFeaturePack extends FeaturePack<HashSet<Annotation>> {
 			count++;
 		}
 		return new Pair<Double, Double>(sum, sum / count);
+	}
+	
+	private static double boldQueryMinED(List<String> bolds, String query) {
+		double sum = 0;
+		for (String bold: bolds)
+			sum += SmaphUtils.getMinEditDist(query, bold.toLowerCase());
+		return sum / bolds.size();
 	}
 }
