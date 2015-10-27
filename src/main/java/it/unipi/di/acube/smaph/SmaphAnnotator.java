@@ -1018,6 +1018,7 @@ public class SmaphAnnotator implements Sa2WSystem {
 		qi.tagToBoldsS6 = tagToBolds;
 		qi.entityToBoldS2S3 = entityToBoldsS2S3;
 		qi.webtotal = webTotalNS;
+		qi.allBoldsNS = allBoldsNS;
 		return qi;
 	}
 	
@@ -1200,9 +1201,19 @@ public class SmaphAnnotator implements Sa2WSystem {
 
 		// Generate examples for linkBack
 		if (lbVectorsToF1 != null) {
+			Set<Tag> acceptedEntities = null;
+			if (keepNEOnly) {
+				acceptedEntities = new HashSet<Tag>();
+				for (Tag entity : qi.entityToFtrVects.keySet())
+					if (ERDDatasetFilter.EntityIsNE(wikiApi, wikiToFreeb, entity.getConcept()))
+						acceptedEntities.add(entity);
+
+			} else {
+				acceptedEntities = qi.entityToFtrVects.keySet();
+			}
 			List<Triple<HashSet<Annotation>, BindingFeaturePack, Double>> bindingsToFtrAndF1 = getLBBindingToFtrsAndF1(
 					query, qi, bg, goldStandardAnn, new StrongAnnotationMatch(
-							wikiApi));
+							wikiApi), acceptedEntities);
 			for (Triple<HashSet<Annotation>, BindingFeaturePack, Double> bindingAndFtrsAndF1 : bindingsToFtrAndF1) {
 				BindingFeaturePack features = bindingAndFtrsAndF1.getMiddle();
 				double f1 = bindingAndFtrsAndF1.getRight();
@@ -1319,9 +1330,9 @@ public class SmaphAnnotator implements Sa2WSystem {
 
 	private List<Triple<HashSet<Annotation>, BindingFeaturePack, Double>> getLBBindingToFtrsAndF1(
 			String query, QueryInformation qi, BindingGenerator bg,
-			HashSet<Annotation> goldStandardAnn, MatchRelation<Annotation> match) {
+			HashSet<Annotation> goldStandardAnn, MatchRelation<Annotation> match, Set<Tag> acceptedEntities) {
 		
-		Collection<Pair<HashSet<Annotation>, BindingFeaturePack>> bindingAndFeaturePacks = CollectiveLinkBack.getBindingFeaturePacks(query, qi.entityToFtrVects.keySet(), qi, bg, wikiApi, debugger);
+		Collection<Pair<HashSet<Annotation>, BindingFeaturePack>> bindingAndFeaturePacks = CollectiveLinkBack.getBindingFeaturePacks(query, acceptedEntities, qi, bg, wikiApi, debugger);
 		
 		List<Triple<HashSet<Annotation>, BindingFeaturePack, Double>> res = new Vector<>();
 		for (Pair<HashSet<Annotation>, BindingFeaturePack> bindingAndFeaturePack : bindingAndFeaturePacks) {
@@ -1360,7 +1371,7 @@ public class SmaphAnnotator implements Sa2WSystem {
 		QueryInformation qi = getQueryInformation(query);
 		List<Triple<HashSet<Annotation>, BindingFeaturePack, Double>> bindingToFtrsAndF1 = getLBBindingToFtrsAndF1(
 				query, qi, bg, goldStandardAnn, new StrongAnnotationMatch(
-						wikiApi));
+						wikiApi), qi.entityToFtrVects.keySet());
 		HashSet<Annotation> bestBinding = null;
 		double bestF1 = Double.NEGATIVE_INFINITY;
 		for (Triple<HashSet<Annotation>, BindingFeaturePack, Double> bindingAndFtrsAndF1 : bindingToFtrsAndF1) {
@@ -1384,7 +1395,7 @@ public class SmaphAnnotator implements Sa2WSystem {
 		QueryInformation qi = getQueryInformation(query);
 		List<Triple<HashSet<Annotation>, BindingFeaturePack, Double>> bindingToFtrsAndF1 = getLBBindingToFtrsAndF1(
 				query, qi, bg, goldStandardAnn,
-				new StrongMentionAnnotationMatch());
+				new StrongMentionAnnotationMatch(), qi.entityToFtrVects.keySet());
 		HashSet<Annotation> bestBinding = null;
 		double bestF1 = Double.NEGATIVE_INFINITY;
 		for (Triple<HashSet<Annotation>, BindingFeaturePack, Double> bindingAndFtrsAndF1 : bindingToFtrsAndF1) {
