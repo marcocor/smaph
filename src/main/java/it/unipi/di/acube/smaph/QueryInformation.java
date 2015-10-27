@@ -11,5 +11,5 @@ public class QueryInformation {
 	public HashMap<Tag, List<HashMap<String, Double>>> entityToFtrVects;
 	public HashMap<Tag, List<String>> tagToBoldsS6;
 	public Double webtotal;
-
+	public List<String> allBoldsNS;
 }
