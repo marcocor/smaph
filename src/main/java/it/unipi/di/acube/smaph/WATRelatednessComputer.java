@@ -1,8 +1,6 @@
 package it.unipi.di.acube.smaph;
 
 import java.io.*;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.net.URLEncoder;
 
 import org.codehaus.jettison.json.JSONArray;
