@@ -22,16 +22,16 @@ import it.unipi.di.acube.batframework.systemPlugins.TagmeAnnotator;
 import it.unipi.di.acube.batframework.systemPlugins.WATAnnotator;
 import it.unipi.di.acube.batframework.utils.*;
 import it.unipi.di.acube.batframework.data.MultipleAnnotation;
+import it.unipi.di.acube.smaph.EntityToVect;
 import it.unipi.di.acube.smaph.SmaphAnnotator;
 import it.unipi.di.acube.smaph.SmaphConfig;
+import it.unipi.di.acube.smaph.WATRelatednessComputer;
 import it.unipi.di.acube.smaph.boldfilters.*;
 import it.unipi.di.acube.smaph.learn.GenerateModel;
 import it.unipi.di.acube.smaph.learn.GenerateTrainingAndTest;
 import it.unipi.di.acube.smaph.learn.featurePacks.EntityFeaturePack;
 import it.unipi.di.acube.smaph.learn.models.entityfilters.*;
-import it.unipi.di.acube.smaph.learn.normalizer.ScaleFeatureNormalizer;
 import it.unipi.di.acube.smaph.learn.normalizer.ZScoreFeatureNormalizer;
-import it.unipi.di.acube.smaph.linkback.BaselineLinkBack;
 import it.unipi.di.acube.smaph.linkback.DummyLinkBack;
 import it.unipi.di.acube.smaph.snippetannotationfilters.FrequencyAnnotationFilter;
 
@@ -43,16 +43,19 @@ public class Annotator {
 	private static WikipediaApiInterface wikiApi = null;
 	private static WikipediaToFreebase wikiToFreeb = null;
 	private static TagmeAnnotator tagme = null;
+	private static WATAnnotator wat = null;
 	private static LibSvmEntityFilter libSvmEntityFilter = null;
 	private String bingKey;
 	private String tagmeKey;
 	private String tagmeHost;
+	private static SmaphAnnotator collective = null;
 
 	public Annotator() {
 		SmaphConfig.setConfigFile("smaph-config.xml");
 		bingKey = SmaphConfig.getDefaultBingKey();
 		String bingCache = SmaphConfig.getDefaultBingCache();
 		try {
+			EntityToVect.initialize();
 			WATAnnotator.setCache("wikisense.cache");
 			if (wikiApi == null)
 				wikiApi = new WikipediaApiInterface("wid.cache",
@@ -192,6 +195,8 @@ public class Annotator {
 			try {
 				BingInterface.flush();
 				wikiApi.flush();
+				WATRelatednessComputer.flush();
+				WATAnnotator.flush();
 			} catch (FileNotFoundException e) {
 				e.printStackTrace();
 			} catch (IOException e) {
@@ -417,15 +422,17 @@ public class Annotator {
 			return res;
 		}
 
-		else if (runId.equals("tagme")) {
-			if (tagme == null) {
-				tagmeHost = SmaphConfig.getDefaultTagmeHost();
-				tagmeKey = SmaphConfig.getDefaultTagmeKey();
-				tagme = new TagmeAnnotator(tagmeHost, tagmeKey);
+		else if (runId.equals("wat")) {
+			if (wat == null) {
+				wat = new WATAnnotator(
+						"wikisense.mkapp.it", 80, "base", "COMMONNESS", "mw", "0.2",
+						"0.0", false, false, false);
 			}
-			return annotatePure(query, textID, tagme);
-		} else if (runId.equals("void"))
+			return annotatePure(query, textID, wat);
+		} else if (runId.equals("void")){
+			System.out.println("Processing query: " + query);
 			return new Vector<>();
+		}
 		else if (runId.startsWith("experimental")){
 			String AFmodel = "/tmp/train_ann.dat.model";
 			String AFrange = "models/model_1-43_AF_0.060_0.02325581_5.00000000_ANW.range";
@@ -438,6 +445,32 @@ public class Annotator {
 			}
 			List<Annotation> res = annotatePure(query, textID, smaph);
 
+			return res;
+		} else if (runId.startsWith("collective")) {
+			if (collective == null) {
+				SmaphConfig.setConfigFile("smaph-config.xml");
+				String bingKey = SmaphConfig.getDefaultBingKey();
+				String bingCache = SmaphConfig.getDefaultBingCache();
+				if (bingCache != null)
+					try {
+						BingInterface.setCache(bingCache);
+					} catch (ClassNotFoundException | IOException e) {
+						e.printStackTrace();
+						throw new RuntimeException(e);
+					}
+				String rankLibBindingModel = "models/model_1-255_RL_0.060.full.6.NDCG@19.ERD-S2S3S6.model"; // "models/model_train_binding_ranking.dat_130-132,139-141,172-174,224-225,229-234.t1000.l10.NDCG@19";
+				String bindingNorm = "models/train_binding_ranking_ERD-S2S3S6.zscore"; // "/tmp/train_binding_ranking.zscore";
+				try {
+					collective = GenerateTrainingAndTest.getDefaultBingAnnotatorCollectiveLBRanklibAllSources(wikiApi, 0.06, bingKey,
+					        rankLibBindingModel, bindingNorm);
+					collective.setPredictNEOnly(true);
+				} catch (Exception e) {
+					e.printStackTrace();
+					throw new RuntimeException(e);
+				}
+			}
+			
+			List<Annotation> res = annotatePure(query, textID, collective);
 			return res;
 		}
 
