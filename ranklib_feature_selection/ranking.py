@@ -5,10 +5,26 @@ import numpy
 import os.path
 import sys
 import hashlib
+import re
 
 RANKLIB_PATH = "../libs/RankLib-2.5.jar"
 JAVA_OPTS_TRAIN="-Xmx3g"
 JAVA_OPTS_SCORE="-Xmx512m"
+
+def ftr_string_set(s):
+	res = set()
+	for ra in s.split(","):
+		m1 = re.match("^\d+$", ra)
+		m2 = re.match("^(\d+)-(\d+)$", ra)
+		if m1: 
+			res.add(int(ra))
+		elif m2:
+			res |= set(range(int(m2.group(1)), int(m2.group(2))+1))
+		else:
+			raise Exception("Could not parse string: {}".format(ra))
+	return sorted(list(res))
+
+assert ftr_string_set("1-2,5-6,8,10-12") == [1,2,5,6,8,10,11,12]
 
 def ftr_set_string(ftrs):
 	ftr_list = ""
