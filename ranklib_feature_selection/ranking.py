@@ -4,9 +4,11 @@ import os
 import numpy
 import os.path
 import sys
+import hashlib
 
 RANKLIB_PATH = "../libs/RankLib-2.5.jar"
-JAVA_OPTS="-Xmx6g"
+JAVA_OPTS_TRAIN="-Xmx3g"
+JAVA_OPTS_SCORE="-Xmx512m"
 
 def ftr_set_string(ftrs):
 	ftr_list = ""
@@ -69,17 +71,17 @@ def get_valid_ftrs(train_file):
 
 def build_models(ftrs_to_try, opt_vals, ranker, train_file, validate_file, optimize="NDCG", model_name_prefix="", tree=[1000], leaf=[10]):
 	get_name = lambda optimize, t, l, op, model_name_base : '{4}.t{1}.l{2}.{0}@{3}'.format(optimize, t, l, op, model_name_base)
-	ftrs_string = ftr_set_string(ftrs_to_try)
-	features_file = ftrs_string + ".features"
+	ftrs_string = hashlib.md5(ftr_set_string(ftrs_to_try)).hexdigest()
+	features_file = ftr_filename(ftrs_string)
 	if not os.path.isfile(features_file):
 		gen_ftr_file(ftrs_to_try)
-	model_name_base = model_name_prefix + "model_" + ftrs_string 
+	model_name_base = "models/" + model_name_prefix + "model_" + os.path.basename(train_file) + "_" + ftrs_string 
 	models_param = [(optimize, t, l, o, model_name_base) for t in tree for l in leaf for o in opt_vals]
 	to_train_param = [p for p in models_param if not os.path.isfile(get_name(*p))]
 	if not to_train_param:
 		print("all models already trained, skipping", file=sys.stderr)
 	else:
-		cmds = ['"java {} -jar {} -ranker {} -feature {} -train {} -validate {}'.format(JAVA_OPTS, RANKLIB_PATH, ranker, features_file, train_file, validate_file) + ' -metric2t {0}@{3} -tree {1} -leaf {2} -save {5}"'.format(*(p + (get_name(*p),))) for p in to_train_param]
+		cmds = ['"java {} -jar {} -ranker {} -feature {} -train {} -validate {}'.format(JAVA_OPTS_TRAIN, RANKLIB_PATH, ranker, features_file, train_file, validate_file) + ' -metric2t {0}@{3} -tree {1} -leaf {2} -save {5}"'.format(*(p + (get_name(*p),))) for p in to_train_param]
 		cmd = "parallel --gnu ::: {}".format(" ".join(cmds))
 		print(cmd, file=sys.stderr)
 		os.system(cmd)
@@ -149,13 +151,17 @@ def get_scores_binary(scores_file, qid_cand_to_f1):
 	return res
 
 def test_models(model_names, qid_cand_to_score, validate_file, scores_computer=get_scores, scores_file_prefix=""):
-	cmd = "parallel --gnu java {} -jar {} -load {{}} -rank {} -score {}{{}}.scores ::: {}".format(JAVA_OPTS, RANKLIB_PATH, validate_file, scores_file_prefix, " ".join(model_names))
+	cmd = "parallel --gnu java {} -jar {} -load {{}} -rank {} -score {}{{}}.scores ::: {}".format(JAVA_OPTS_SCORE, RANKLIB_PATH, validate_file, scores_file_prefix, " ".join(model_names))
 	print(cmd, file=sys.stderr)
 	os.system(cmd)
 	return [(model_name, scores_computer(scores_file_prefix+model_name+".scores", qid_cand_to_score) if scores_computer else None) for model_name in model_names]
 
+def ftr_filename(ftrs_string):
+	return "models/" + ftrs_string + ".features"
+
 def gen_ftr_file(ftrs):
-	filename = ftr_set_string(ftrs) + ".features"
+	ftrs_string = hashlib.md5(ftr_set_string(ftrs)).hexdigest()
+	filename = ftr_filename(ftrs_string)
 	with open(filename, "w") as f:
 		for ftr in ftrs:
 			f.write(str(ftr))
@@ -172,4 +178,3 @@ def generate_and_test_model(ftrs_to_try, qid_cand_to_score, opt_vals, ranker, tr
 		print("model {} F1={}".format(*p), file=sys.stderr)
 	model, f1 = max(models_and_f1s, key=lambda p: p[1])
 	return model, f1
-
