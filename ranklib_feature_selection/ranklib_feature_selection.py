@@ -76,12 +76,14 @@ def is_improvement(new_f1, new_ftrs, old_f1, old_ftrs):
 
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser(description='Do feature selections')
-	parser.add_argument('--method', help="Can be ablation or increment", choices=['ablation', 'increment'], required=True)
+	parser.add_argument('--method', help="Method used in feature selection iterations", choices=['ablation', 'increment', 'oneshot'], required=True)
 	parser.add_argument('--dataset', help="Dataset code (e.g. ERD-S2S3S6)", required=True)
-	parser.add_argument('--startset', help="Feature set to start with (e.g. 1,3,5-10,24)", required=False, default="")
+	parser.add_argument('--startset', help="Feature set to start with (e.g. 1,3,5-10,24). Default: use all features (no features for 'increment' method)", required=False, default="")
+	parser.add_argument('--leaves', help="Number of tree leaves (e.g. 5,7,10-20). Default: 10.", required=False, default="10")
 	args = parser.parse_args()
 
 	good_ftr = ftr_string_set(args.startset)
+	leaves = ftr_string_set(args.leaves)
 
 	OPT_VALS = range(12,17+1)
 	TRAIN_DATA = "../train_binding_ranking_{}.dat".format(args.dataset)
@@ -97,26 +99,27 @@ if __name__ == '__main__':
 		main_method, secondary_method = decrement_features, increment_features
 	elif args.method == 'increment':
 		main_method, secondary_method = increment_features, decrement_features
-	
-	print("Initialization - testing initial feature set", file=sys.stderr)
-	_, best_f1 = generate_and_test_model(good_ftr if good_ftr else valid_ftrs, qid_cand_to_score, OPT_VALS, RANKER, TRAIN_DATA, VALIDATE_DATA)
-	print("Initial best score: {}".format(best_f1), file=sys.stderr)
-	
-	if args.method == 'increment' and not good_ftr: #start from scratch
-		best_f1 = 0.0
 
-	good_ftr, best_f1 = do_one_phase(main_method, good_ftr, valid_ftrs, best_f1, 6)
-	good_ftr, best_f1 = do_one_phase(main_method, good_ftr, valid_ftrs, best_f1, 3)
-	good_ftr, best_f1 = do_one_phase(main_method, good_ftr, valid_ftrs, best_f1, 2)
-	good_ftr, best_f1 = do_one_phase(main_method, good_ftr, valid_ftrs, best_f1, 1)
+	if args.method in['increment', 'ablation']:
+		print("Testing initial feature set", file=sys.stderr)
+		for leaf in leaves:
+			_, best_f1 = generate_and_test_model(good_ftr if good_ftr else valid_ftrs, qid_cand_to_score, OPT_VALS, RANKER, TRAIN_DATA, VALIDATE_DATA, leaf=[leaf])
+		print("Initial best score: {}".format(best_f1), file=sys.stderr)
 	
-	good_ftr, best_f1 = do_one_phase(secondary_method, good_ftr, valid_ftrs, best_f1, 1)
+		if args.method == 'increment' and not good_ftr: #start from scratch
+			best_f1 = 0.0
+
+		good_ftr, best_f1 = do_one_phase(main_method, good_ftr, valid_ftrs, best_f1, 6)
+		good_ftr, best_f1 = do_one_phase(main_method, good_ftr, valid_ftrs, best_f1, 3)
+		good_ftr, best_f1 = do_one_phase(main_method, good_ftr, valid_ftrs, best_f1, 2)
+		good_ftr, best_f1 = do_one_phase(main_method, good_ftr, valid_ftrs, best_f1, 1)
+	
+		good_ftr, best_f1 = do_one_phase(secondary_method, good_ftr, valid_ftrs, best_f1, 1)
 
 	print("Parameter tuning", file=sys.stderr)
-	for t in [200, 500, 1000]:
-		for l in [7,8,9,10,11,12]:
-			model, best_f1 = generate_and_test_model(good_ftr, qid_cand_to_score, OPT_VALS, RANKER, TRAIN_DATA, VALIDATE_DATA, tree=[t], leaf=[l])
-			print("3rd phase - Overall best model: {}".format(model), file=sys.stderr)
-			print("3rd phase - Overall best score: {}".format(best_f1), file=sys.stderr)
+	for l in leaves:
+		model, best_f1 = generate_and_test_model(good_ftr, qid_cand_to_score, OPT_VALS, RANKER, TRAIN_DATA, VALIDATE_DATA, leaf=[l])
+		print("Tuning - Overall best model: {}".format(model), file=sys.stderr)
+		print("Tuning - Overall best score: {}".format(best_f1), file=sys.stderr)
 			
 	
