@@ -24,6 +24,7 @@ import it.unipi.di.acube.batframework.metrics.MetricsResultSet;
 import it.unipi.di.acube.batframework.systemPlugins.WATAnnotator;
 import it.unipi.di.acube.batframework.utils.FreebaseApi;
 import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
+import it.unipi.di.acube.smaph.EntityToVect;
 import it.unipi.di.acube.smaph.SmaphAnnotator;
 import it.unipi.di.acube.smaph.SmaphConfig;
 import it.unipi.di.acube.smaph.SmaphUtils;
@@ -32,6 +33,7 @@ import it.unipi.di.acube.smaph.learn.GenerateTrainingAndTest.OptDataset;
 import it.unipi.di.acube.smaph.learn.featurePacks.AdvancedAnnotationFeaturePack;
 import it.unipi.di.acube.smaph.learn.featurePacks.AnnotationFeaturePack;
 import it.unipi.di.acube.smaph.learn.featurePacks.BindingFeaturePack;
+import it.unipi.di.acube.smaph.learn.featurePacks.EntityFeaturePack;
 import it.unipi.di.acube.smaph.learn.models.entityfilters.EntityFilter;
 import it.unipi.di.acube.smaph.learn.models.entityfilters.LibSvmEntityFilter;
 import it.unipi.di.acube.smaph.learn.models.linkback.annotationRegressor.AnnotationRegressor;
@@ -78,14 +80,14 @@ public class GenerateModel {
 		freebKey = SmaphConfig.getDefaultFreebaseKey();
 		freebCache = SmaphConfig.getDefaultFreebaseCache();
 		BingInterface.setCache(SmaphConfig.getDefaultBingCache());
-		wikiApi = new WikipediaApiInterface("wid.cache",
-				"redirect.cache");
+		wikiApi = new WikipediaApiInterface("wid.cache", "redirect.cache");
 		WATRelatednessComputer.setCache("relatedness.cache");
 		freebApi = new FreebaseApi(freebKey, freebCache);
 		WATAnnotator.setCache("wikisense.cache");
 		wikiToFreebase = new WikipediaToFreebase("mapdb");
+		EntityToVect.initialize();
 
-		//generateEFModel(OptDataset.SMAPH_DATASET);
+		//generateEFModel();
 		//generateAnnotationModel();
 		generateCollectiveModel();
 		//generateStackedModel();
@@ -93,8 +95,8 @@ public class GenerateModel {
 		WATAnnotator.flush();
 	}
 
-	public static void generateEFModel(OptDataset opt) throws Exception {
-
+	public static void generateEFModel() throws Exception {
+		OptDataset opt = OptDataset.SMAPH_DATASET;
 		double[][] paramsToTest = null;
 		double[][] weightsToTest = null;
 		int[][] featuresSetsToTest = null;
@@ -120,17 +122,20 @@ public class GenerateModel {
 
 			};
 			weightsToTest = new double[][] {
-					//{4.74985, 2.0},
-					//{2.88435, 1.6},
+					{2.88435, 1.4},
+					{2.88435, 1.6},
 					{2.88435, 1.8},
 					{2.88435, 2.0},
 					{2.88435, 2.2},
-					//{2.88435, 2.4},
-					//{2.88435, 2.6},
+					{2.88435, 2.4},
+					{2.88435, 2.6},
+					{2.88435, 2.8},
+					{2.88435, 3.0},
+					{2.88435, 3.2},
 			};
 			featuresSetsToTest = new int[][] {
-					SmaphUtils.getAllFtrVect(66),
-					{2,19,21,22,34,35,37,39,40,41,44,46,47,48,49,50,51,52,53,55,56,57,58,59,60,61,62,64,65},
+					SmaphUtils.getAllFtrVect(EntityFeaturePack.ftrNames.length),
+					//{2,19,21,22,34,35,37,39,40,41,44,46,47,48,49,50,51,52,53,55,56,57,58,59,60,61,62,64,65},
 					//{2,15,16,20,21,22,24,33,34,35,36,39,40,44,46,47,48,49,50,51,52,53,54,56,57,58,59,60,61,63,64,65,66},
 					//{7,8,9,10,11,12,13,15,17,20,21,23,24,25,33,34,35,37},
 					//{ 1, 2, 3, 6, 7, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 33, 34, 35, 36, 37,38,39,40,41 },
@@ -364,7 +369,7 @@ public class GenerateModel {
 	}
 
 	public static void generateIndividualAdvancedAnnotationModel() throws Exception {
-		int[][] featuresSetsToTest = new int[][] { {1},{2},{3},{4},{5},{6},{7},{58},SmaphUtils
+		int[][] featuresSetsToTest = new int[][] { SmaphUtils
 				.getAllFtrVect(new AdvancedAnnotationFeaturePack().getFeatureCount())};
 		OptDataset opt = OptDataset.SMAPH_DATASET;
 		double anchorMaxED = 0.5;
@@ -480,12 +485,27 @@ public class GenerateModel {
 				SmaphUtils.getAllFtrVect(new BindingFeaturePack().getFeatureCount()),
 		};
 
+/*		OptDataset opt = OptDataset.ERD_CHALLENGE;
+		boolean useS2 = true, useS3 = true, useS6 = true;*/
+		
 		OptDataset opt = OptDataset.SMAPH_DATASET;
+		boolean useS2 = true, useS3 = true, useS6 = true;
+
+		/*OptDataset opt = OptDataset.SMAPH_DATASET_NE;
+		boolean useS2 = true, useS3 = true, useS6 = true;*/
+
+		String prefix = "";
+		if (opt == OptDataset.ERD_CHALLENGE) prefix = "ERD-";
+		else if (opt == OptDataset.SMAPH_DATASET) prefix = "SMAPH-";
+		else if (opt == OptDataset.SMAPH_DATASET_NE) prefix = "SMAPHNE-";
+		else throw new RuntimeException("OptDataset not recognized.");
+		prefix += (useS2 ? "S2" : "") + (useS3 ? "S3" : "") + (useS6 ? "S6" : "");
+		
 		List<ModelConfigurationResult> mcrs = new Vector<>();
 		for (double boldFilterThr = 0.06; boldFilterThr <= 0.06; boldFilterThr += 0.02) {
 			SmaphAnnotator bingAnnotator = GenerateTrainingAndTest
 					.getDefaultBingAnnotatorGatherer(wikiApi, 
-							boldFilterThr, bingKey, false, false, true);
+							boldFilterThr, bingKey, useS2, useS3, useS6);
 			WATAnnotator.setCache("wikisense.cache");
 
 			ExampleGatherer<HashSet<Annotation>, HashSet<Annotation>> trainLinkBackGatherer = new ExampleGatherer<HashSet<Annotation>, HashSet<Annotation>>();
@@ -496,7 +516,7 @@ public class GenerateModel {
 			WATRelatednessComputer.flush();
 
 			//List<Triple<BindingRegressor, FeatureNormalizer, int[]>> regressors = getLibLinearBindingRegressors(featuresSetsToTest, trainLinkBackGatherer, develLinkBackGatherer, mcrs, boldFilterThr);
-			List<Triple<BindingRegressor, FeatureNormalizer, int[]>> regressors = getRanklibBindingRegressors(featuresSetsToTest, trainLinkBackGatherer, develLinkBackGatherer, mcrs, boldFilterThr);
+			List<Triple<BindingRegressor, FeatureNormalizer, int[]>> regressors = getRanklibBindingRegressors(featuresSetsToTest, trainLinkBackGatherer, develLinkBackGatherer, mcrs, boldFilterThr, prefix);
 
 			for (Triple<BindingRegressor, FeatureNormalizer, int[]> t : regressors){
 				MetricsResultSet metrics = TuneModelLibSvm.ParameterTester
@@ -515,15 +535,15 @@ public class GenerateModel {
 				float macroRec = metrics.getMacroRecall();
 				float macroPrec = metrics.getMacroPrecision();
 				int totVects = develLinkBackGatherer.getExamplesCount();
-				mcrs.add(new ModelConfigurationResult(t.getRight(), -1, -1, -1, -1,
+				ModelConfigurationResult mcr = new ModelConfigurationResult(t.getRight(), -1, -1, -1, -1,
 						tp, fp, fn, totVects - tp - fp - fn, microF1,
-						macroF1, macroRec, macroPrec));
+						macroF1, macroRec, macroPrec);
+				System.out.printf("%.5f%%\t%.5f%%\t%.5f%%%n",
+						mcr.getMacroPrecision() * 100, mcr.getMacroRecall() * 100,
+						mcr.getMacroF1() * 100);
+				mcrs.add(mcr);
 			}
 		}
-		for (ModelConfigurationResult mcr : mcrs)
-			System.out.printf("%.5f%%\t%.5f%%\t%.5f%%%n",
-					mcr.getMacroPrecision() * 100, mcr.getMacroRecall() * 100,
-					mcr.getMacroF1() * 100);
 		for (ModelConfigurationResult mcr : mcrs)
 			System.out.println(mcr.getReadable());
 	}
@@ -579,16 +599,17 @@ public class GenerateModel {
 			int[][] featuresSetsToTest,
 			ExampleGatherer<HashSet<Annotation>, HashSet<Annotation>> trainLinkBackGatherer,
 			ExampleGatherer<HashSet<Annotation>, HashSet<Annotation>> develLinkBackGatherer,
-			List<ModelConfigurationResult> mcrs, double boldFilterThr)
+			List<ModelConfigurationResult> mcrs, double boldFilterThr, String prefix)
 					throws IOException, InterruptedException {
 		List<Triple<BindingRegressor, FeatureNormalizer, int[]>> res = new Vector<>();
 
-		String trainFile = "train_binding_ranking.dat";
-		String develFile = "devel_binding_ranking.dat";
-		String normFile = "models/train_binding_ranking.zscore";
+		String trainFile = "train_binding_ranking_"+prefix+".dat";
+		String develFile = "devel_binding_ranking_"+prefix+".dat";
+		String normFile = "models/train_binding_ranking_"+prefix+".zscore";
+		double defaultValueNorm = 0.0;
 
 		System.out.println("Building normalizer...");
-		ZScoreFeatureNormalizer brNorm = new ZScoreFeatureNormalizer(trainLinkBackGatherer);
+		ZScoreFeatureNormalizer brNorm = new ZScoreFeatureNormalizer(trainLinkBackGatherer, defaultValueNorm);
 		brNorm.dump(normFile);
 		System.out.println("Dumping binding training problems for ranking...");
 		trainLinkBackGatherer.dumpExamplesRankLib(trainFile, brNorm);
@@ -598,10 +619,10 @@ public class GenerateModel {
 		for (int[] ftrs : featuresSetsToTest) {
 			String ftrListFile = generateFeatureListFile(ftrs);
 			for (int modelType : new int[] { 6 }) {
-				for (int ncdgTop : new int[] {10}){
+				for (int ncdgTop : new int[] {15,19,21,23,25}){
 					String optMetric = "NDCG@" + ncdgTop;
 					String rankModelBase = getModelFileNameBaseRL(ftrs, boldFilterThr) + ".full";
-					String modelFile = rankModelBase + "." + modelType+ "." + optMetric + ".model";
+					String modelFile = rankModelBase + "." + modelType+ "." + optMetric + "." + prefix + ".model";
 					String cliOpts = String.format("-feature %s -ranker %d -metric2t %s -train %s -validate %s -save %s",
 							ftrListFile, modelType, optMetric, trainFile, develFile, modelFile);
 					System.out.println("Training rankLib model (binding)... " + cliOpts);
@@ -609,7 +630,7 @@ public class GenerateModel {
 					System.out.println("Model trained (binding).");
 
 					BindingRegressor br = new RankLibBindingRegressor(modelFile);
-					FeatureNormalizer brNormLoaded = new ZScoreFeatureNormalizer(normFile, new BindingFeaturePack());
+					FeatureNormalizer brNormLoaded = new ZScoreFeatureNormalizer(normFile, new BindingFeaturePack(), defaultValueNorm);
 					res.add(new ImmutableTriple<BindingRegressor, FeatureNormalizer, int[]>(br, brNormLoaded, ftrs));
 				}
 			}

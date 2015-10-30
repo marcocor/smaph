@@ -67,7 +67,7 @@ import org.slf4j.LoggerFactory;
 public class GenerateTrainingAndTest {
 	private static Logger logger = LoggerFactory.getLogger(GenerateTrainingAndTest.class);
 
-	public enum OptDataset {ERD_CHALLENGE, SMAPH_DATASET}
+	public enum OptDataset {ERD_CHALLENGE, SMAPH_DATASET, SMAPH_DATASET_NE}
 	public static void gatherExamples(SmaphAnnotator bingAnnotator,
 			A2WDataset ds, ExampleGatherer<Tag, HashSet<Tag>> entityFilterGatherer, ExampleGatherer<Annotation, HashSet<Annotation>> annotationLevel1Gatherer, ExampleGatherer<HashSet<Annotation>, HashSet<Annotation>> linkBackLevel2Gatherer, ExampleGatherer<HashSet<Annotation>, HashSet<Annotation>> linkBackCollectiveGatherer, ExampleGatherer<Annotation, HashSet<Annotation>> individualAnnotationGatherer, ExampleGatherer<Annotation, HashSet<Annotation>> advancedIndividualAnnotationGatherer,
 			WikipediaToFreebase wikiToFreeb, AnnotationRegressor ar, FeatureNormalizer annFn, boolean keepNEOnly, double anchorMaxED) throws Exception {
@@ -242,6 +242,21 @@ public class GenerateTrainingAndTest {
 				gatherExamples(bingAnnotator, smaphSingle,
 						trainEntityFilterGatherer, trainLevel1AnnotationGatherer, null, trainLinkBackCollectiveGatherer,
 						trainIndividualAnnotationGatherer,trainIndividualAdvancedAnnotationGatherer, wikiToFreebase, arLevel1, arNormLevel1, keepNEOnly, anchorMaxED);*/
+			} else if (opt == OptDataset.SMAPH_DATASET_NE) {
+				boolean keepNEOnly = true;
+				A2WDataset smaphTrainA = new ERDDatasetFilter(new SMAPHDataset(
+						"datasets/smaph/smaph_trainingA.xml", wikiApi), wikiApi,
+						wikiToFreebase);
+				gatherExamples(bingAnnotator, smaphTrainA,
+						trainEntityFilterGatherer, trainLevel1AnnotationGatherer, null, trainLinkBackCollectiveGatherer,
+						trainIndividualAnnotationGatherer,trainIndividualAdvancedAnnotationGatherer, wikiToFreebase, arLevel1, arNormLevel1, keepNEOnly, anchorMaxED);
+
+				A2WDataset smaphTrainB = new ERDDatasetFilter(new SMAPHDataset(
+						"datasets/smaph/smaph_trainingB.xml", wikiApi), wikiApi,
+						wikiToFreebase);
+				gatherExamples(bingAnnotator, smaphTrainB,
+						trainEntityFilterGatherer, null, trainLinkBackLevel2Gatherer, trainLinkBackCollectiveGatherer,
+						trainIndividualAnnotationGatherer,trainIndividualAdvancedAnnotationGatherer, wikiToFreebase, arLevel1, arNormLevel1, keepNEOnly, anchorMaxED);
 			}
 		}
 		if (develEntityFilterGatherer != null || develLinkBackLevel2Gatherer != null || develLinkBackCollectiveGatherer != null|| develIndividualAnnotationGatherer != null || develIndividualAdvancedAnnotationGatherer != null) {
@@ -275,6 +290,15 @@ public class GenerateTrainingAndTest {
 				gatherExamples(bingAnnotator, smaphSingle,
 						develEntityFilterGatherer, develLevel1AnnotationGatherer, develLinkBackLevel2Gatherer, develLinkBackCollectiveGatherer,
 						develIndividualAnnotationGatherer,develIndividualAdvancedAnnotationGatherer,  wikiToFreebase, arLevel1, arNormLevel1, keepNEOnly, anchorMaxED);*/
+			}
+			else if (opt == OptDataset.SMAPH_DATASET_NE){
+				boolean keepNEOnly = true;
+				A2WDataset smaphDevel = new ERDDatasetFilter(new SMAPHDataset(
+						"datasets/smaph/smaph_devel.xml", wikiApi), wikiApi,
+						wikiToFreebase);
+				gatherExamples(bingAnnotator, smaphDevel,
+						develEntityFilterGatherer, develLevel1AnnotationGatherer, develLinkBackLevel2Gatherer, develLinkBackCollectiveGatherer,
+						develIndividualAnnotationGatherer,develIndividualAdvancedAnnotationGatherer,  wikiToFreebase, arLevel1, arNormLevel1, keepNEOnly, anchorMaxED);
 			}
 
 		}
@@ -342,13 +366,23 @@ public class GenerateTrainingAndTest {
 				editDistanceSpotFilterThreshold, 
 				bingKey, new NoEntityFilter(), null, lb, false, true, true, true);
 	}
-	public static SmaphAnnotator getDefaultBingAnnotatorCollectiveLBRanklib(
+	public static SmaphAnnotator getDefaultBingAnnotatorCollectiveLBRanklibS6(
 			WikipediaApiInterface wikiApi, double editDistanceSpotFilterThreshold, String bingKey,
 			String lBmodel, String lbRange) throws FileNotFoundException, ClassNotFoundException, IOException {
 		CollectiveLinkBack lb = new CollectiveLinkBack(wikiApi, new DefaultBindingGenerator(), new RankLibBindingRegressor(lBmodel), new ZScoreFeatureNormalizer(lbRange, new BindingFeaturePack()));
-		return getDefaultBingAnnotatorParam( wikiApi, 
+		return getDefaultBingAnnotatorParam(
+				wikiApi, 
 				editDistanceSpotFilterThreshold, 
 				bingKey, new NoEntityFilter(), null, lb, false, false, false, true);
+	}
+	public static SmaphAnnotator getDefaultBingAnnotatorCollectiveLBRanklibAllSources(
+			WikipediaApiInterface wikiApi, double editDistanceSpotFilterThreshold, String bingKey,
+			String lBmodel, String lbRange) throws FileNotFoundException, ClassNotFoundException, IOException {
+		CollectiveLinkBack lb = new CollectiveLinkBack(wikiApi, new DefaultBindingGenerator(), new RankLibBindingRegressor(lBmodel), new ZScoreFeatureNormalizer(lbRange, new BindingFeaturePack()));
+		return getDefaultBingAnnotatorParam(
+				wikiApi, 
+				editDistanceSpotFilterThreshold, 
+				bingKey, new NoEntityFilter(), null, lb, false, true, true, true);
 	}
 	public static SmaphAnnotator getDefaultBingAnnotatorIndividualAdvancedAnnotationRegressor(
 			WikipediaApiInterface wikiApi, double editDistanceSpotFilterThreshold, String bingKey,
