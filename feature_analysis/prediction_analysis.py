@@ -15,6 +15,7 @@ with open("/dev/stdin") as f:
 
 for c in categories:
 	plt.hist(categories[c], 20, histtype='step', label=str(c))
+	print "mean prediction for category {0}: {1}".format(c, np.mean(categories[c]))
 plt.legend(loc='upper right')
 plt.title("Predictions vs. expected")
 plt.show()
