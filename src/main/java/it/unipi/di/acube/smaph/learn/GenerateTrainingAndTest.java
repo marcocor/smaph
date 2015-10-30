@@ -19,7 +19,7 @@ package it.unipi.di.acube.smaph.learn;
 import it.unimi.dsi.logging.ProgressLogger;
 import it.unipi.di.acube.batframework.data.Annotation;
 import it.unipi.di.acube.batframework.data.Tag;
-import it.unipi.di.acube.batframework.datasetPlugins.SMAPHDataset;
+import it.unipi.di.acube.batframework.datasetPlugins.GERDAQDataset;
 import it.unipi.di.acube.batframework.datasetPlugins.YahooWebscopeL24Dataset;
 import it.unipi.di.acube.batframework.problems.A2WDataset;
 import it.unipi.di.acube.batframework.systemPlugins.WATAnnotator;
@@ -161,29 +161,29 @@ public class GenerateTrainingAndTest {
 			if (opt == OptDataset.ERD_CHALLENGE) {
 
 				boolean keepNEOnly = true;
-				A2WDataset smaphTrainA = new ERDDatasetFilter(new SMAPHDataset(
-						"datasets/smaph/smaph_trainingA.xml", wikiApi), wikiApi,
+				A2WDataset smaphTrainA = new ERDDatasetFilter(new GERDAQDataset(
+						"datasets/gerdaq/gerdaq_trainingA.xml", wikiApi), wikiApi,
 						wikiToFreebase);
 				gatherExamples(bingAnnotator, smaphTrainA,
 						trainEntityFilterGatherer, trainLevel1AnnotationGatherer, null, trainLinkBackCollectiveGatherer,
 						trainIndividualAnnotationGatherer,trainIndividualAdvancedAnnotationGatherer, wikiToFreebase, arLevel1, arNormLevel1, keepNEOnly, anchorMaxED);
 
-				A2WDataset smaphTrainB = new ERDDatasetFilter(new SMAPHDataset(
-						"datasets/smaph/smaph_trainingB.xml", wikiApi), wikiApi,
+				A2WDataset smaphTrainB = new ERDDatasetFilter(new GERDAQDataset(
+						"datasets/gerdaq/gerdaq_trainingB.xml", wikiApi), wikiApi,
 						wikiToFreebase);
 				gatherExamples(bingAnnotator, smaphTrainB,
 						trainEntityFilterGatherer, null, trainLinkBackLevel2Gatherer, trainLinkBackCollectiveGatherer,
 						trainIndividualAnnotationGatherer,trainIndividualAdvancedAnnotationGatherer, wikiToFreebase, arLevel1, arNormLevel1, keepNEOnly, anchorMaxED);
 
-				A2WDataset smaphTest = new ERDDatasetFilter(new SMAPHDataset(
-						"datasets/smaph/smaph_test.xml", wikiApi), wikiApi,
+				A2WDataset smaphTest = new ERDDatasetFilter(new GERDAQDataset(
+						"datasets/gerdaq/gerdaq_test.xml", wikiApi), wikiApi,
 						wikiToFreebase);
 				gatherExamples(bingAnnotator, smaphTest,
 						trainEntityFilterGatherer, null, trainLinkBackLevel2Gatherer, trainLinkBackCollectiveGatherer,
 						trainIndividualAnnotationGatherer,trainIndividualAdvancedAnnotationGatherer, wikiToFreebase, arLevel1, arNormLevel1, keepNEOnly, anchorMaxED);
 
-				A2WDataset smaphDevel = new ERDDatasetFilter(new SMAPHDataset(
-						"datasets/smaph/smaph_devel.xml", wikiApi), wikiApi,
+				A2WDataset smaphDevel = new ERDDatasetFilter(new GERDAQDataset(
+						"datasets/gerdaq/gerdaq_devel.xml", wikiApi), wikiApi,
 						wikiToFreebase);
 				gatherExamples(bingAnnotator, smaphDevel,
 						trainEntityFilterGatherer,null, trainLinkBackLevel2Gatherer, trainLinkBackCollectiveGatherer,
@@ -213,20 +213,20 @@ public class GenerateTrainingAndTest {
 				 */
 			} else if (opt == OptDataset.SMAPH_DATASET) {
 				boolean keepNEOnly = false;
-				A2WDataset smaphTrainA = new SMAPHDataset(
-						"datasets/smaph/smaph_trainingA.xml", wikiApi);
+				A2WDataset smaphTrainA = new GERDAQDataset(
+						"datasets/gerdaq/gerdaq_trainingA.xml", wikiApi);
 				gatherExamples(bingAnnotator, smaphTrainA,
 						trainEntityFilterGatherer, trainLevel1AnnotationGatherer, null, trainLinkBackCollectiveGatherer,
 						trainIndividualAnnotationGatherer,trainIndividualAdvancedAnnotationGatherer, wikiToFreebase, arLevel1, arNormLevel1, keepNEOnly, anchorMaxED);
 
-				A2WDataset smaphTrainB = new SMAPHDataset(
-						"datasets/smaph/smaph_trainingB.xml", wikiApi);
+				A2WDataset smaphTrainB = new GERDAQDataset(
+						"datasets/gerdaq/gerdaq_trainingB.xml", wikiApi);
 				gatherExamples(bingAnnotator, smaphTrainB,
 						trainEntityFilterGatherer, null, trainLinkBackLevel2Gatherer, trainLinkBackCollectiveGatherer,
 						trainIndividualAnnotationGatherer,trainIndividualAdvancedAnnotationGatherer, wikiToFreebase, arLevel1, arNormLevel1, keepNEOnly, anchorMaxED);
 
 				/*A2WDataset smaphDevel = new SMAPHDataset(
-						"datasets/smaph/smaph_devel.xml", wikiApi);
+						"datasets/gerdaq/gerdaq_devel.xml", wikiApi);
 				gatherExamples(bingAnnotator, smaphDevel,
 						trainEntityFilterGatherer, null, trainLinkBackGatherer,
 						trainAnnotationGatherer,  wikiToFreebase, ar, annFn, keepNEOnly);*/
@@ -244,15 +244,15 @@ public class GenerateTrainingAndTest {
 						trainIndividualAnnotationGatherer,trainIndividualAdvancedAnnotationGatherer, wikiToFreebase, arLevel1, arNormLevel1, keepNEOnly, anchorMaxED);*/
 			} else if (opt == OptDataset.SMAPH_DATASET_NE) {
 				boolean keepNEOnly = true;
-				A2WDataset smaphTrainA = new ERDDatasetFilter(new SMAPHDataset(
-						"datasets/smaph/smaph_trainingA.xml", wikiApi), wikiApi,
+				A2WDataset smaphTrainA = new ERDDatasetFilter(new GERDAQDataset(
+						"datasets/gerdaq/gerdaq_trainingA.xml", wikiApi), wikiApi,
 						wikiToFreebase);
 				gatherExamples(bingAnnotator, smaphTrainA,
 						trainEntityFilterGatherer, trainLevel1AnnotationGatherer, null, trainLinkBackCollectiveGatherer,
 						trainIndividualAnnotationGatherer,trainIndividualAdvancedAnnotationGatherer, wikiToFreebase, arLevel1, arNormLevel1, keepNEOnly, anchorMaxED);
 
-				A2WDataset smaphTrainB = new ERDDatasetFilter(new SMAPHDataset(
-						"datasets/smaph/smaph_trainingB.xml", wikiApi), wikiApi,
+				A2WDataset smaphTrainB = new ERDDatasetFilter(new GERDAQDataset(
+						"datasets/gerdaq/gerdaq_trainingB.xml", wikiApi), wikiApi,
 						wikiToFreebase);
 				gatherExamples(bingAnnotator, smaphTrainB,
 						trainEntityFilterGatherer, null, trainLinkBackLevel2Gatherer, trainLinkBackCollectiveGatherer,
@@ -262,8 +262,8 @@ public class GenerateTrainingAndTest {
 		if (develEntityFilterGatherer != null || develLinkBackLevel2Gatherer != null || develLinkBackCollectiveGatherer != null|| develIndividualAnnotationGatherer != null || develIndividualAdvancedAnnotationGatherer != null) {
 			if (opt == OptDataset.ERD_CHALLENGE) {
 				boolean keepNEOnly = true;
-				A2WDataset smaphDevel = new ERDDatasetFilter(new SMAPHDataset(
-						"datasets/smaph/smaph_devel.xml", wikiApi), wikiApi,
+				A2WDataset smaphDevel = new ERDDatasetFilter(new GERDAQDataset(
+						"datasets/gerdaq/gerdaq_devel.xml", wikiApi), wikiApi,
 						wikiToFreebase);
 				gatherExamples(bingAnnotator, smaphDevel,
 						develEntityFilterGatherer,
@@ -275,13 +275,13 @@ public class GenerateTrainingAndTest {
 			else if (opt == OptDataset.SMAPH_DATASET){
 				boolean keepNEOnly = false;
 				/*A2WDataset smaphTest = new SMAPHDataset(
-						"datasets/smaph/smaph_test.xml", wikiApi);
+						"datasets/gerdaq/gerdaq_test.xml", wikiApi);
 				gatherExamples(bingAnnotator, smaphTest,
 						develEntityFilterGatherer, develEntityRegressorGatherer, develLinkBackGatherer,develAnnotationGatherer,
 						wikiToFreebase, ar, annFn, keepNEOnly);*/
 
-				A2WDataset smaphDevel = new SMAPHDataset(
-						"datasets/smaph/smaph_devel.xml", wikiApi);
+				A2WDataset smaphDevel = new GERDAQDataset(
+						"datasets/gerdaq/gerdaq_devel.xml", wikiApi);
 				gatherExamples(bingAnnotator, smaphDevel,
 						develEntityFilterGatherer, develLevel1AnnotationGatherer, develLinkBackLevel2Gatherer, develLinkBackCollectiveGatherer,
 						develIndividualAnnotationGatherer,develIndividualAdvancedAnnotationGatherer,  wikiToFreebase, arLevel1, arNormLevel1, keepNEOnly, anchorMaxED);
@@ -293,8 +293,8 @@ public class GenerateTrainingAndTest {
 			}
 			else if (opt == OptDataset.SMAPH_DATASET_NE){
 				boolean keepNEOnly = true;
-				A2WDataset smaphDevel = new ERDDatasetFilter(new SMAPHDataset(
-						"datasets/smaph/smaph_devel.xml", wikiApi), wikiApi,
+				A2WDataset smaphDevel = new ERDDatasetFilter(new GERDAQDataset(
+						"datasets/gerdaq/gerdaq_devel.xml", wikiApi), wikiApi,
 						wikiToFreebase);
 				gatherExamples(bingAnnotator, smaphDevel,
 						develEntityFilterGatherer, develLevel1AnnotationGatherer, develLinkBackLevel2Gatherer, develLinkBackCollectiveGatherer,

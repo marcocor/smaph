@@ -19,7 +19,7 @@ package it.unipi.di.acube.smaph.main;
 import it.unipi.di.acube.BingInterface;
 import it.unipi.di.acube.batframework.cache.BenchmarkCache;
 import it.unipi.di.acube.batframework.data.Tag;
-import it.unipi.di.acube.batframework.datasetPlugins.SMAPHDataset;
+import it.unipi.di.acube.batframework.datasetPlugins.GERDAQDataset;
 import it.unipi.di.acube.batframework.metrics.Metrics;
 import it.unipi.di.acube.batframework.metrics.MetricsResultSet;
 import it.unipi.di.acube.batframework.metrics.StrongTagMatch;
@@ -61,9 +61,9 @@ public class DumpCandidateEntities {
 		//WATRelatednessComputer.setCache("relatedness.cache");
 		//WikipediaToFreebase wikiToFreebase = new WikipediaToFreebase("mapdb");
 		//BenchmarkCache.useCache("results.cache");
-		/*A2WDataset ds = new ERDDatasetFilter (new SMAPHDataset("datasets/smaph/smaph_test.xml",
+		/*A2WDataset ds = new ERDDatasetFilter (new SMAPHDataset("datasets/gerdaq/gerdaq_test.xml",
 				wikiApi), wikiApi, wikiToFreebase);*/
-		A2WDataset ds = new SMAPHDataset("datasets/smaph/smaph_trainingA.xml",
+		A2WDataset ds = new GERDAQDataset("datasets/gerdaq/gerdaq_trainingA.xml",
 				wikiApi);
 
 		System.out.println("Printing basic information about dataset "

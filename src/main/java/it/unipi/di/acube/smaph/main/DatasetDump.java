@@ -7,7 +7,7 @@ import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONObject;
 import org.codehaus.jettison.json.JSONWriter;
 
-import it.unipi.di.acube.batframework.datasetPlugins.SMAPHDataset;
+import it.unipi.di.acube.batframework.datasetPlugins.GERDAQDataset;
 import it.unipi.di.acube.batframework.datasetPlugins.YahooWebscopeL24Dataset;
 import it.unipi.di.acube.batframework.problems.*;
 import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
@@ -30,14 +30,14 @@ public class DatasetDump {
 		Stands4AbbreviationExpansion.setCache(cache);
 
 		{
-			A2WDataset ds1 = new SMAPHDataset(
-					"datasets/smaph/smaph_trainingA.xml", wikiApi);
-			A2WDataset ds2 = new SMAPHDataset(
-					"datasets/smaph/smaph_trainingB.xml", wikiApi);
-			A2WDataset ds3 = new SMAPHDataset(
-					"datasets/smaph/smaph_test.xml", wikiApi);
-			A2WDataset ds4 = new SMAPHDataset(
-					"datasets/smaph/smaph_devel.xml", wikiApi);
+			A2WDataset ds1 = new GERDAQDataset(
+					"datasets/gerdaq/gerdaq_trainingA.xml", wikiApi);
+			A2WDataset ds2 = new GERDAQDataset(
+					"datasets/gerdaq/gerdaq_trainingB.xml", wikiApi);
+			A2WDataset ds3 = new GERDAQDataset(
+					"datasets/gerdaq/gerdaq_test.xml", wikiApi);
+			A2WDataset ds4 = new GERDAQDataset(
+					"datasets/gerdaq/gerdaq_devel.xml", wikiApi);
 			
 			HashSet<String> insertedKeys = new HashSet<>();
 			FileWriter fw = new FileWriter("abbrev.json");

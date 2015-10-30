@@ -2,7 +2,7 @@ package it.unipi.di.acube.smaph.main;
 
 import it.unipi.di.acube.BingInterface;
 import it.unipi.di.acube.batframework.data.Annotation;
-import it.unipi.di.acube.batframework.datasetPlugins.SMAPHDataset;
+import it.unipi.di.acube.batframework.datasetPlugins.GERDAQDataset;
 import it.unipi.di.acube.batframework.metrics.MatchRelation;
 import it.unipi.di.acube.batframework.metrics.Metrics;
 import it.unipi.di.acube.batframework.metrics.StrongAnnotationMatch;
@@ -23,11 +23,9 @@ import org.codehaus.jettison.json.JSONArray;
 public class DebugMain {
 
 	public static void main(String[] args) throws Exception {
-		WikipediaApiInterface wikiApi = new WikipediaApiInterface("wid.cache",
-				"redirect.cache");
+		WikipediaApiInterface wikiApi = new WikipediaApiInterface("wid.cache", "redirect.cache");
 		
-		SMAPHDataset ds = new SMAPHDataset("datasets/smaph/smaph_devel.xml",
-				wikiApi);
+		GERDAQDataset ds = new GERDAQDataset("datasets/gerdaq/gerdaq_devel.xml", wikiApi);
 
 		SmaphConfig.setConfigFile("smaph-config.xml");
 		String bingKey = SmaphConfig.getDefaultBingKey();

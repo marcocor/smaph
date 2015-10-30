@@ -32,12 +32,12 @@ import it.unipi.di.acube.batframework.problems.A2WDataset;
 import it.unipi.di.acube.batframework.utils.ProblemReduction;
 import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
 
-public class SMAPHDataset implements A2WDataset {
+public class GERDAQDataset implements A2WDataset {
 	private List<String> queries = new Vector<String>();
 	private List<HashSet<Tag>> tags = new Vector<HashSet<Tag>>();
 	private List<HashSet<Annotation>> annotations = new Vector<HashSet<Annotation>>();
 
-	public SMAPHDataset(String xmlFile, WikipediaApiInterface api) {
+	public GERDAQDataset(String xmlFile, WikipediaApiInterface api) {
 		File fXmlFile = new File(xmlFile);
 		DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
 		DocumentBuilder dBuilder;
@@ -147,7 +147,7 @@ public class SMAPHDataset implements A2WDataset {
 
 	@Override
 	public String getName() {
-		return "SMAPH";
+		return "GERDAQ";
 	}
 
 	@Override
@@ -165,7 +165,6 @@ public class SMAPHDataset implements A2WDataset {
 
 	@Override
 	public List<HashSet<Tag>> getC2WGoldStandardList() {
-		//return tags;
 		return ProblemReduction.A2WToC2WList(annotations);
 	}
 
