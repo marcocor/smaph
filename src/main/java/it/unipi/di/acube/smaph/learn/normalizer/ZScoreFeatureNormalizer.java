@@ -18,11 +18,22 @@ public class ZScoreFeatureNormalizer extends FeatureNormalizer {
 	private HashMap<String, Double> stdDevs = new HashMap<>();
 	private Mean meanComputer = new Mean();
 	private StandardDeviation stdDevComputer = new StandardDeviation();
+	private double defaultValue = 0.0; // Default value for missing features. 0.0 is the average value.
 
+	public ZScoreFeatureNormalizer(String zScoreFile, FeaturePack<?> fp, double defaultValue) {
+		this(zScoreFile, fp);
+		this.defaultValue = defaultValue;
+	}
 	public ZScoreFeatureNormalizer(String zScoreFile, FeaturePack<?> fp) {
 		load(zScoreFile, fp);
 	}
 
+	public <E extends Serializable, G extends Serializable> ZScoreFeatureNormalizer(
+			ExampleGatherer<E,G> exampleGatherer, double defaultValue) {
+		this(exampleGatherer);
+		this.defaultValue = defaultValue;
+	}
+	
 	public <E extends Serializable, G extends Serializable> ZScoreFeatureNormalizer(
 			ExampleGatherer<E,G> exampleGatherer) {
 		List<FeaturePack<E>> ftrPacks = exampleGatherer.getAllFeaturePacks();
@@ -44,7 +55,7 @@ public class ZScoreFeatureNormalizer extends FeatureNormalizer {
 	@Override
 	public double normalizeFeature(FeaturePack<?> fp, String ftrName) {
 		if (!fp.featureIsSet(ftrName))
-			return 0.0;
+			return defaultValue;
 		if (!avgs.containsKey(ftrName))
 			return fp.getFeature(ftrName);
 		double avg = avgs.get(ftrName);
