@@ -15,6 +15,8 @@ with open("/dev/stdin") as f:
 		else:
 			ftr_values[0].append(data[FTR_ID])
 
+print "average for Positive:{0} Negatives:{1}".format(np.mean(ftr_values[1]), np.mean(ftr_values[0]))
+
 plt.hist(ftr_values[0], 20, histtype='step', label="Negative ex.")#, normed=1
 plt.hist(ftr_values[1], 20, histtype='step', label="Positive ex.")#, normed=1
 plt.legend(loc='upper right')
