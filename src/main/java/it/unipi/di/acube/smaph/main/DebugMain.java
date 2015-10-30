@@ -39,7 +39,7 @@ public class DebugMain {
 		String rankLibBindingModel = "models/model_1-225_RL_0.060.full.6.NDCG@10.model";
 		String rankLibBindingNorm = "models/train_binding_ranking.zscore";
 
-		SmaphAnnotator ann = GenerateTrainingAndTest.getDefaultBingAnnotatorCollectiveLBRanklib(wikiApi, 0.06, bingKey, rankLibBindingModel, rankLibBindingNorm);
+		SmaphAnnotator ann = GenerateTrainingAndTest.getDefaultBingAnnotatorCollectiveLBRanklibAllSources(wikiApi, 0.06, bingKey, rankLibBindingModel, rankLibBindingNorm);
 		ann.appendName("-lb-collective-ranking");
 		SmaphAnnotatorDebugger debugger = new SmaphAnnotatorDebugger();
 		ann.setDebugger(debugger);
