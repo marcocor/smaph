@@ -16,72 +16,37 @@
 
 package it.unipi.di.acube.smaph.main;
 
+import it.unipi.di.acube.BingInterface;
 import it.unipi.di.acube.batframework.cache.BenchmarkCache;
-import it.unipi.di.acube.batframework.cache.BenchmarkResults;
-import it.unipi.di.acube.batframework.data.Annotation;
-import it.unipi.di.acube.batframework.data.ScoredAnnotation;
 import it.unipi.di.acube.batframework.data.Tag;
 import it.unipi.di.acube.batframework.datasetPlugins.SMAPHDataset;
-import it.unipi.di.acube.batframework.metrics.*;
+import it.unipi.di.acube.batframework.metrics.Metrics;
+import it.unipi.di.acube.batframework.metrics.MetricsResultSet;
+import it.unipi.di.acube.batframework.metrics.StrongTagMatch;
 import it.unipi.di.acube.batframework.problems.A2WDataset;
-import it.unipi.di.acube.batframework.problems.A2WSystem;
-import it.unipi.di.acube.batframework.problems.C2WDataset;
-import it.unipi.di.acube.batframework.problems.C2WSystem;
-import it.unipi.di.acube.batframework.problems.Sa2WSystem;
-import it.unipi.di.acube.batframework.systemPlugins.AIDADefaultAnnotator;
-import it.unipi.di.acube.batframework.systemPlugins.ERDSystem;
-import it.unipi.di.acube.batframework.systemPlugins.MockAnnotator;
-import it.unipi.di.acube.batframework.systemPlugins.TagmeAnnotator;
 import it.unipi.di.acube.batframework.systemPlugins.WATAnnotator;
-import it.unipi.di.acube.batframework.utils.*;
+import it.unipi.di.acube.batframework.utils.FreebaseApi;
+import it.unipi.di.acube.batframework.utils.TestDataset;
+import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
 import it.unipi.di.acube.smaph.SmaphAnnotator;
 import it.unipi.di.acube.smaph.SmaphAnnotatorDebugger;
 import it.unipi.di.acube.smaph.SmaphConfig;
-import it.unipi.di.acube.smaph.SmaphUtils;
 import it.unipi.di.acube.smaph.WATRelatednessComputer;
-import it.unipi.di.acube.smaph.boldfilters.EditDistanceBoldFilter;
 import it.unipi.di.acube.smaph.boldfilters.FrequencyBoldFilter;
-import it.unipi.di.acube.smaph.learn.GenerateTrainingAndTest;
-import it.unipi.di.acube.smaph.learn.featurePacks.AnnotationFeaturePack;
-import it.unipi.di.acube.smaph.learn.featurePacks.BindingFeaturePack;
-import it.unipi.di.acube.smaph.learn.featurePacks.EntityFeaturePack;
-import it.unipi.di.acube.smaph.learn.models.entityfilters.LibSvmEntityFilter;
 import it.unipi.di.acube.smaph.learn.models.entityfilters.NoEntityFilter;
-import it.unipi.di.acube.smaph.learn.models.linkback.annotationRegressor.LibLinearAnnotatorRegressor;
-import it.unipi.di.acube.smaph.learn.models.linkback.annotationRegressor.RankLibAnnotationRegressor;
-import it.unipi.di.acube.smaph.learn.models.linkback.bindingRegressor.LibLinearBindingRegressor;
-import it.unipi.di.acube.smaph.learn.models.linkback.bindingRegressor.RankLibBindingRegressor;
-import it.unipi.di.acube.smaph.learn.normalizer.FeatureNormalizer;
-import it.unipi.di.acube.smaph.learn.normalizer.NoFeatureNormalizer;
-import it.unipi.di.acube.smaph.learn.normalizer.ScaleFeatureNormalizer;
-import it.unipi.di.acube.smaph.learn.normalizer.ZScoreFeatureNormalizer;
-import it.unipi.di.acube.smaph.linkback.BaselineLinkBack;
 import it.unipi.di.acube.smaph.linkback.DummyLinkBack;
-import it.unipi.di.acube.smaph.linkback.CollectiveLinkBack;
-import it.unipi.di.acube.smaph.linkback.IndividualAnnotationLinkBack;
-import it.unipi.di.acube.smaph.linkback.bindingGenerator.BindingGenerator;
-import it.unipi.di.acube.smaph.linkback.bindingGenerator.DefaultBindingGenerator;
 import it.unipi.di.acube.smaph.snippetannotationfilters.FrequencyAnnotationFilter;
-import it.unipi.di.acube.smaph.snippetannotationfilters.SnippetAnnotationFilter;
-import it.unipi.di.acube.BingInterface;
-import it.cnr.isti.hpc.erd.WikipediaToFreebase;
 
-import java.io.BufferedWriter;
-import java.io.FileNotFoundException;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.UnsupportedEncodingException;
-import java.nio.channels.GatheringByteChannel;
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 
-import org.apache.commons.lang3.ArrayUtils;
-import org.codehaus.jackson.annotate.JsonAnyGetter;
 import org.codehaus.jettison.json.JSONException;
-import org.codehaus.jettison.json.JSONObject;
 import org.codehaus.jettison.json.JSONWriter;
-
-import de.bwaldvogel.liblinear.Train;
 
 public class DumpCandidateEntities {
 	private static final Locale LOCALE = Locale.US;
