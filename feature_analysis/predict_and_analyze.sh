@@ -2,9 +2,11 @@
 TRAIN=$1
 TEST=$2
 TRAIN_OPTS=$3
+LIBLINEAR_DIR="libs/liblinear-2.0"
 
-~/Downloads/liblinear-1.96/train $TRAIN_OPTS -s 13 $TRAIN /tmp/model
-~/Downloads/liblinear-1.96/predict $TEST /tmp/model /tmp/pred
+
+$LIBLINEAR_DIR/train $TRAIN_OPTS -s 13 $TRAIN /tmp/model
+$LIBLINEAR_DIR/predict $TEST /tmp/model /tmp/pred
 
 expected=($(cat $TEST | sed 's/ .*//' ))
 preds=($(</tmp/pred))
