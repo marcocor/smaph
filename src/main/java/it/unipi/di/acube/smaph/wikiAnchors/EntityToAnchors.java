@@ -63,7 +63,7 @@ public class EntityToAnchors {
 
 	private static EntityToAnchors fromDB() {
 		logger.info("Loading E2A database.");
-		return new EntityToAnchors(DBMaker
+		EntityToAnchors e2a = new EntityToAnchors(DBMaker
 				.newFileDB(new File(DATASET_FILENAME))
 				.transactionDisable()
 				.closeOnJvmShutdown()
@@ -71,6 +71,8 @@ public class EntityToAnchors {
 				.cacheLRUEnable()
 		        // .compressionEnable()
 		        .make());
+		logger.info("Loading E2A database done.");
+		return e2a;
 	}
 	
 	public EntityToAnchors(DB db) {
@@ -121,13 +123,13 @@ public class EntityToAnchors {
 			int tabIdx = line.indexOf('\t');
 			int idLastIdx = line.indexOf('\t', tabIdx + 1);
 			String anchor = line.substring(0, tabIdx);
-			Integer aId;
-			if (mdb.vocab.containsKey(anchor))
-				aId = mdb.vocab.get(anchor);
-			else{
-				aId = lastId;
-				mdb.vocab.put(anchor, lastId++);
+
+			if (!mdb.vocab.containsKey(anchor)){
+				mdb.vocab.put(anchor, lastId);
+				lastId++;
 			}
+				
+			Integer aId = mdb.vocab.get(anchor);
 			
 			int pageId = Integer
 					.parseInt(line.substring(tabIdx + 1, idLastIdx));
@@ -242,11 +244,13 @@ public class EntityToAnchors {
 	}
 	
 	public double getCommonness(String anchor, int entity){
-		return ((double)getFrequency(anchor, entity))/getAnchorGlobalOccurrences(anchor);
+		if (!vocab.containsKey(anchor))
+			return 0.0;
+		return ((double)getFrequency(anchor, entity)) / getAnchorGlobalOccurrences(anchor);
 	}
 
 	public double getCommonness(String anchor, int entity, int occurrences){
-		return ((double)occurrences)/getAnchorGlobalOccurrences(anchor);
+		return ((double) occurrences) / getAnchorGlobalOccurrences(anchor);
 	}
 
 	private int getFrequency(String anchor, int entity) {
