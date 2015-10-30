@@ -55,7 +55,7 @@ public class CollectiveLinkBack implements LinkBack {
 			HashMap<Annotation, HashMap<String, Double>> debugAnnotationFeatures = new HashMap<>();
 			HashMap<String, Double> debugBindingFeatures = new HashMap<>();
 			BindingFeaturePack features = new BindingFeaturePack(binding, query,
-					qi, acceptedEntities, wikiApi, debugAnnotationFeatures, debugBindingFeatures);
+					qi, wikiApi, debugAnnotationFeatures, debugBindingFeatures);
 			featurePacks.add(new Pair<HashSet<Annotation>, BindingFeaturePack>(binding, features));
 			if (debugger != null)
 				debugger.addLinkbackBindingFeatures(query, binding, debugAnnotationFeatures, debugBindingFeatures);
