@@ -16,38 +16,41 @@
 package it.cnr.isti.hpc.erd;
 
 import it.unipi.di.acube.BingInterface;
+import it.unipi.di.acube.batframework.data.MultipleAnnotation;
 import it.unipi.di.acube.batframework.problems.CandidatesSpotter;
 import it.unipi.di.acube.batframework.problems.Sa2WSystem;
-import it.unipi.di.acube.batframework.systemPlugins.TagmeAnnotator;
 import it.unipi.di.acube.batframework.systemPlugins.WATAnnotator;
-import it.unipi.di.acube.batframework.utils.*;
-import it.unipi.di.acube.batframework.data.MultipleAnnotation;
+import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
 import it.unipi.di.acube.smaph.EntityToVect;
 import it.unipi.di.acube.smaph.SmaphAnnotator;
 import it.unipi.di.acube.smaph.SmaphConfig;
 import it.unipi.di.acube.smaph.WATRelatednessComputer;
-import it.unipi.di.acube.smaph.boldfilters.*;
 import it.unipi.di.acube.smaph.learn.GenerateModel;
 import it.unipi.di.acube.smaph.learn.GenerateTrainingAndTest;
 import it.unipi.di.acube.smaph.learn.featurePacks.EntityFeaturePack;
-import it.unipi.di.acube.smaph.learn.models.entityfilters.*;
+import it.unipi.di.acube.smaph.learn.models.entityfilters.EntityFilter;
+import it.unipi.di.acube.smaph.learn.models.entityfilters.LibSvmEntityFilter;
+import it.unipi.di.acube.smaph.learn.models.entityfilters.NoEntityFilter;
 import it.unipi.di.acube.smaph.learn.normalizer.ZScoreFeatureNormalizer;
 import it.unipi.di.acube.smaph.linkback.DummyLinkBack;
 import it.unipi.di.acube.smaph.snippetannotationfilters.FrequencyAnnotationFilter;
 
-import java.io.*;
-import java.util.*;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Vector;
 
 public class Annotator {
 	public static final String SMAPH_PARAMS_FORMAT = "BING-auxAnnotator=%s&minLp=%.5f&sortBy=%s&method=%s&relatedness=%s&epsilon=%.5f&spotFilter=%s&spotFilterThreshold=%f&entityFilter=%s&svmEntityFilterModelBase=%s&emptyQueryFilter=%s&svmEmptyQueryFilterModelBase=%s&entitySources=%s";
 	private static WikipediaApiInterface wikiApi = null;
 	private static WikipediaToFreebase wikiToFreeb = null;
-	private static TagmeAnnotator tagme = null;
 	private static WATAnnotator wat = null;
 	private static LibSvmEntityFilter libSvmEntityFilter = null;
 	private String bingKey;
-	private String tagmeKey;
-	private String tagmeHost;
 	private static SmaphAnnotator collective = null;
 
 	public Annotator() {
@@ -176,14 +179,14 @@ public class Annotator {
 		if (runId.startsWith("miao")) {
 			String modelFileEF = GenerateModel.getModelFileNameBaseEF(
 					new int[] {1, 2, 3, 6, 7, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 33, 34, 35, 36, 37},
-					3.8, 5.2, 0.06, 0.01, 100.0)
+					3.8, 5.2, 0.01, 100.0)
 					+ "_" + "ANW-erd";
 
 			runId = String.format(SMAPH_PARAMS_FORMAT, "wikisense", 0.0,
 					"COMMONNESS", "base", "jaccard", 0.6f,
 					"Frequency", 0.06, "SvmEntityFilter",
 					modelFileEF, "NoEmptyQueryFilter", "null",
-					"Annotator+NormalSearch+WikiSearch10"); // <---------------------------
+					"NormalSearch+WikiSearch10+AnnotateSnippet25");
 		}
 		if (runId.equals("___reset_models")) {
 			System.out.println("Invalidating SVM models...");
@@ -210,7 +213,6 @@ public class Annotator {
 		String sortBy = "";
 		String method = "";
 		String relatedness = "";
-		String epsilon = "";
 		String spotFilterName = "";
 		String entityFilterName = "";
 		String svmEntityFilterModelBase = "";
@@ -224,8 +226,6 @@ public class Annotator {
 		int wikiSearchPages = 0;
 		boolean includeSourceAnnotatorCandidates = false;
 		int topKannotatorCandidates = 0;
-		boolean includeSourceRelatedSearch = false;
-		int topKRelatedSearch = 0;
 		boolean includeSourceAnnotateSnippet = false;
 		int topKSnippetsToAnnotate = 0;
 
@@ -253,18 +253,13 @@ public class Annotator {
 				int idWeight = Integer.parseInt(runId.substring(
 						"ftr_test_XXXX_XXX_".length(),
 						"ftr_test_XXXX_XXX_XXX".length()));
-				double edThr = Double.parseDouble(runId.substring(
-						"ftr_test_XXXX_XXX_XXX_".length(),
-						"ftr_test_XXXX_XXX_XXX_XXXX".length()));
 				int idParam = Integer.parseInt(runId.substring(
 						"ftr_test_XXXX_XXX_XXX_XXXX_".length(),
 						"ftr_test_XXXX_XXX_XXX_XXXX_XXX".length()));
 
 				String sourcesString = "";
 				for (char c : sources.toCharArray())
-					if (c == 'A')
-						sourcesString += "Annotator+";
-					else if (c == 'W')
+					if (c == 'W')
 						sourcesString += "WikiSearch10+";
 					else if (c == 'N')
 						sourcesString += "NormalSearch+";
@@ -278,11 +273,11 @@ public class Annotator {
 				double gamma = paramsToTest[idParam][0];
 				double C = paramsToTest[idParam][1];
 				String modelFileEF = GenerateModel.getModelFileNameBaseEF(
-						featuresSetsToTest[idftr], wPos, wNeg, edThr, gamma, C)
+						featuresSetsToTest[idftr], wPos, wNeg, gamma, C)
 						+ "_" + sources+"-erd";
 				runId = String.format(SMAPH_PARAMS_FORMAT, "wikisense", 0.0,
 						"COMMONNESS", "base", "jaccard", 0.6f,
-						"Frequency", edThr, "SvmEntityFilter",
+						"Frequency", "SvmEntityFilter",
 						modelFileEF, "NoEmptyQueryFilter", "null",
 						sourcesString);
 
@@ -306,8 +301,6 @@ public class Annotator {
 					relatedness = paramValue;
 				if (paramName.equals("spotFilterThreshold"))
 					spotFilterThreshold = Float.parseFloat(paramValue);
-				if (paramName.equals("epsilon"))
-					epsilon = paramValue;
 				if (paramName.equals("spotFilter"))
 					spotFilterName = paramValue;
 				if (paramName.equals("entityFilter"))
@@ -325,10 +318,6 @@ public class Annotator {
 			}
 			int sourcesCount = 0;
 			for (String src : entitySources) {
-				if (src.equals("Annotator")) {
-					includeSourceAnnotator = true;
-					sourcesCount++;
-				}
 				if (src.equals("NormalSearch")) {
 					includeSourceNormalSearch = true;
 					sourcesCount++;
@@ -339,26 +328,12 @@ public class Annotator {
 							.substring("WikiSearch".length()));
 					sourcesCount++;
 				}
-				if (src.startsWith("AnnotatorCandidates")) {
-					includeSourceAnnotatorCandidates = true;
-					topKannotatorCandidates = Integer.parseInt(src
-							.substring("AnnotatorCandidates".length()));
-					sourcesCount++;
-				}
-				if (src.startsWith("RelatedSearch")) {
-					includeSourceRelatedSearch = true;
-					topKRelatedSearch = Integer.parseInt(src
-							.substring("RelatedSearch".length()));
-					sourcesCount++;
-				}
 				if (src.startsWith("AnnotateSnippet")) {
 					includeSourceAnnotateSnippet = true;
 					topKSnippetsToAnnotate = Integer.parseInt(src
 							.substring("AnnotateSnippet".length()));
 					sourcesCount++;
-
 				}
-				
 			}
 			if (sourcesCount != entitySources.size())
 				throw new RuntimeException("Unrecognized Source.");
@@ -372,19 +347,6 @@ public class Annotator {
 							includeSourceWikiSearch, wikiSearchPages,
 							includeSourceAnnotatorCandidates,
 							topKannotatorCandidates, includeSourceAnnotateSnippet, topKSnippetsToAnnotate);
-
-			WATAnnotator auxAnnotatorService = new WATAnnotator(
-					"wikisense.mkapp.it", 80, method, sortBy, relatedness,
-					epsilon, minLp, false, false, false);
-			BoldFilter spotFilter = null;
-			if (spotFilterName.equals("RankWeight"))
-				spotFilter = new RankWeightBoldFilter(spotFilterThreshold);
-			else if (spotFilterName.equals("Frequency"))
-				spotFilter = new FrequencyBoldFilter(spotFilterThreshold);
-			else if (spotFilterName.equals("EditDistanceSpotFilter"))
-				spotFilter = new EditDistanceBoldFilter(spotFilterThreshold);
-			else if (spotFilterName.equals("NoSpotFilter"))
-				spotFilter = new NoBoldFilter();
 
 			EntityFilter entityFilter = null;
 			if (entityFilterName.equals("NoEntityFilter"))
@@ -410,15 +372,13 @@ public class Annotator {
 					"wikisense.mkapp.it", 80, "base", "COMMONNESS", "mw", "0.2",
 					"0.0", false, false, false);
 			List<Annotation> res = annotatePure(query, textID,
-					new SmaphAnnotator(auxAnnotatorService, spotFilter,
+					new SmaphAnnotator(
 							entityFilter, new ZScoreFeatureNormalizer(svmEntityFilterModelBase+".zscore", new EntityFeaturePack()), new DummyLinkBack(),
-							includeSourceAnnotator, includeSourceNormalSearch,
+							includeSourceNormalSearch,
 							includeSourceWikiSearch, wikiSearchPages,
-							includeSourceAnnotatorCandidates,
-							topKannotatorCandidates,
-							includeSourceRelatedSearch, topKRelatedSearch, includeSourceAnnotateSnippet, topKSnippetsToAnnotate, false, watDefault
+							includeSourceAnnotateSnippet, topKSnippetsToAnnotate, false, watDefault
 							, new FrequencyAnnotationFilter(0.03), wikiApi, bingKey));
-//TODO: we are not using titles!
+			//TODO: we are not using titles!
 			return res;
 		}
 

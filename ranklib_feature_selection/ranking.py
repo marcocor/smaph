@@ -6,6 +6,7 @@ import os.path
 import sys
 import hashlib
 import re
+from collections import Counter
 
 RANKLIB_PATH = "../libs/RankLib-2.5.jar"
 JAVA_OPTS_TRAIN="-Xmx3g"
@@ -72,6 +73,14 @@ def load_f1s(validate_file):
 				i += 1
 			qid_cand_to_score[(qid, i)] = f1
 	return qid_cand_to_score
+
+def get_ftr_chunks(dataset_file, fake_value=None):
+	res = Counter()
+	with open(dataset_file) as f:
+		for l in f:
+			set_features = tuple(sorted([p[0] for p in parse_line(l)[0] if p[1] != fake_value]))
+			res[set_features] += 1
+	return res
 
 def get_valid_ftrs(train_file):
 	diverse_features = set()

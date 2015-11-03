@@ -32,7 +32,6 @@ import it.unipi.di.acube.smaph.SmaphAnnotator;
 import it.unipi.di.acube.smaph.SmaphAnnotatorDebugger;
 import it.unipi.di.acube.smaph.SmaphConfig;
 import it.unipi.di.acube.smaph.WATRelatednessComputer;
-import it.unipi.di.acube.smaph.boldfilters.FrequencyBoldFilter;
 import it.unipi.di.acube.smaph.learn.models.entityfilters.NoEntityFilter;
 import it.unipi.di.acube.smaph.linkback.DummyLinkBack;
 import it.unipi.di.acube.smaph.snippetannotationfilters.FrequencyAnnotationFilter;
@@ -74,19 +73,14 @@ public class DumpCandidateEntities {
 		String bingKey = SmaphConfig.getDefaultBingKey();
 		
 		WATAnnotator.setCache("wikisense.cache");
-		WATAnnotator wat = new WATAnnotator("wikisense.mkapp.it", 80,
-				"base", "COMMONNESS", "jaccard", "0.6", "0.0"/* minlp */, false,
-				false, false);
-
 		WATAnnotator watSnippets= new WATAnnotator(
 				"wikisense.mkapp.it", 80, "base", "COMMONNESS", "mw", "0.2",
 				"0.0", false, false, false);
 
 		
 		SmaphAnnotatorDebugger debugger = new SmaphAnnotatorDebugger();
-		SmaphAnnotator ann = new SmaphAnnotator(wat, new FrequencyBoldFilter(
-				0.06f), new NoEntityFilter(), null, new DummyLinkBack(), false,
-				true, true, 10, false, -1, false, -1, true, 25, false,
+		SmaphAnnotator ann = new SmaphAnnotator(new NoEntityFilter(), null, new DummyLinkBack(), 
+				true, true, 10, true, 25, false,
 				watSnippets, new FrequencyAnnotationFilter(0.03), wikiApi,
 				bingKey);
 			

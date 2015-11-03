@@ -22,7 +22,6 @@ import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
 import it.unipi.di.acube.smaph.SmaphAnnotator;
 import it.unipi.di.acube.smaph.SmaphAnnotatorDebugger;
 import it.unipi.di.acube.smaph.SmaphConfig;
-import it.unipi.di.acube.smaph.boldfilters.FrequencyBoldFilter;
 import it.unipi.di.acube.smaph.learn.featurePacks.EntityFeaturePack;
 import it.unipi.di.acube.smaph.learn.models.entityfilters.LibSvmEntityFilter;
 import it.unipi.di.acube.smaph.learn.normalizer.ScaleFeatureNormalizer;
@@ -124,10 +123,9 @@ public class RestService {
 				"0", false, false, false);
 
 		try {
-			return new SmaphAnnotator(auxAnnotatorService,
-					new FrequencyBoldFilter(0.06f), new LibSvmEntityFilter(
-							modelBase), new ScaleFeatureNormalizer(modelBase+".range", new EntityFeaturePack()), new DummyLinkBack(), true, true, true,
-					10, false, -1, false, -1, false, 0, false, null, null, wikiApi, bingKey);
+			return new SmaphAnnotator(new LibSvmEntityFilter(
+							modelBase), new ScaleFeatureNormalizer(modelBase+".range", new EntityFeaturePack()), new DummyLinkBack(), true, true,
+					10, true, 25, false, auxAnnotatorService, null/*won't work*/, wikiApi, bingKey);
 		} catch (IOException e) {
 			e.printStackTrace();
 			throw new RuntimeException(e);

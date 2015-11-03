@@ -27,7 +27,6 @@ import it.unipi.di.acube.batframework.utils.FreebaseApi;
 import it.unipi.di.acube.batframework.utils.Pair;
 import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
 import it.unipi.di.acube.smaph.SmaphAnnotator;
-import it.unipi.di.acube.smaph.boldfilters.FrequencyBoldFilter;
 import it.unipi.di.acube.smaph.learn.featurePacks.AdvancedAnnotationFeaturePack;
 import it.unipi.di.acube.smaph.learn.featurePacks.AnnotationFeaturePack;
 import it.unipi.di.acube.smaph.learn.featurePacks.BindingFeaturePack;
@@ -309,31 +308,24 @@ public class GenerateTrainingAndTest {
 	}
 	private static SmaphAnnotator getDefaultBingAnnotatorParam(
 			WikipediaApiInterface wikiApi,
-			double editDistanceSpotFilterThreshold, 
 			String bingKey, EntityFilter entityFilter,FeatureNormalizer efNorm, LinkBack lb,
-			boolean s1, boolean s2, boolean s3, boolean s6) throws FileNotFoundException,
+			boolean s2, boolean s3, boolean s6) throws FileNotFoundException,
 			ClassNotFoundException, IOException {
-		WATAnnotator wikiSense = new WATAnnotator("wikisense.mkapp.it", 80,
-				"base", "COMMONNESS", "jaccard", "0.6", "0.0"/* minlp */, false,
-				false, false);
 
 		WATAnnotator watDefault = new WATAnnotator(
 				"wikisense.mkapp.it", 80, "base", "COMMONNESS", "mw", "0.2",
 				"0.0", false, false, false);
-		return new SmaphAnnotator(wikiSense,
-				new FrequencyBoldFilter((float)editDistanceSpotFilterThreshold),entityFilter
-				, efNorm, lb, s1, s2, s3,
-				10, false, 0, false, 0, s6, 25, false, watDefault, new FrequencyAnnotationFilter(0.03), wikiApi, bingKey);
+		return new SmaphAnnotator(entityFilter
+				, efNorm, lb, s2, s3,
+				10, s6, 25, false, watDefault, new FrequencyAnnotationFilter(0.03), wikiApi, bingKey);
 
 	}
 	public static SmaphAnnotator getDefaultBingAnnotatorGatherer(
 			WikipediaApiInterface wikiApi, 
-			double editDistanceSpotFilterThreshold, 
 			String bingKey, boolean s2, boolean s3, boolean s6) throws FileNotFoundException,
 			ClassNotFoundException, IOException {
 		return getDefaultBingAnnotatorParam( wikiApi, 
-				editDistanceSpotFilterThreshold,  
-				bingKey, new NoEntityFilter(), null, new DummyLinkBack(), false, s2, s3, s6);
+				bingKey, new NoEntityFilter(), null, new DummyLinkBack(), s2, s3, s6);
 	}
 	public static SmaphAnnotator getDefaultBingAnnotatorEF(
 			WikipediaApiInterface wikiApi, 
@@ -341,30 +333,26 @@ public class GenerateTrainingAndTest {
 			String bingKey, String EFModelFileBase) throws FileNotFoundException,
 			ClassNotFoundException, IOException {
 		return getDefaultBingAnnotatorParam( wikiApi, 
-				editDistanceSpotFilterThreshold, 
-				bingKey, new LibSvmEntityFilter(EFModelFileBase+".model"), new ZScoreFeatureNormalizer(EFModelFileBase+".zscore", new EntityFeaturePack()), new DummyLinkBack(), false, true, true, true);
+				bingKey, new LibSvmEntityFilter(EFModelFileBase+".model"), new ZScoreFeatureNormalizer(EFModelFileBase+".zscore", new EntityFeaturePack()), new DummyLinkBack(), true, true, true);
 	}
 	public static SmaphAnnotator getDefaultBingAnnotatorEFRegressor(
 			WikipediaApiInterface wikiApi, double editDistanceSpotFilterThreshold, String bingKey,
 			String EFModelFileBase) throws FileNotFoundException, ClassNotFoundException, IOException {
 		return getDefaultBingAnnotatorParam( wikiApi, 
-				editDistanceSpotFilterThreshold, 
-				bingKey, new NoEntityFilter(), null, new SingleEntityLinkBack(new LibSvmEntityFilter(EFModelFileBase), new ScaleFeatureNormalizer(EFModelFileBase+".range", new EntityFeaturePack()), wikiApi), false, true, true, true);
+				bingKey, new NoEntityFilter(), null, new SingleEntityLinkBack(new LibSvmEntityFilter(EFModelFileBase), new ScaleFeatureNormalizer(EFModelFileBase+".range", new EntityFeaturePack()), wikiApi), true, true, true);
 	}
 	public static SmaphAnnotator getDefaultBingAnnotatorIndividualLBLiblinear(
 			WikipediaApiInterface wikiApi, double editDistanceSpotFilterThreshold, String bingKey,
 			String AFModelFileBase, String AFScaleFile, double annotationFilterThreshold) throws FileNotFoundException, ClassNotFoundException, IOException {
 		return getDefaultBingAnnotatorParam( wikiApi, 
-				editDistanceSpotFilterThreshold, 
-				bingKey, new NoEntityFilter(), null, new IndividualAnnotationLinkBack(new LibLinearAnnotatorRegressor(AFModelFileBase), new ZScoreFeatureNormalizer(AFScaleFile, new AnnotationFeaturePack()), wikiApi, annotationFilterThreshold), false, true, true, true);
+				bingKey, new NoEntityFilter(), null, new IndividualAnnotationLinkBack(new LibLinearAnnotatorRegressor(AFModelFileBase), new ZScoreFeatureNormalizer(AFScaleFile, new AnnotationFeaturePack()), wikiApi, annotationFilterThreshold), true, true, true);
 	}
 	public static SmaphAnnotator getDefaultBingAnnotatorCollectiveLBLiblinear(
 			WikipediaApiInterface wikiApi, double editDistanceSpotFilterThreshold, String bingKey,
 			String lBmodel, String lBrange) throws FileNotFoundException, ClassNotFoundException, IOException {
 		CollectiveLinkBack lb = new CollectiveLinkBack(wikiApi, new DefaultBindingGenerator(), new LibLinearBindingRegressor(lBmodel), new ZScoreFeatureNormalizer(lBrange, new BindingFeaturePack()));
 		return getDefaultBingAnnotatorParam( wikiApi, 
-				editDistanceSpotFilterThreshold, 
-				bingKey, new NoEntityFilter(), null, lb, false, true, true, true);
+				bingKey, new NoEntityFilter(), null, lb, true, true, true);
 	}
 	public static SmaphAnnotator getDefaultBingAnnotatorCollectiveLBRanklibS6(
 			WikipediaApiInterface wikiApi, double editDistanceSpotFilterThreshold, String bingKey,
@@ -372,8 +360,7 @@ public class GenerateTrainingAndTest {
 		CollectiveLinkBack lb = new CollectiveLinkBack(wikiApi, new DefaultBindingGenerator(), new RankLibBindingRegressor(lBmodel), new ZScoreFeatureNormalizer(lbRange, new BindingFeaturePack()));
 		return getDefaultBingAnnotatorParam(
 				wikiApi, 
-				editDistanceSpotFilterThreshold, 
-				bingKey, new NoEntityFilter(), null, lb, false, false, false, true);
+				bingKey, new NoEntityFilter(), null, lb, false, false, true);
 	}
 	public static SmaphAnnotator getDefaultBingAnnotatorCollectiveLBRanklibAllSources(
 			WikipediaApiInterface wikiApi, double editDistanceSpotFilterThreshold, String bingKey,
@@ -381,15 +368,13 @@ public class GenerateTrainingAndTest {
 		CollectiveLinkBack lb = new CollectiveLinkBack(wikiApi, new DefaultBindingGenerator(), new RankLibBindingRegressor(lBmodel), new ZScoreFeatureNormalizer(lbRange, new BindingFeaturePack()));
 		return getDefaultBingAnnotatorParam(
 				wikiApi, 
-				editDistanceSpotFilterThreshold, 
-				bingKey, new NoEntityFilter(), null, lb, false, true, true, true);
+				bingKey, new NoEntityFilter(), null, lb, true, true, true);
 	}
 	public static SmaphAnnotator getDefaultBingAnnotatorIndividualAdvancedAnnotationRegressor(
 			WikipediaApiInterface wikiApi, double editDistanceSpotFilterThreshold, String bingKey,
 			String AAFModelFileBase, String AAFScaleFile, double annotationFilterThreshold, double anchorMaxED) throws FileNotFoundException, ClassNotFoundException, IOException {
 		return getDefaultBingAnnotatorParam( wikiApi, 
-				editDistanceSpotFilterThreshold, 
-				bingKey, new NoEntityFilter(), null, new AdvancedIndividualLinkback(new LibLinearAnnotatorRegressor(AAFModelFileBase), new ZScoreFeatureNormalizer(AAFScaleFile, new AdvancedAnnotationFeaturePack()), wikiApi, annotationFilterThreshold, anchorMaxED), false, false, false, true);
+				bingKey, new NoEntityFilter(), null, new AdvancedIndividualLinkback(new LibLinearAnnotatorRegressor(AAFModelFileBase), new ZScoreFeatureNormalizer(AAFScaleFile, new AdvancedAnnotationFeaturePack()), wikiApi, annotationFilterThreshold, anchorMaxED), false, false, true);
 	}
 
 }

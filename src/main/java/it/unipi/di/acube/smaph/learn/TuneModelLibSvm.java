@@ -83,7 +83,7 @@ public class TuneModelLibSvm {
 		param.weight = new double[] { wPos, wNeg };
 		return param;
 	}
-	
+
 	public static svm_parameter getParametersLB(
 			double gamma, double c) {
 		svm_parameter param = new svm_parameter();
@@ -105,7 +105,7 @@ public class TuneModelLibSvm {
 		return param;	}
 
 	public static svm_parameter getParametersEFRegressor(double gamma, double c) {
-		
+
 		svm_parameter params = getParametersEF (-1, -1, gamma, c);
 		params.svm_type = svm_parameter.EPSILON_SVR;
 		return params;
@@ -145,41 +145,39 @@ public class TuneModelLibSvm {
 		WikipediaApiInterface wikiApi = new WikipediaApiInterface("wid.cache",
 				"redirect.cache");
 		FreebaseApi freebApi = new FreebaseApi(freebKey, freebCache);
-			
+
 		Vector<ModelConfigurationResult> bestEFModels = new Vector<>();
 		OptDataset opt = OptDataset.SMAPH_DATASET;
-		for (double boldFilterThr = 0.06; boldFilterThr <= 0.06; boldFilterThr += 0.1) {
-			WikipediaToFreebase wikiToFreebase = new WikipediaToFreebase(
-					"mapdb");
+		WikipediaToFreebase wikiToFreebase = new WikipediaToFreebase(
+				"mapdb");
 
-			SmaphAnnotator bingAnnotator = GenerateTrainingAndTest
-					.getDefaultBingAnnotatorGatherer(wikiApi, 
-							boldFilterThr, bingKey, true, true, true);
+		SmaphAnnotator bingAnnotator = GenerateTrainingAndTest
+				.getDefaultBingAnnotatorGatherer(wikiApi, 
+						bingKey, true, true, true);
 
-			ExampleGatherer<Tag, HashSet<Tag>> trainEntityFilterGatherer = new ExampleGatherer<Tag, HashSet<Tag>>();
-			ExampleGatherer<Tag, HashSet<Tag>> develEntityFilterGatherer = new ExampleGatherer<Tag, HashSet<Tag>>();
-			
-			GenerateTrainingAndTest.gatherExamplesTrainingAndDevel(
-					bingAnnotator, trainEntityFilterGatherer,
-					develEntityFilterGatherer, null, null, null, null, null,null, null,
-					null, null, null, null, null, wikiApi, wikiToFreebase, freebApi, opt,-1);
-			int[] ftrToInclude = { 2, 3, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 33, 34, 35, 36, 37,39,40,41,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66};
-			//int[] ftrToInclude = { 2, 3, 15};
-					
-		
-			Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult> modelAndStatsEF = trainIterative(
-					trainEntityFilterGatherer, develEntityFilterGatherer,
-					OptimizaionProfiles.MAXIMIZE_MACRO_F1, -1.0,
-					ftrToInclude, wikiApi);
-			for (ModelConfigurationResult res : modelAndStatsEF.first)
-				System.out.println(res.getReadable());
+		ExampleGatherer<Tag, HashSet<Tag>> trainEntityFilterGatherer = new ExampleGatherer<Tag, HashSet<Tag>>();
+		ExampleGatherer<Tag, HashSet<Tag>> develEntityFilterGatherer = new ExampleGatherer<Tag, HashSet<Tag>>();
 
-			bestEFModels.add(modelAndStatsEF.second);
-			System.gc();
-		}
+		GenerateTrainingAndTest.gatherExamplesTrainingAndDevel(
+				bingAnnotator, trainEntityFilterGatherer,
+				develEntityFilterGatherer, null, null, null, null, null,null, null,
+				null, null, null, null, null, wikiApi, wikiToFreebase, freebApi, opt,-1);
+		int[] ftrToInclude = { 2, 3, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 33, 34, 35, 36, 37,39,40,41,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66};
+		//int[] ftrToInclude = { 2, 3, 15};
 
-		for (ModelConfigurationResult modelAndStatsEF : bestEFModels)
-			System.out.println("Best EF:" + modelAndStatsEF.getReadable());
+
+		Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult> modelAndStatsEF = trainIterative(
+				trainEntityFilterGatherer, develEntityFilterGatherer,
+				OptimizaionProfiles.MAXIMIZE_MACRO_F1, -1.0,
+				ftrToInclude, wikiApi);
+		for (ModelConfigurationResult res : modelAndStatsEF.first)
+			System.out.println(res.getReadable());
+
+		bestEFModels.add(modelAndStatsEF.second);
+		System.gc();
+
+		for (ModelConfigurationResult modelAndStatsEFi : bestEFModels)
+			System.out.println("Best EF:" + modelAndStatsEFi.getReadable());
 
 		System.out.println("Flushing Bing API...");
 
@@ -203,7 +201,7 @@ public class TuneModelLibSvm {
 			ExampleGatherer<Tag, HashSet<Tag>> trainGatherer,
 			ExampleGatherer<Tag, HashSet<Tag>> develGatherer,
 			OptimizaionProfiles optProfile, double optProfileThreshold, int[] featuresToInclude,
-			 WikipediaApiInterface wikiApi) {
+			WikipediaApiInterface wikiApi) {
 		Vector<ModelConfigurationResult> globalScoreboard = new Vector<>();
 		double bestwPos;
 		double bestwNeg;
@@ -255,22 +253,22 @@ public class TuneModelLibSvm {
 			ModelConfigurationResult bestFtr;
 			{
 				Vector<ModelConfigurationResult> scoreboardFtrSelection = new Vector<>();
-				
-				  new AblationFeatureSelector(bestwPos, bestwNeg, bestGamma, bestC,
-				  trainGatherer, develGatherer, featuresToInclude,
-				  optProfile, optProfileThreshold, scoreboardFtrSelection, wikiApi)
-				  .run();
-				 
-/*				new IncrementalFeatureSelector(bestwPos, bestwNeg, bestGamma,
+
+				new AblationFeatureSelector(bestwPos, bestwNeg, bestGamma, bestC,
+						trainGatherer, develGatherer, featuresToInclude,
+						optProfile, optProfileThreshold, scoreboardFtrSelection, wikiApi)
+				.run();
+
+				/*				new IncrementalFeatureSelector(bestwPos, bestwNeg, bestGamma,
 						bestC, trainGatherer, develGatherer, optProfile,
 						optProfileThreshold, scoreboardFtrSelection, wikiApi)
 						.run();
-*/				bestFtr = ModelConfigurationResult
-						.findBest(scoreboardFtrSelection, optProfile,
-								optProfileThreshold);
-				globalScoreboard.addAll(scoreboardFtrSelection);
-				System.err.printf("Done feature selection (iteration %d).%n",
-						iteration);
+				 */				bestFtr = ModelConfigurationResult
+						 .findBest(scoreboardFtrSelection, optProfile,
+								 optProfileThreshold);
+				 globalScoreboard.addAll(scoreboardFtrSelection);
+				 System.err.printf("Done feature selection (iteration %d).%n",
+						 iteration);
 			}
 			int[] bestFeatures = bestFtr.getFeatures();
 
@@ -283,7 +281,7 @@ public class TuneModelLibSvm {
 							finewNegMin, finewNegMax, -1, bestGamma, bestC, fineSteps,
 							bestFeatures, trainGatherer,
 							develGatherer, optProfile, scoreboardWeightsTuning, wikiApi)
-							.call();
+					.call();
 				} catch (Exception e) {
 					e.printStackTrace();
 					throw new RuntimeException();
@@ -324,7 +322,7 @@ public class TuneModelLibSvm {
 				System.err.printf("Done weights tuning (iteration %d).%n",
 						iteration);
 			}
-			
+
 			ModelConfigurationResult newBest = ModelConfigurationResult
 					.findBest(globalScoreboard, optProfile, optProfileThreshold);
 			if (bestResult != null
@@ -344,7 +342,7 @@ public class TuneModelLibSvm {
 	}
 
 	public static class ParameterTester implements
-			Callable<ModelConfigurationResult> {
+	Callable<ModelConfigurationResult> {
 		private double wPos, wNeg, gamma, C;
 		private ExampleGatherer<Tag, HashSet<Tag>> trainGatherer;
 		private ExampleGatherer<Tag, HashSet<Tag>> testGatherer;
@@ -368,9 +366,9 @@ public class TuneModelLibSvm {
 			this.C = C;
 			this.wikiApi = wikiApi;
 		}
-		
+
 		public static MetricsResultSet testEntityFilter(EntityFilter model, ExampleGatherer<Tag, HashSet<Tag>> testGatherer, int[] features, FeatureNormalizer scaleFn, SolutionComputer<Tag, HashSet<Tag>> sc){
-			
+
 			List<Pair<Vector<Pair<FeaturePack<Tag>, Tag>>, HashSet<Tag>>> ftrsAndDatasAndGolds = testGatherer.getDataAndFeaturePacksAndGoldOnePerInstance();
 
 			List<HashSet<Tag>> golds = new Vector<>();
@@ -390,7 +388,7 @@ public class TuneModelLibSvm {
 			}
 		}
 
-		
+
 		public static MetricsResultSet testAnnotationRegressorModel(AnnotationRegressor model, ExampleGatherer<Annotation, HashSet<Annotation>> testGatherer, FeatureNormalizer scaleFn, SolutionComputer<Annotation, HashSet<Annotation>> sc) throws IOException{
 			List<HashSet<Annotation>> golds = new Vector<>();
 			List<List<Pair<Annotation, Double>>> candidateAndPreds = new Vector<>();
@@ -403,7 +401,7 @@ public class TuneModelLibSvm {
 					candidateAndPred.add(new Pair<Annotation, Double>(p.second, predictedScore));
 				}
 			}
-			
+
 			try {
 				return sc.getResults(candidateAndPreds, golds);
 			} catch (IOException e) {
@@ -417,23 +415,23 @@ public class TuneModelLibSvm {
 			for (Pair<Vector<Pair<FeaturePack<HashSet<Annotation>>, HashSet<Annotation>>>, HashSet<Annotation>> ftrsAndDatasAndGold : testGatherer.getDataAndFeaturePacksAndGoldOnePerInstance()) {
 				Vector<Pair<FeaturePack<HashSet<Annotation>>, HashSet<Annotation>>> ftrsAndBindings = ftrsAndDatasAndGold.first;
 				HashSet<Annotation> gold = ftrsAndDatasAndGold.second; 
-				
+
 				golds.add(gold);
-				
+
 				List<FeaturePack<HashSet<Annotation>>> packs = new Vector<>();
 				for (Pair<FeaturePack<HashSet<Annotation>>, HashSet<Annotation>> ftrsAndBinding: ftrsAndBindings)
 					packs.add(ftrsAndBinding.first);
-				
+
 				double[] scores = model.getScores(packs, scaleFn);
 				if (scores.length != ftrsAndDatasAndGold.first.size())
 					throw new RuntimeException("Invalid scores retrieved.");
-				
+
 				List<Pair<HashSet<Annotation>, Double>> candidateAndPred = new Vector<>();
 				candidateAndPreds.add(candidateAndPred);
 				for (int i = 0; i < scores.length; i++)
 					candidateAndPred.add(new Pair<HashSet<Annotation>, Double>(ftrsAndBindings.get(i).second, scores[i]));
 			}
-			
+
 			try {
 				return sc.getResults(candidateAndPreds, golds);
 			} catch (IOException e) {
@@ -455,7 +453,7 @@ public class TuneModelLibSvm {
 			EntityFilter ef = new LibSvmEntityFilter(model);
 
 			MetricsResultSet metrics = testEntityFilter(ef, testGatherer, this.features, scaleFn, new SolutionComputer.TagSetSolutionComputer(wikiApi));
-			
+
 			int tp = metrics.getGlobalTp();
 			int fp = metrics.getGlobalFp();
 			int fn = metrics.getGlobalFn();
@@ -499,12 +497,12 @@ public class TuneModelLibSvm {
 					- cMin)))
 				throw new IllegalArgumentException(String.format(
 						"k must be between 0.0 and %f. Got %f", cMax
-								- cMin, kappaC));
+						- cMin, kappaC));
 			if (!(kappaGamma > 0 && (gammaMax - gammaMin == 0 || kappaGamma <= gammaMax
 					- gammaMin)))
 				throw new IllegalArgumentException(String.format(
 						"k must be between 0.0 and %f. Got %f", gammaMax
-								- gammaMin, kappaGamma));
+						- gammaMin, kappaGamma));
 			this.gammaMin = gammaMin;
 			this.gammaMax = gammaMax;
 			this.cMin = cMin;
@@ -557,7 +555,7 @@ public class TuneModelLibSvm {
 		}
 
 	}
-		
+
 	static class WeightSelector implements Callable<Pair<Double, Double>> {
 		private double wPosMin, wPosMax, wNegMin, wNegMax, gamma, C;
 		private double optProfileThreshold;
@@ -587,12 +585,12 @@ public class TuneModelLibSvm {
 					- wPosMin)))
 				throw new IllegalArgumentException(String.format(
 						"k must be between 0.0 and %f. Got %f", wPosMax
-								- wPosMin, kappaPos));
+						- wPosMin, kappaPos));
 			if (!(kappaNeg > 0 && (wNegMax - wNegMin == 0 || kappaNeg <= wNegMax
 					- wNegMin)))
 				throw new IllegalArgumentException(String.format(
 						"k must be between 0.0 and %f. Got %f", wNegMax
-								- wNegMin, kappaNeg));
+						- wNegMin, kappaNeg));
 			this.wNegMin = wNegMin;
 			this.wNegMax = wNegMax;
 			this.wPosMin = wPosMin;
@@ -700,7 +698,7 @@ public class TuneModelLibSvm {
 							continue;
 						else
 							pickedFtrsIteration[j++] = bestBase.getFeatures()[i];
-							
+
 					try {
 						Future<ModelConfigurationResult> future = execServ
 								.submit(new ParameterTester(wPos, wNeg,
