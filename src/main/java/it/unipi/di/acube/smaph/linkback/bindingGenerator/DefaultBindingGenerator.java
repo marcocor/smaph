@@ -388,10 +388,10 @@ public class DefaultBindingGenerator implements BindingGenerator {
 			QueryInformation qi, Set<Tag> acceptedEntities,
 			WikipediaApiInterface wikiApi) {
 		HashMap<Tag, String[]> entityToBolds;
-		entityToBolds = SmaphUtils.getEntitiesToBoldsList(qi.entityToBoldsS6,
+		entityToBolds = SmaphUtils.getEntitiesToBoldsList(qi.entityToBoldsSA,
 				qi.allCandidates());
 		HashMap<Tag, String> entitiesToTitles = SmaphUtils.getEntitiesToTitles(acceptedEntities, wikiApi);
-		return getAllBindings(query, entityToBolds, qi.entityToBoldS2S3, entitiesToTitles, acceptedEntities);
+		return getAllBindings(query, entityToBolds, qi.entityToBoldNS, entitiesToTitles, acceptedEntities);
 		
 	}
 }

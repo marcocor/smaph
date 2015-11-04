@@ -127,9 +127,9 @@ public class EntityFeaturePack extends FeaturePack<Tag> {
 		//Generate features for entities found by the Snippet annotation
 		if (qi.includeSourceSnippets && qi.candidatesSA.contains(candidate)) {
 			HashMap<String, Double> ESFeatures = generateEntityFeaturesSnippet(
-					query, qi.webTotalNS, qi.resultsCount,
-					qi.tagToMentionsSA.get(candidate), qi.tagToBoldsSA.get(candidate), qi.tagToRanksSA.get(candidate),
-					qi.tagToAdditionalInfosSA.get(candidate), candidate.getConcept(), wikiApi);
+					query, qi.webTotalNS, qi.resultsCountNS,
+					qi.entityToMentionsSA.get(candidate), qi.entityToBoldsSA.get(candidate), qi.entityToRanksSA.get(candidate),
+					qi.entityToAdditionalInfosSA.get(candidate), candidate.getConcept(), wikiApi);
 			res.add(ESFeatures);
 
 		}

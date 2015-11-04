@@ -456,29 +456,29 @@ public class SmaphAnnotator implements Sa2WSystem {
 
 		/** Search the query on bing */
 		List<Pair<String, Integer>> bingBoldsAndRankNS = null;
-		List<String> urls = null;
-		List<String> relatedSearchRes = null;
+		List<String> urlsNS = null;
+		List<String> relatedSearchNS = null;
 		Triple<Integer, Double, JSONObject> resCountAndWebTotalNS = null;
-		int resultsCount = -1;
+		int resultsCountNS = -1;
 		double webTotalNS = Double.NaN;
 		HashMap<Integer, Integer> rankToIdNS = null;
 		HashMap<Integer, HashSet<String>> rankToBoldsNS = null;
-		List<Pair<String, Vector<Pair<Integer, Integer>>>> snippetsToBolds = null;
-		HashMap<Tag, String[]> entityToBoldsS2S3 = new HashMap<>();
+		List<Pair<String, Vector<Pair<Integer, Integer>>>> snippetsToBoldsNS = null;
+		HashMap<Tag, String[]> entityToBoldsNS = new HashMap<>();
 		List<String> allBoldsNS = null;
 		Set<Tag> candidatesNS = null;
 		if (includeSourceWikiSearch || includeSourceNormalSearch || includeSourceSnippets) {
 			bingBoldsAndRankNS = new Vector<>();
-			urls = new Vector<>();
-			relatedSearchRes = new Vector<>();
-			snippetsToBolds = new Vector<>();
+			urlsNS = new Vector<>();
+			relatedSearchNS = new Vector<>();
+			snippetsToBoldsNS = new Vector<>();
 			candidatesNS = new HashSet<>();
 			resCountAndWebTotalNS = takeBingData(query, bingBoldsAndRankNS,
-					urls, relatedSearchRes, snippetsToBolds, Integer.MAX_VALUE,
+					urlsNS, relatedSearchNS, snippetsToBoldsNS, Integer.MAX_VALUE,
 					false);
-			resultsCount = resCountAndWebTotalNS.getLeft();
+			resultsCountNS = resCountAndWebTotalNS.getLeft();
 			webTotalNS = resCountAndWebTotalNS.getMiddle();
-			rankToIdNS = urlsToRankID(urls);
+			rankToIdNS = urlsToRankID(urlsNS);
 			rankToBoldsNS = new HashMap<>();
 			allBoldsNS = SmaphUtils.boldPairsToListLC(bingBoldsAndRankNS);
 			SmaphUtils.mapRankToBoldsLC(bingBoldsAndRankNS, rankToBoldsNS, null);
@@ -486,14 +486,14 @@ public class SmaphAnnotator implements Sa2WSystem {
 				String[] bolds = rankToBoldsNS.containsKey(rank) ? rankToBoldsNS
 						.get(rank).toArray(new String[] {}) : new String[] {};
 				Tag candidate = new Tag(rankToIdNS.get(rank));
-				entityToBoldsS2S3.put(candidate, bolds);
+				entityToBoldsNS.put(candidate, bolds);
 				candidatesNS.add(candidate);		
 			}
 
 			if (debugger != null) {
 				debugger.addBoldPositionEditDistance(query, bingBoldsAndRankNS);
-				debugger.addSnippets(query, snippetsToBolds);
-				debugger.addSource2SearchResult(query, rankToIdNS, urls);
+				debugger.addSnippets(query, snippetsToBoldsNS);
+				debugger.addSource2SearchResult(query, rankToIdNS, urlsNS);
 				debugger.addBingResponseNormalSearch(query,
 						resCountAndWebTotalNS.getRight());
 			}
@@ -528,40 +528,42 @@ public class SmaphAnnotator implements Sa2WSystem {
 		}
 
 		/** Annotate snippets */
-		HashMap<Tag,List<Integer>> tagToRanks = null;
-		HashMap<Tag,List<String>> tagToMentions = null;
-		HashMap<Tag,List<String>> tagToBolds = null;
-		HashMap<Tag,List<HashMap<String,Double>>> tagToAdditionalInfos = null;
+		HashMap<Tag,List<Integer>> entityToRanksSA = null;
+		HashMap<Tag,List<String>> entityToMentionsSA = null;
+		HashMap<Tag,List<String>> entityToBoldsSA = null;
+		HashMap<Tag,List<HashMap<String,Double>>> entiyToAdditionalInfosSA = null;
 		HashSet<Tag> filteredAnnotationsSA = null;
 		if (includeSourceSnippets){
 			List<List<Pair<ScoredAnnotation, HashMap<String, Double>>>> snippetAnnotations = new Vector<>();
-			tagToBolds = new HashMap<>();
-			annotateSnippets(snippetsToBolds, snippetAnnotations, tagToBolds);
-			tagToRanks = getSnippetAnnotationRanks(snippetAnnotations);
-			tagToMentions = getSnippetMentions(snippetAnnotations, snippetsToBolds);
-			tagToAdditionalInfos = getSnippetAdditionalInfo(snippetAnnotations);
-			filteredAnnotationsSA = snippetAnnotationFilter.filterAnnotations(tagToRanks, resultsCount);
+			entityToBoldsSA = new HashMap<>();
+			annotateSnippets(snippetsToBoldsNS, snippetAnnotations, entityToBoldsSA);
+			entityToRanksSA = getSnippetAnnotationRanks(snippetAnnotations);
+			entityToMentionsSA = getSnippetMentions(snippetAnnotations, snippetsToBoldsNS);
+			entiyToAdditionalInfosSA = getSnippetAdditionalInfo(snippetAnnotations);
+			filteredAnnotationsSA = snippetAnnotationFilter.filterAnnotations(entityToRanksSA, resultsCountNS);
 		}
-
 
 		QueryInformation qi = new QueryInformation();
 		qi.includeSourceNormalSearch = includeSourceNormalSearch;
 		qi.includeSourceWikiSearch = includeSourceWikiSearch;
 		qi.includeSourceSnippets = includeSourceSnippets;
+
 		qi.idToRankNS = SmaphUtils.inverseMap(rankToIdNS);
-		qi.entityToBoldsS6 = tagToBolds;
-		qi.entityToBoldS2S3 = entityToBoldsS2S3;
+		qi.entityToBoldNS = entityToBoldsNS;
 		qi.webTotalNS = webTotalNS;
 		qi.allBoldsNS = allBoldsNS;
 		qi.bingBoldsAndRankNS = bingBoldsAndRankNS;
+		qi.resultsCountNS = resultsCountNS;
+		
 		qi.annTitlesToIdAndRankWS = annTitlesToIdAndRankWS;
 		qi.webTotalWS = webTotalWS;
 		qi.bingBoldsAndRankWS = bingBoldsAndRankWS;
-		qi.resultsCount = resultsCount;
-		qi.tagToMentionsSA = tagToMentions;
-		qi.tagToBoldsSA = tagToBolds;
-		qi.tagToRanksSA = tagToRanks;
-		qi.tagToAdditionalInfosSA = tagToAdditionalInfos;
+		
+		qi.entityToBoldsSA = entityToBoldsSA;
+		qi.entityToMentionsSA = entityToMentionsSA;
+		qi.entityToRanksSA = entityToRanksSA;
+		qi.entityToAdditionalInfosSA = entiyToAdditionalInfosSA;
+		
 		qi.candidatesSA = filteredAnnotationsSA;
 		qi.candidatesNS = candidatesNS;
 		qi.candidatesWS = candidatesWS;

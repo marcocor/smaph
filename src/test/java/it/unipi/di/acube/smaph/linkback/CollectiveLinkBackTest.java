@@ -28,8 +28,8 @@ public class CollectiveLinkBackTest {
 		entityToBolds.put(new Tag(3564116), Arrays.asList("set", "setting"));
 
 		QueryInformation qi = new QueryInformation();
-		qi.entityToBoldsS6 = entityToBolds;
-		qi.entityToBoldS2S3 = new HashMap<Tag,String[]>();
+		qi.entityToBoldsSA = entityToBolds;
+		qi.entityToBoldNS = new HashMap<Tag,String[]>();
 		List<HashSet<Annotation>> possibleBindings = bg.getBindings(query, qi, new HashSet<Tag>(entityToBolds.keySet()), new WikipediaApiInterface(null, null));
 
 		for (HashSet<Annotation> binding : possibleBindings) {

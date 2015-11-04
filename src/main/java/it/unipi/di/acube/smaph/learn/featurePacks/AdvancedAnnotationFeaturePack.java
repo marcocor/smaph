@@ -55,8 +55,8 @@ public class AdvancedAnnotationFeaturePack extends FeaturePack<Annotation> {
 		List<Pair<String, Integer>> anchorAndOccurrencies = EntityToAnchors.e2a().getAnchors(a.getConcept());
 		HashMap<String, Double> entityFeatures = mergeFeatureVectors(EntityFeaturePack.getFeatures(entity, query, qi, wikiApi)); //TODO: don't like this.
 		List<String> bolds = null;
-		if (qi.entityToBoldsS6.containsKey(entity))
-			bolds = qi.entityToBoldsS6.get(entity);
+		if (qi.entityToBoldsSA.containsKey(entity))
+			bolds = qi.entityToBoldsSA.get(entity);
 
 		String title, urlEncodedTitle;
 		try {

@@ -30,7 +30,7 @@ public class BaselineLinkBack implements LinkBack {
 	@Override
 	public HashSet<ScoredAnnotation> linkBack(String query,
 			HashSet<Tag> acceptedEntities, QueryInformation qi) {
-		Map<Tag, List<String>> entitiesToBolds = qi.entityToBoldsS6.entrySet().stream()
+		Map<Tag, List<String>> entitiesToBolds = qi.entityToBoldsSA.entrySet().stream()
 		        .filter(p -> acceptedEntities.contains(p.getKey()))
 		        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 

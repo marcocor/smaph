@@ -31,7 +31,7 @@ public class BaselineLinkBackTest {
 			HashSet<Tag> acceptedEntities = new HashSet<Tag>(boldsToEntities.keySet());
 
 			QueryInformation qi = new QueryInformation();
-			qi.entityToBoldsS6 = boldsToEntities;
+			qi.entityToBoldsSA = boldsToEntities;
 			
 			HashSet<ScoredAnnotation> res = lb.linkBack(query, acceptedEntities, qi);
 			Vector<ScoredAnnotation> resVect = new Vector<>(res);
@@ -56,7 +56,7 @@ public class BaselineLinkBackTest {
 			HashSet<Tag> acceptedEntities = new HashSet<Tag>(boldsToEntities.keySet());
 
 			QueryInformation qi = new QueryInformation();
-			qi.entityToBoldsS6 = boldsToEntities;
+			qi.entityToBoldsSA = boldsToEntities;
 
 			HashSet<ScoredAnnotation> res = lb.linkBack(query,
 					acceptedEntities, qi);
