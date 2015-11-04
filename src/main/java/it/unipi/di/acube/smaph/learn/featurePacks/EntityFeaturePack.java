@@ -17,14 +17,27 @@ import org.apache.commons.lang3.tuple.Triple;
 
 public class EntityFeaturePack extends FeaturePack<Tag> {
 	private static final long serialVersionUID = 1L;
-
-	public EntityFeaturePack(Tag candidate, String query, QueryInformation qi, WikipediaApiInterface wikiApi) {
-		super(getFeatures(candidate, query, qi, wikiApi));
+	
+	public static List<EntityFeaturePack> getAllFeaturePacks(Tag candidate, String query, QueryInformation qi, WikipediaApiInterface wikiApi){
+		List<EntityFeaturePack> res = new Vector<>();
+		for (HashMap<String, Double> ftrs : getFeatures(candidate, query, qi, wikiApi))
+			res.add(new EntityFeaturePack(ftrs));
+		return res;
 	}
+
+	/*public EntityFeaturePack(Tag candidate, String query, QueryInformation qi, WikipediaApiInterface wikiApi) {
+		super(getFeatures(candidate, query, qi, wikiApi));
+	}*/
+
+	//TODO: delete!
+	public EntityFeaturePack(HashMap<String, Double> ftrs) {
+	   super(ftrs);
+    }
 
 	public EntityFeaturePack() {
 		super(null);
 	}
+
 
 	public static String[] ftrNames = new String[] {
 		"is_s1", // 1
@@ -107,7 +120,8 @@ public class EntityFeaturePack extends FeaturePack<Tag> {
 		return ftrNames;
 	}
 
-	public static HashMap<String, Double> getFeatures(Tag candidate, String query, QueryInformation qi, WikipediaApiInterface wikiApi){
+	public static List<HashMap<String, Double>> getFeatures(Tag candidate, String query, QueryInformation qi, WikipediaApiInterface wikiApi){
+		List<HashMap<String, Double>> res = new Vector<>();
 		int wid = candidate.getConcept();
 		// Filter and add entities found in the normal search
 		if (qi.includeSourceNormalSearch && qi.candidatesNS.contains(candidate)){
@@ -115,7 +129,7 @@ public class EntityFeaturePack extends FeaturePack<Tag> {
 			HashMap<String, Double> ESFeatures = generateEntityFeaturesSearch(
 					query, wid, rank,  qi.webTotalNS,  qi.webTotalWS,
 					qi.bingBoldsAndRankNS, 2, wikiApi);
-			return ESFeatures; //TODO: merge with others instead of returning
+			res.add(ESFeatures); //TODO: merge with others instead of returning
 		}
 
 		// Filter and add entities found in the WikipediaSearch
@@ -127,7 +141,7 @@ public class EntityFeaturePack extends FeaturePack<Tag> {
 					HashMap<String, Double> ESFeatures = generateEntityFeaturesSearch(
 							query, wid, rank, qi.webTotalNS, qi.webTotalWS,
 							qi.bingBoldsAndRankWS, 3, wikiApi);
-					return ESFeatures;
+					res.add(ESFeatures);
 				}
 			}
 		}
@@ -138,10 +152,12 @@ public class EntityFeaturePack extends FeaturePack<Tag> {
 					query, qi.webTotalNS, qi.resultsCount,
 					qi.tagToMentionsSA.get(candidate), qi.tagToBoldsSA.get(candidate), qi.tagToRanksSA.get(candidate),
 					qi.tagToAdditionalInfosSA.get(candidate), candidate.getConcept(), wikiApi);
-			return ESFeatures;
+			res.add(ESFeatures);
 
 		}
-		throw new RuntimeException(wid + " is not a candidate for query " + query);
+		if (res.isEmpty())
+			throw new RuntimeException(wid + " is not a candidate for query " + query);
+		return res;
 	}
 
 	@Override

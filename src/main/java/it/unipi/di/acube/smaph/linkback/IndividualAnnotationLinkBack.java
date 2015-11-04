@@ -67,10 +67,15 @@ public class IndividualAnnotationLinkBack implements LinkBack {
 
 		List<Pair<Annotation, Double>> scoreAndAnnotations = new Vector<>();
 		for (Annotation a : getAnnotations(query, acceptedEntities, qi)) {
-			HashMap<String, Double> entityFeatures = EntityFeaturePack.getFeatures(new Tag(a.getConcept()), query, qi, wikiApi);
-			double score = ar.predictScore(new AnnotationFeaturePack(a, query, stemmer,
-					entityFeatures, entityToBolds, entityToTitle), annFn);
-			scoreAndAnnotations.add(new Pair<Annotation, Double>(a, score));
+			
+			double bestScore = Double.NEGATIVE_INFINITY;
+			for (HashMap<String, Double> entityFeatures : EntityFeaturePack.getFeatures(new Tag(a.getConcept()), query, qi, wikiApi)) {
+				double score = ar.predictScore(new AnnotationFeaturePack(a, query, stemmer,
+						entityFeatures, entityToBolds, entityToTitle), annFn);
+				if (score > bestScore)
+					bestScore = score;
+			}
+			scoreAndAnnotations.add(new Pair<Annotation, Double>(a, bestScore));
 		}
 
 		return getResult(scoreAndAnnotations, threshold);

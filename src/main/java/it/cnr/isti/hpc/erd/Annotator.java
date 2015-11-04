@@ -399,7 +399,7 @@ public class Annotator {
 
 			SmaphAnnotator smaph = null;
 			try {
-				smaph = GenerateTrainingAndTest.getDefaultBingAnnotatorIndividualLBLiblinear(wikiApi, 0.06, bingKey, AFmodel, AFrange, -0.65);
+				smaph = GenerateTrainingAndTest.getDefaultBingAnnotatorIndividualLBLiblinear(wikiApi, bingKey, AFmodel, AFrange, -0.65);
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
@@ -421,8 +421,7 @@ public class Annotator {
 				String rankLibBindingModel = "models/model_1-255_RL_0.060.full.6.NDCG@19.ERD-S2S3S6.model"; // "models/model_train_binding_ranking.dat_130-132,139-141,172-174,224-225,229-234.t1000.l10.NDCG@19";
 				String bindingNorm = "models/train_binding_ranking_ERD-S2S3S6.zscore"; // "/tmp/train_binding_ranking.zscore";
 				try {
-					collective = GenerateTrainingAndTest.getDefaultBingAnnotatorCollectiveLBRanklibAllSources(wikiApi, 0.06, bingKey,
-					        rankLibBindingModel, bindingNorm);
+					collective = GenerateTrainingAndTest.getDefaultBingAnnotatorCollectiveLBRanklibAllSources(wikiApi, bingKey, rankLibBindingModel, bindingNorm);
 					collective.setPredictNEOnly(true);
 				} catch (Exception e) {
 					e.printStackTrace();

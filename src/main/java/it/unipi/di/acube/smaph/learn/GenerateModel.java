@@ -87,9 +87,9 @@ public class GenerateModel {
 		wikiToFreebase = new WikipediaToFreebase("mapdb");
 		EntityToVect.initialize();
 
-		//generateEFModel();
+		generateEFModel();
 		//generateAnnotationModel();
-		generateCollectiveModel();
+		//generateCollectiveModel();
 		//generateStackedModel();
 		//generateIndividualAdvancedAnnotationModel();
 		WATAnnotator.flush();

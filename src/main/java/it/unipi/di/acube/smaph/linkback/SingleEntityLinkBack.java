@@ -36,8 +36,11 @@ public class SingleEntityLinkBack implements LinkBack {
 
 		List<Pair<Double, Tag>> scoreAndTags = new Vector<>();
 		for (Tag t : acceptedEntities) {
-			double score = ef.predictScore(new EntityFeaturePack(t, query, qi, wikiApi), fn);
-			scoreAndTags.add(new Pair<Double, Tag>(score, t));
+			List<EntityFeaturePack> featureVects = EntityFeaturePack.getAllFeaturePacks(t, query, qi, wikiApi);
+			double bestScore = Double.NEGATIVE_INFINITY;
+			for (EntityFeaturePack features : featureVects)
+				bestScore = Math.max(ef.predictScore(features, fn), bestScore);
+			scoreAndTags.add(new Pair<Double, Tag>(bestScore, t));
 		}
 
 		Collections.sort(scoreAndTags, new ComparePairsByScore());
