@@ -37,13 +37,6 @@ public class BindingFeaturePack extends FeaturePack<HashSet<Annotation>> {
 	public static String[] getFeatureNamesStatic() {
 		if (ftrNames == null) {
 			List<String> ftrNamesVect = new Vector<>();
-			ftrNamesVect.add("min_relatedness");
-			ftrNamesVect.add("max_relatedness");
-			ftrNamesVect.add("avg_relatedness");
-
-			ftrNamesVect.add("query_tokens");
-			ftrNamesVect.add("annotation_count");
-			ftrNamesVect.add("covered_tokens");
 
 			for (String ftrName : AdvancedAnnotationFeaturePack
 					.getFeatureNamesStatic())
@@ -55,6 +48,12 @@ public class BindingFeaturePack extends FeaturePack<HashSet<Annotation>> {
 					ftrNamesVect.add("avg_" + ftrName);
 				}
 
+			ftrNamesVect.add("min_relatedness");
+			ftrNamesVect.add("max_relatedness");
+			ftrNamesVect.add("avg_relatedness");
+			ftrNamesVect.add("query_tokens");
+			ftrNamesVect.add("annotation_count");
+			ftrNamesVect.add("covered_tokens");
 			ftrNamesVect.add("min_relatedness_mw");
 			ftrNamesVect.add("max_relatedness_mw");
 			ftrNamesVect.add("avg_relatedness_mw");
