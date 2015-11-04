@@ -39,9 +39,11 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.Vector;
+import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -717,5 +719,9 @@ public class SmaphUtils {
 		HashMap<String, HashSet<Integer>> positions = SmaphUtils.findPositionsLC(boldAndRanks);
 		return getFrequency(positions.get(bold.toLowerCase()).size(), resultsCount);
 	}
+
+	public static <T1, T2> HashMap<T1, T2> inverseMap(HashMap<T2, T1> map) {
+		return (HashMap<T1, T2>) map.entrySet().stream().collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
+    }
 }
 
