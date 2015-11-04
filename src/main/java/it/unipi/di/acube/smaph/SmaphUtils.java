@@ -16,14 +16,10 @@
 
 package it.unipi.di.acube.smaph;
 
-import it.unipi.di.acube.batframework.data.Annotation;
 import it.unipi.di.acube.batframework.data.ScoredAnnotation;
 import it.unipi.di.acube.batframework.data.Tag;
 import it.unipi.di.acube.batframework.utils.Pair;
 import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
-import it.unipi.di.acube.smaph.learn.featurePacks.AnnotationFeaturePack;
-import it.unipi.di.acube.smaph.learn.models.linkback.annotationRegressor.AnnotationRegressor;
-import it.unipi.di.acube.smaph.learn.normalizer.FeatureNormalizer;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -466,29 +462,6 @@ public class SmaphUtils {
 		public int compare(Pair<E, T> o1, Pair<E, T> o2) {
 			return o1.second.compareTo(o2.second);
 		}
-	}
-
-	public static HashMap<Annotation, Double> predictBestScores(AnnotationRegressor ar, FeatureNormalizer fn,
-			List<HashSet<Annotation>> allBindings, String query,
-			HashMap<Tag, List<HashMap<String, Double>>> entityToFtrVects,
-			HashMap<Tag, String[]> entitiesToBoldsS1,
-			HashMap<Tag, String> entitiesToTitles, EnglishStemmer englishStemmer) {
-		
-		List<Annotation> annotations = new Vector<>();
-		for (HashSet<Annotation> binding : allBindings)
-			for (Annotation a : binding)
-				annotations.add(a);
-
-		HashMap<Annotation, Double> annsToRegressorScore = new HashMap<>();
-			for (Annotation ann : annotations){
-				double bestScore = Double.NEGATIVE_INFINITY;
-				for (HashMap<String, Double> entityFtrs : entityToFtrVects.get(new Tag(ann.getConcept())))
-					bestScore = Math.max(bestScore, ar.predictScore(new AnnotationFeaturePack(ann, query, new EnglishStemmer(),
-							entityFtrs, entitiesToBoldsS1, entitiesToTitles), fn));
-				annsToRegressorScore.put(ann, bestScore);
-			}
-
-		return annsToRegressorScore;
 	}
 
 	/**

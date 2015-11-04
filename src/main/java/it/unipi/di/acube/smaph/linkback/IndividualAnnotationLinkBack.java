@@ -8,19 +8,15 @@ import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
 import it.unipi.di.acube.smaph.QueryInformation;
 import it.unipi.di.acube.smaph.SmaphAnnotatorDebugger;
 import it.unipi.di.acube.smaph.SmaphUtils;
-import it.unipi.di.acube.smaph.learn.featurePacks.AnnotationFeaturePack;
-import it.unipi.di.acube.smaph.learn.featurePacks.EntityFeaturePack;
+import it.unipi.di.acube.smaph.learn.featurePacks.AdvancedAnnotationFeaturePack;
 import it.unipi.di.acube.smaph.learn.models.linkback.annotationRegressor.AnnotationRegressor;
 import it.unipi.di.acube.smaph.learn.normalizer.FeatureNormalizer;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.Vector;
-
-import org.tartarus.snowball.ext.EnglishStemmer;
 
 public class IndividualAnnotationLinkBack implements LinkBack {
 	private AnnotationRegressor ar;
@@ -52,26 +48,11 @@ public class IndividualAnnotationLinkBack implements LinkBack {
 	public HashSet<ScoredAnnotation> linkBack(String query,
 			HashSet<Tag> acceptedEntities, QueryInformation qi) {
 
-		HashMap<Tag, String> entityToTitle = SmaphUtils.getEntitiesToTitles(
-				acceptedEntities, wikiApi);
-		HashMap<Tag, String[]> entityToBolds = null;
-		entityToBolds = SmaphUtils.getEntitiesToBoldsList(qi.entityToBoldsSA,
-				acceptedEntities);
-
-		
-		EnglishStemmer stemmer = new EnglishStemmer();
-
 		List<Pair<Annotation, Double>> scoreAndAnnotations = new Vector<>();
 		for (Annotation a : getAnnotations(query, acceptedEntities, qi)) {
-			
-			double bestScore = Double.NEGATIVE_INFINITY;
-			for (HashMap<String, Double> entityFeatures : EntityFeaturePack.getFeatures(new Tag(a.getConcept()), query, qi, wikiApi)) {
-				double score = ar.predictScore(new AnnotationFeaturePack(a, query, stemmer,
-						entityFeatures, entityToBolds, entityToTitle), annFn);
-				if (score > bestScore)
-					bestScore = score;
-			}
-			scoreAndAnnotations.add(new Pair<Annotation, Double>(a, bestScore));
+			double score = ar.predictScore(
+					new AdvancedAnnotationFeaturePack(a, query, qi, wikiApi), annFn);
+			scoreAndAnnotations.add(new Pair<Annotation, Double>(a, score));
 		}
 
 		return getResult(scoreAndAnnotations, threshold);
