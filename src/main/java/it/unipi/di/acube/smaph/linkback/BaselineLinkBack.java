@@ -6,6 +6,7 @@ import it.unipi.di.acube.smaph.SmaphAnnotatorDebugger;
 import it.unipi.di.acube.smaph.SmaphUtils;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.ImmutableTriple;
 import org.apache.commons.lang3.tuple.Triple;
@@ -29,14 +30,15 @@ public class BaselineLinkBack implements LinkBack {
 	@Override
 	public HashSet<ScoredAnnotation> linkBack(String query,
 			HashSet<Tag> acceptedEntities, QueryInformation qi) {
-		HashMap<Tag, String[]> entitiesToBolds = SmaphUtils.getEntitiesToBolds(
-				qi.boldToEntityS1, acceptedEntities);
+		Map<Tag, List<String>> entitiesToBolds = qi.entityToBoldsS6.entrySet().stream()
+		        .filter(p -> acceptedEntities.contains(p.getKey()))
+		        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
 		// If more than one bold points to the same entity, keep the bold with
 		// smallest edit distance.
 		HashMap<String, Tag> boldToEntities = new HashMap<>();
 		for (Tag t : entitiesToBolds.keySet()) {
-			String[] bolds = entitiesToBolds.get(t);
+			List<String> bolds = entitiesToBolds.get(t);
 			String bestBold = null;
 			double bestDistance = Double.MAX_VALUE;
 			for (String bold : bolds) {

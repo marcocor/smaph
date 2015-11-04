@@ -13,8 +13,7 @@ public class QueryInformation {
 	public boolean includeSourceWikiSearch;
 	public boolean includeSourceSnippets;
 	public HashMap<Tag, String[]> entityToBoldS2S3;
-	public HashMap<String, Tag> boldToEntityS1;
-	public HashMap<Tag, List<String>> tagToBoldsS6;
+	public HashMap<Tag, List<String>> entityToBoldsS6;
 	public Double webTotalNS;
 	public List<String> allBoldsNS;
 	public HashMap<Integer, Integer> idToRankNS;

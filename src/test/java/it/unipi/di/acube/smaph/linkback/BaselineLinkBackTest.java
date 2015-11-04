@@ -6,9 +6,11 @@ import it.unipi.di.acube.batframework.data.Tag;
 import it.unipi.di.acube.smaph.QueryInformation;
 import it.unipi.di.acube.smaph.linkback.BaselineLinkBack;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Vector;
 
 import org.junit.Test;
@@ -20,25 +22,18 @@ public class BaselineLinkBackTest {
 		BaselineLinkBack lb = new BaselineLinkBack();
 		{
 			String query = "armstrong mon   lading";
-			HashMap<String, Tag> boldsToEntities = new HashMap<>();
-			boldsToEntities.put("moon landing", new Tag(111));
-			boldsToEntities.put("wikipedia", new Tag(111));
-			boldsToEntities.put("moon", new Tag(111));
-			boldsToEntities.put("armstrong", new Tag(222));
-			boldsToEntities.put("neil armstrong", new Tag(222));
-			boldsToEntities.put("armstrang", new Tag(333));
-			boldsToEntities.put("neil armstrang", new Tag(333));
+			
+			HashMap<Tag, List<String>> boldsToEntities = new HashMap<>();
+			boldsToEntities.put(new Tag(111), Arrays.asList("moon landing", "wikipedia", "moon"));
+			boldsToEntities.put(new Tag(222), Arrays.asList("armstrong", "neil armstrong"));
+			boldsToEntities.put(new Tag(333), Arrays.asList("armstrang", "neil armstrang"));
 
-			HashSet<Tag> acceptedEntities = new HashSet<Tag>();
-			acceptedEntities.add(new Tag(111));
-			acceptedEntities.add(new Tag(222));
-			acceptedEntities.add(new Tag(333));
+			HashSet<Tag> acceptedEntities = new HashSet<Tag>(boldsToEntities.keySet());
 
 			QueryInformation qi = new QueryInformation();
-			qi.boldToEntityS1 = boldsToEntities;
+			qi.entityToBoldsS6 = boldsToEntities;
 			
-			HashSet<ScoredAnnotation> res = lb.linkBack(query,
-					acceptedEntities, qi);
+			HashSet<ScoredAnnotation> res = lb.linkBack(query, acceptedEntities, qi);
 			Vector<ScoredAnnotation> resVect = new Vector<>(res);
 			Collections.sort(resVect);
 			assertEquals(2, res.size());
@@ -54,19 +49,14 @@ public class BaselineLinkBackTest {
 
 		{
 			String query = "armstrang trumpet";
-			HashMap<String, Tag> boldsToEntities = new HashMap<>();
-			boldsToEntities.put("moon landing", new Tag(111));
-			boldsToEntities.put("wikipedia", new Tag(111));
-			boldsToEntities.put("moon", new Tag(111));
-			boldsToEntities.put("armstrong", new Tag(222));
-			boldsToEntities.put("neil armstrong", new Tag(222));
+			HashMap<Tag, List<String>> boldsToEntities = new HashMap<>();
+			boldsToEntities.put(new Tag(111), Arrays.asList("moon landing", "wikipedia", "moon"));
+			boldsToEntities.put(new Tag(222), Arrays.asList("armstrong", "neil armstrong"));
 
-			HashSet<Tag> acceptedEntities = new HashSet<Tag>();
-			acceptedEntities.add(new Tag(111));
-			acceptedEntities.add(new Tag(222));
+			HashSet<Tag> acceptedEntities = new HashSet<Tag>(boldsToEntities.keySet());
 
 			QueryInformation qi = new QueryInformation();
-			qi.boldToEntityS1 = boldsToEntities;
+			qi.entityToBoldsS6 = boldsToEntities;
 
 			HashSet<ScoredAnnotation> res = lb.linkBack(query,
 					acceptedEntities, qi);

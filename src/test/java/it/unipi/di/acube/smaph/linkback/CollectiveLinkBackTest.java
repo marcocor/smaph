@@ -4,7 +4,6 @@ import it.unipi.di.acube.batframework.data.Annotation;
 import it.unipi.di.acube.batframework.data.Tag;
 import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
 import it.unipi.di.acube.smaph.QueryInformation;
-import it.unipi.di.acube.smaph.SmaphUtils;
 import it.unipi.di.acube.smaph.linkback.bindingGenerator.BindingGenerator;
 import it.unipi.di.acube.smaph.linkback.bindingGenerator.DefaultBindingGenerator;
 
@@ -22,29 +21,16 @@ public class CollectiveLinkBackTest {
 		BindingGenerator bg = new DefaultBindingGenerator();
 
 		String query = "metronome satting of allegro";
-		HashMap<String, Tag> entityToTexts = new HashMap<>();
 
-		Tag tag1 = new Tag(88771); // Metronome
-		entityToTexts.put("metronome", tag1);
-		entityToTexts.put("metronomes", tag1);
-		entityToTexts.put("Set", tag1);
-		entityToTexts.put("Metronome", tag1);
-		entityToTexts.put("allegro", tag1);
+		HashMap<Tag, List<String>> entityToBolds = new HashMap<>();
+		entityToBolds.put(new Tag(88771), Arrays.asList("metronome", "metronomes", "Set", "Metronome", "allegro"));
+		entityToBolds.put(new Tag(30967), Arrays.asList("allegro", "Metronome", "metronome", "of allegro"));
+		entityToBolds.put(new Tag(3564116), Arrays.asList("set", "setting"));
 
-		Tag tag2 = new Tag(30967); // Tempo
-		entityToTexts.put("allegro", tag2);
-		entityToTexts.put("Metronome", tag2);
-		entityToTexts.put("metronome", tag2);
-		entityToTexts.put("of allegro", tag2);
-
-		Tag tag3 = new Tag(3564116); // Setting (narrativity)
-		entityToTexts.put("set",tag3);
-		entityToTexts.put("setting",tag3);
-		
 		QueryInformation qi = new QueryInformation();
-		qi.boldToEntityS1 = entityToTexts;
+		qi.entityToBoldsS6 = entityToBolds;
 		qi.entityToBoldS2S3 = new HashMap<Tag,String[]>();
-		List<HashSet<Annotation>> possibleBindings = bg.getBindings(query,qi,new HashSet<Tag>(entityToTexts.values()), new WikipediaApiInterface(null, null));
+		List<HashSet<Annotation>> possibleBindings = bg.getBindings(query, qi, new HashSet<Tag>(entityToBolds.keySet()), new WikipediaApiInterface(null, null));
 
 		for (HashSet<Annotation> binding : possibleBindings) {
 			for (Annotation ann : binding)

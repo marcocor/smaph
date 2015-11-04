@@ -55,12 +55,8 @@ public class IndividualAnnotationLinkBack implements LinkBack {
 		HashMap<Tag, String> entityToTitle = SmaphUtils.getEntitiesToTitles(
 				acceptedEntities, wikiApi);
 		HashMap<Tag, String[]> entityToBolds = null;
-		if (qi.boldToEntityS1 != null)
-			entityToBolds = SmaphUtils.getEntitiesToBolds(qi.boldToEntityS1,
-					acceptedEntities);
-		else
-			entityToBolds = SmaphUtils.getEntitiesToBoldsList(qi.tagToBoldsS6,
-					acceptedEntities);
+		entityToBolds = SmaphUtils.getEntitiesToBoldsList(qi.entityToBoldsS6,
+				acceptedEntities);
 
 		
 		EnglishStemmer stemmer = new EnglishStemmer();

@@ -40,14 +40,12 @@ import it.unipi.di.acube.smaph.learn.models.linkback.annotationRegressor.LibLine
 import it.unipi.di.acube.smaph.learn.models.linkback.bindingRegressor.LibLinearBindingRegressor;
 import it.unipi.di.acube.smaph.learn.models.linkback.bindingRegressor.RankLibBindingRegressor;
 import it.unipi.di.acube.smaph.learn.normalizer.FeatureNormalizer;
-import it.unipi.di.acube.smaph.learn.normalizer.ScaleFeatureNormalizer;
 import it.unipi.di.acube.smaph.learn.normalizer.ZScoreFeatureNormalizer;
 import it.unipi.di.acube.smaph.linkback.DummyLinkBack;
 import it.unipi.di.acube.smaph.linkback.LinkBack;
 import it.unipi.di.acube.smaph.linkback.AdvancedIndividualLinkback;
 import it.unipi.di.acube.smaph.linkback.CollectiveLinkBack;
 import it.unipi.di.acube.smaph.linkback.IndividualAnnotationLinkBack;
-import it.unipi.di.acube.smaph.linkback.SingleEntityLinkBack;
 import it.unipi.di.acube.smaph.linkback.bindingGenerator.DefaultBindingGenerator;
 import it.unipi.di.acube.smaph.main.ERDDatasetFilter;
 import it.unipi.di.acube.smaph.snippetannotationfilters.FrequencyAnnotationFilter;
@@ -325,12 +323,6 @@ public class GenerateTrainingAndTest {
 			ClassNotFoundException, IOException {
 		return getDefaultBingAnnotatorParam( wikiApi, 
 				bingKey, new LibSvmEntityFilter(EFModelFileBase+".model"), new ZScoreFeatureNormalizer(EFModelFileBase+".zscore", new EntityFeaturePack()), new DummyLinkBack(), true, true, true);
-	}
-	public static SmaphAnnotator getDefaultBingAnnotatorEFRegressor(
-			WikipediaApiInterface wikiApi, String bingKey,
-			String EFModelFileBase) throws FileNotFoundException, ClassNotFoundException, IOException {
-		return getDefaultBingAnnotatorParam( wikiApi, 
-				bingKey, new NoEntityFilter(), null, new SingleEntityLinkBack(new LibSvmEntityFilter(EFModelFileBase), new ScaleFeatureNormalizer(EFModelFileBase+".range", new EntityFeaturePack()), wikiApi), true, true, true);
 	}
 	public static SmaphAnnotator getDefaultBingAnnotatorIndividualLBLiblinear(
 			WikipediaApiInterface wikiApi, String bingKey,

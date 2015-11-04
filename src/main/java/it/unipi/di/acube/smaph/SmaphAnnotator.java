@@ -549,7 +549,7 @@ public class SmaphAnnotator implements Sa2WSystem {
 		qi.includeSourceWikiSearch = includeSourceWikiSearch;
 		qi.includeSourceSnippets = includeSourceSnippets;
 		qi.idToRankNS = SmaphUtils.inverseMap(rankToIdNS);
-		qi.tagToBoldsS6 = tagToBolds;
+		qi.entityToBoldsS6 = tagToBolds;
 		qi.entityToBoldS2S3 = entityToBoldsS2S3;
 		qi.webTotalNS = webTotalNS;
 		qi.allBoldsNS = allBoldsNS;
