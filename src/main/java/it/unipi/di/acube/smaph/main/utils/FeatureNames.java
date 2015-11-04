@@ -1,4 +1,4 @@
-package it.unipi.di.acube.smaph.main;
+package it.unipi.di.acube.smaph.main.utils;
 
 import it.unipi.di.acube.smaph.learn.featurePacks.AdvancedAnnotationFeaturePack;
 import it.unipi.di.acube.smaph.learn.featurePacks.BindingFeaturePack;
