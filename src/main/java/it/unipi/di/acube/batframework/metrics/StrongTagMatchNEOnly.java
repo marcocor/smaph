@@ -8,15 +8,12 @@ import java.util.Vector;
 import it.unipi.di.acube.batframework.data.Tag;
 import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
 import it.unipi.di.acube.smaph.main.ERDDatasetFilter;
-import it.cnr.isti.hpc.erd.WikipediaToFreebase;
 
 public class StrongTagMatchNEOnly extends StrongTagMatch {
 	WikipediaApiInterface api;
-	WikipediaToFreebase wikiToFreebase;
-	public StrongTagMatchNEOnly(WikipediaApiInterface api, WikipediaToFreebase wikiToFreebase) {
+	public StrongTagMatchNEOnly(WikipediaApiInterface api) {
 		super(api);
 		this.api = api;
-		this.wikiToFreebase = wikiToFreebase;
 	}
 
 	@Override
@@ -29,7 +26,7 @@ public class StrongTagMatchNEOnly extends StrongTagMatch {
 			filtered.add(newRes);
 			for (Tag t: s)
 				try {
-					if (ERDDatasetFilter.EntityIsNE(api, wikiToFreebase,t.getConcept()))
+					if (ERDDatasetFilter.EntityIsNE(api,t.getConcept()))
 						newRes.add(t);
 				} catch (IOException e) {
 					e.printStackTrace();

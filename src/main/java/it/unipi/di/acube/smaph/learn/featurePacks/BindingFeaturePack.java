@@ -209,7 +209,7 @@ public class BindingFeaturePack extends FeaturePack<HashSet<Annotation>> {
 		bindingFeatures.put("segments_lp_sum", lpSumAndAvg.first);
 		bindingFeatures.put("segments_lp_avg", lpSumAndAvg.second);
 
-		bindingFeatures.put("webtotal", qi.webtotal);		
+		bindingFeatures.put("webtotal", qi.webTotalNS);		
 		
 		bindingFeatures.put("bolds_number", (double) qi.allBoldsNS.size());
 		bindingFeatures.put("distinct_bolds", (double) new HashSet<String>(qi.allBoldsNS).size());

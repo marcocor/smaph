@@ -33,27 +33,24 @@ public class ERDDatasetFilter implements A2WDataset {
 	private List<HashSet<Mention>> ERDMentions;
 	private List<HashSet<Annotation>> ERDAnnotations;
 
-	public ERDDatasetFilter(A2WDataset ds, WikipediaApiInterface wikiApi,
-			WikipediaToFreebase wikiToFreebase) throws IOException {
+	public ERDDatasetFilter(A2WDataset ds, WikipediaApiInterface wikiApi) throws IOException {
 		this.ds = ds;
-		FilterERDTopics(ds.getC2WGoldStandardList(), wikiApi, wikiToFreebase);
-		FilterERDAnnotations(ds.getA2WGoldStandardList(), wikiApi,
-				wikiToFreebase);
+		FilterERDTopics(ds.getC2WGoldStandardList(), wikiApi);
+		FilterERDAnnotations(ds.getA2WGoldStandardList(), wikiApi);
 	}
 
-	public static boolean EntityIsNE(WikipediaApiInterface wikiApi,
-			WikipediaToFreebase wikiToFreebase, int wid) throws IOException {
+	public static boolean EntityIsNE(WikipediaApiInterface wikiApi, int wid) throws IOException {
 		String title = wikiApi.getTitlebyId(wid);
-		return EntityIsNE(wikiApi, wikiToFreebase, title);
+		return EntityIsNE(wikiApi, title);
 	}
-	public static boolean EntityIsNE(WikipediaApiInterface wikiApi,
-			WikipediaToFreebase wikiToFreebase, String title) throws IOException {
-		return title != null && wikiToFreebase.hasEntity(title);
+
+	public static boolean EntityIsNE(WikipediaApiInterface wikiApi, String title) throws IOException {
+		return title != null && WikipediaToFreebase.getDefault().hasEntity(title);
 	}
 
 	private void FilterERDAnnotations(
 			List<HashSet<Annotation>> a2wGoldStandardList,
-			WikipediaApiInterface wikiApi, WikipediaToFreebase wikiToFreebase)
+			WikipediaApiInterface wikiApi)
 			throws IOException {
 		ERDMentions = new Vector<HashSet<Mention>>();
 		ERDAnnotations = new Vector<HashSet<Annotation>>();
@@ -64,7 +61,7 @@ public class ERDDatasetFilter implements A2WDataset {
 			ERDMentions.add(filteredMentions);
 			for (Annotation ann : anns) {
 				String title = wikiApi.getTitlebyId(ann.getConcept());
-				if (!EntityIsNE(wikiApi, wikiToFreebase, ann.getConcept())) {
+				if (!EntityIsNE(wikiApi, ann.getConcept())) {
 					SmaphAnnotatorDebugger.out.printf("Discarding title=%s%n", title);
 					continue;
 				}
@@ -78,16 +75,14 @@ public class ERDDatasetFilter implements A2WDataset {
 
 	}
 
-	private void FilterERDTopics(List<HashSet<Tag>> c2wGoldStandardList,
-			WikipediaApiInterface wikiApi, WikipediaToFreebase wikiToFreebase)
-			throws IOException {
+	private void FilterERDTopics(List<HashSet<Tag>> c2wGoldStandardList, WikipediaApiInterface wikiApi)			throws IOException {
 		ERDTopics = new Vector<>();
 		for (HashSet<Tag> tags : c2wGoldStandardList) {
 			HashSet<Tag> erdTags = new HashSet<>();
 			ERDTopics.add(erdTags);
 			for (Tag t : tags) {
 				String title = wikiApi.getTitlebyId(t.getConcept());
-				if (!EntityIsNE(wikiApi, wikiToFreebase, t.getConcept())) {
+				if (!EntityIsNE(wikiApi, t.getConcept())) {
 					SmaphAnnotatorDebugger.out.printf("Discarding title=%s%n", title);
 					continue;
 				}

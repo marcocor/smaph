@@ -53,7 +53,7 @@ public class AdvancedAnnotationFeaturePack extends FeaturePack<Annotation> {
 		Tag entity = new Tag(a.getConcept());
 		String mention = query.substring(a.getPosition(), a.getPosition() + a.getLength());
 		List<Pair<String, Integer>> anchorAndOccurrencies = EntityToAnchors.e2a().getAnchors(a.getConcept());
-		HashMap<String, Double> entityFeatures = mergeFeatureVectors(qi.entityToFtrVects.get(entity));
+		HashMap<String, Double> entityFeatures = EntityFeaturePack.getFeatures(entity, query, qi, wikiApi);//mergeFeatureVectors(qi.entityToFtrVects.get(entity));
 		List<String> bolds = null;
 		if (qi.tagToBoldsS6.containsKey(entity))
 			bolds = qi.tagToBoldsS6.get(entity);

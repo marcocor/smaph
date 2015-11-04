@@ -390,10 +390,10 @@ public class DefaultBindingGenerator implements BindingGenerator {
 		HashMap<Tag, String[]> entityToBolds;
 		if (qi.boldToEntityS1 != null)
 			entityToBolds = SmaphUtils.getEntitiesToBolds(qi.boldToEntityS1,
-					qi.entityToFtrVects.keySet());
+					qi.allCandidates());
 		else
 			entityToBolds = SmaphUtils.getEntitiesToBoldsList(qi.tagToBoldsS6,
-					qi.entityToFtrVects.keySet());
+					qi.allCandidates());
 		HashMap<Tag, String> entitiesToTitles = SmaphUtils.getEntitiesToTitles(acceptedEntities, wikiApi);
 		return getAllBindings(query, entityToBolds, qi.entityToBoldS2S3, entitiesToTitles, acceptedEntities);
 		
