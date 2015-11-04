@@ -42,9 +42,17 @@ import java.util.Map;
  *         Created on Mar 15, 2014
  */
 public class WikipediaToFreebase {
+	private static WikipediaToFreebase wikiToFreebase;
+
 	Map<String, String> map;
 	Map<String, String> labels;
 
+	public static WikipediaToFreebase getDefault() {
+		if (wikiToFreebase == null)
+			wikiToFreebase = new WikipediaToFreebase("mapdb");
+		return wikiToFreebase;
+	}
+	
 	public WikipediaToFreebase(String folder) {
 		File dir = new File(folder);
 		File mapfile = new File(dir, "mapdb");
