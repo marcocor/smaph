@@ -34,7 +34,6 @@ import it.unipi.di.acube.smaph.learn.featurePacks.FeaturePack;
 import it.unipi.di.acube.smaph.learn.models.entityfilters.EntityFilter;
 import it.unipi.di.acube.smaph.learn.models.entityfilters.LibSvmEntityFilter;
 import it.unipi.di.acube.smaph.learn.models.entityfilters.NoEntityFilter;
-import it.unipi.di.acube.smaph.learn.models.linkback.annotationRegressor.AnnotationRegressor;
 import it.unipi.di.acube.smaph.learn.models.linkback.annotationRegressor.LibLinearAnnotatorRegressor;
 import it.unipi.di.acube.smaph.learn.models.linkback.bindingRegressor.LibLinearBindingRegressor;
 import it.unipi.di.acube.smaph.learn.models.linkback.bindingRegressor.RankLibBindingRegressor;
@@ -65,14 +64,14 @@ public class GenerateTrainingAndTest {
 
 	public enum OptDataset {ERD_CHALLENGE, SMAPH_DATASET, SMAPH_DATASET_NE}
 	public static void gatherExamples(SmaphAnnotator bingAnnotator,
-			A2WDataset ds, ExampleGatherer<Tag, HashSet<Tag>> entityFilterGatherer, ExampleGatherer<Annotation, HashSet<Annotation>> annotationLevel1Gatherer, ExampleGatherer<HashSet<Annotation>, HashSet<Annotation>> linkBackLevel2Gatherer, ExampleGatherer<HashSet<Annotation>, HashSet<Annotation>> linkBackCollectiveGatherer, ExampleGatherer<Annotation, HashSet<Annotation>> individualAnnotationGatherer, ExampleGatherer<Annotation, HashSet<Annotation>> advancedIndividualAnnotationGatherer,
-			WikipediaToFreebase wikiToFreeb, AnnotationRegressor ar, FeatureNormalizer annFn, boolean keepNEOnly, double anchorMaxED) throws Exception {
-		gatherExamples(bingAnnotator, ds, entityFilterGatherer,annotationLevel1Gatherer,
-				linkBackLevel2Gatherer, linkBackCollectiveGatherer, individualAnnotationGatherer, advancedIndividualAnnotationGatherer, wikiToFreeb, ar,annFn, keepNEOnly, -1, anchorMaxED);
+			A2WDataset ds, ExampleGatherer<Tag, HashSet<Tag>> entityFilterGatherer, ExampleGatherer<HashSet<Annotation>, HashSet<Annotation>> linkBackCollectiveGatherer, ExampleGatherer<Annotation, HashSet<Annotation>> advancedIndividualAnnotationGatherer,
+			WikipediaToFreebase wikiToFreeb, boolean keepNEOnly, double anchorMaxED) throws Exception {
+		gatherExamples(bingAnnotator, ds, entityFilterGatherer,
+				linkBackCollectiveGatherer, advancedIndividualAnnotationGatherer, wikiToFreeb, keepNEOnly, -1, anchorMaxED);
 	}
 	public static void gatherExamples(SmaphAnnotator bingAnnotator,
-			A2WDataset ds, ExampleGatherer<Tag, HashSet<Tag>> entityFilterGatherer,ExampleGatherer<Annotation, HashSet<Annotation>> annotationLevel1Gatherer, ExampleGatherer<HashSet<Annotation>, HashSet<Annotation>> linkBackLevel2Gatherer, ExampleGatherer<HashSet<Annotation>, HashSet<Annotation>> linkBackCollectiveGatherer,ExampleGatherer<Annotation, HashSet<Annotation>> annotationRegressorGatherer,ExampleGatherer<Annotation, HashSet<Annotation>> advancedAnnotationRegressorGatherer,
-			WikipediaToFreebase wikiToFreeb, AnnotationRegressor arLevel1, FeatureNormalizer arNormLevel1, boolean keepNEOnly, int limit, double anchorMaxED) throws Exception {
+			A2WDataset ds, ExampleGatherer<Tag, HashSet<Tag>> entityFilterGatherer, ExampleGatherer<HashSet<Annotation>, HashSet<Annotation>> linkBackCollectiveGatherer, ExampleGatherer<Annotation, HashSet<Annotation>> advancedAnnotationRegressorGatherer,
+			WikipediaToFreebase wikiToFreeb, boolean keepNEOnly, int limit, double anchorMaxED) throws Exception {
 		limit = limit ==-1? ds.getSize() : Math.min(limit, ds.getSize());
 		ProgressLogger plog = new ProgressLogger(logger, "document");
 		plog.start("Collecting examples.");
@@ -85,20 +84,15 @@ public class GenerateTrainingAndTest {
 			List<Annotation> ARCandidates = null;
 			List<HashSet<Annotation>> BRCandidates = null;
 			List<Pair<FeaturePack<HashSet<Annotation>>, Double>> LbVectorsToF1 = null;
-			List<Pair<FeaturePack<Annotation>, Boolean>> annVectorsToPresence = null;
 			List<Pair<FeaturePack<Annotation>, Boolean>> advAnnVectorsToPresence = null;
 
 			if (entityFilterGatherer != null){
 				EFVectorsToPresence = new Vector<>();
 				EFCandidates = new Vector<>();
 			}
-			if (linkBackCollectiveGatherer != null || linkBackLevel2Gatherer != null){
+			if (linkBackCollectiveGatherer != null){
 				LbVectorsToF1 = new Vector<>();
 				BRCandidates = new Vector<>();
-			}
-			if (annotationRegressorGatherer != null || annotationLevel1Gatherer != null) {
-				annVectorsToPresence = new Vector<>();
-				ARCandidates = new Vector<>();
 			}
 			if (advancedAnnotationRegressorGatherer != null) {
 				ARCandidates = new Vector<>();
@@ -106,17 +100,11 @@ public class GenerateTrainingAndTest {
 			}
 
 			bingAnnotator.generateExamples(query, goldStandard, goldStandardAnn, EFVectorsToPresence, EFCandidates,
-					LbVectorsToF1, BRCandidates, annVectorsToPresence, advAnnVectorsToPresence, ARCandidates, keepNEOnly,
-					new DefaultBindingGenerator(), arLevel1, arNormLevel1, wikiToFreeb, anchorMaxED);
+					LbVectorsToF1, BRCandidates, advAnnVectorsToPresence, ARCandidates, keepNEOnly,
+					new DefaultBindingGenerator(), wikiToFreeb, anchorMaxED);
 
 			if (entityFilterGatherer != null)
 				entityFilterGatherer.addExample(goldBoolToDouble(EFVectorsToPresence), EFCandidates, goldStandard);
-			if (annotationLevel1Gatherer != null)
-				annotationLevel1Gatherer.addExample(goldBoolToDouble(annVectorsToPresence), ARCandidates, goldStandardAnn);
-			if (linkBackLevel2Gatherer!= null)
-				linkBackLevel2Gatherer.addExample(LbVectorsToF1, BRCandidates, goldStandardAnn);
-			if (annotationRegressorGatherer!= null)
-				annotationRegressorGatherer.addExample(goldBoolToDouble(annVectorsToPresence), ARCandidates, goldStandardAnn);
 			if (linkBackCollectiveGatherer != null)
 				linkBackCollectiveGatherer.addExample(LbVectorsToF1, BRCandidates, goldStandardAnn);
 			if (advancedAnnotationRegressorGatherer != null)
@@ -139,20 +127,13 @@ public class GenerateTrainingAndTest {
 			SmaphAnnotator bingAnnotator,
 			ExampleGatherer<Tag, HashSet<Tag>> trainEntityFilterGatherer,
 			ExampleGatherer<Tag, HashSet<Tag>> develEntityFilterGatherer,
-			ExampleGatherer<Annotation, HashSet<Annotation>> trainLevel1AnnotationGatherer,
-			ExampleGatherer<Annotation, HashSet<Annotation>> develLevel1AnnotationGatherer,
-			ExampleGatherer<HashSet<Annotation>, HashSet<Annotation>> trainLinkBackLevel2Gatherer,
-			ExampleGatherer<HashSet<Annotation>, HashSet<Annotation>> develLinkBackLevel2Gatherer,
 			ExampleGatherer<HashSet<Annotation>, HashSet<Annotation>> trainLinkBackCollectiveGatherer,
 			ExampleGatherer<HashSet<Annotation>, HashSet<Annotation>> develLinkBackCollectiveGatherer,
-			ExampleGatherer<Annotation, HashSet<Annotation>> trainIndividualAnnotationGatherer,
-			ExampleGatherer<Annotation, HashSet<Annotation>> develIndividualAnnotationGatherer,
 			ExampleGatherer<Annotation, HashSet<Annotation>> trainIndividualAdvancedAnnotationGatherer,
 			ExampleGatherer<Annotation, HashSet<Annotation>> develIndividualAdvancedAnnotationGatherer,
-			AnnotationRegressor arLevel1, FeatureNormalizer arNormLevel1,
 			WikipediaApiInterface wikiApi, WikipediaToFreebase wikiToFreebase,
 			FreebaseApi freebApi, OptDataset opt, double anchorMaxED) throws Exception {
-		if (trainEntityFilterGatherer != null || trainLinkBackCollectiveGatherer != null || trainLinkBackLevel2Gatherer != null || trainIndividualAnnotationGatherer != null || trainIndividualAdvancedAnnotationGatherer != null) {
+		if (trainEntityFilterGatherer != null || trainLinkBackCollectiveGatherer != null || trainIndividualAdvancedAnnotationGatherer != null) {
 
 			if (opt == OptDataset.ERD_CHALLENGE) {
 
@@ -160,33 +141,33 @@ public class GenerateTrainingAndTest {
 				A2WDataset smaphTrainA = new ERDDatasetFilter(new GERDAQDataset(
 						"datasets/gerdaq/gerdaq_trainingA.xml", wikiApi), wikiApi);
 				gatherExamples(bingAnnotator, smaphTrainA,
-						trainEntityFilterGatherer, trainLevel1AnnotationGatherer, null, trainLinkBackCollectiveGatherer,
-						trainIndividualAnnotationGatherer,trainIndividualAdvancedAnnotationGatherer, wikiToFreebase, arLevel1, arNormLevel1, keepNEOnly, anchorMaxED);
+						trainEntityFilterGatherer, trainLinkBackCollectiveGatherer,
+						trainIndividualAdvancedAnnotationGatherer, wikiToFreebase, keepNEOnly, anchorMaxED);
 
 				A2WDataset smaphTrainB = new ERDDatasetFilter(new GERDAQDataset(
 						"datasets/gerdaq/gerdaq_trainingB.xml", wikiApi), wikiApi);
 				gatherExamples(bingAnnotator, smaphTrainB,
-						trainEntityFilterGatherer, null, trainLinkBackLevel2Gatherer, trainLinkBackCollectiveGatherer,
-						trainIndividualAnnotationGatherer,trainIndividualAdvancedAnnotationGatherer, wikiToFreebase, arLevel1, arNormLevel1, keepNEOnly, anchorMaxED);
+						trainEntityFilterGatherer, trainLinkBackCollectiveGatherer,
+						trainIndividualAdvancedAnnotationGatherer, wikiToFreebase, keepNEOnly, anchorMaxED);
 
 				A2WDataset smaphTest = new ERDDatasetFilter(new GERDAQDataset(
 						"datasets/gerdaq/gerdaq_test.xml", wikiApi), wikiApi);
 				gatherExamples(bingAnnotator, smaphTest,
-						trainEntityFilterGatherer, null, trainLinkBackLevel2Gatherer, trainLinkBackCollectiveGatherer,
-						trainIndividualAnnotationGatherer,trainIndividualAdvancedAnnotationGatherer, wikiToFreebase, arLevel1, arNormLevel1, keepNEOnly, anchorMaxED);
+						trainEntityFilterGatherer, trainLinkBackCollectiveGatherer,
+						trainIndividualAdvancedAnnotationGatherer, wikiToFreebase, keepNEOnly, anchorMaxED);
 
 				A2WDataset smaphDevel = new ERDDatasetFilter(new GERDAQDataset(
 						"datasets/gerdaq/gerdaq_devel.xml", wikiApi), wikiApi);
 				gatherExamples(bingAnnotator, smaphDevel,
-						trainEntityFilterGatherer,null, trainLinkBackLevel2Gatherer, trainLinkBackCollectiveGatherer,
-						trainIndividualAnnotationGatherer,trainIndividualAdvancedAnnotationGatherer, wikiToFreebase, arLevel1, arNormLevel1, keepNEOnly, anchorMaxED);
+						trainEntityFilterGatherer, trainLinkBackCollectiveGatherer,
+						trainIndividualAdvancedAnnotationGatherer, wikiToFreebase, keepNEOnly, anchorMaxED);
 
 				A2WDataset yahoo = new ERDDatasetFilter(
 						new YahooWebscopeL24Dataset(
 								"datasets/yahoo_webscope_L24/ydata-search-query-log-to-entities-v1_0.xml"),
 								wikiApi);
-				gatherExamples(bingAnnotator, yahoo, trainEntityFilterGatherer, null, trainLinkBackCollectiveGatherer,
-						trainLinkBackLevel2Gatherer, trainIndividualAnnotationGatherer,trainIndividualAdvancedAnnotationGatherer, wikiToFreebase, arLevel1, arNormLevel1, keepNEOnly, anchorMaxED);
+				gatherExamples(bingAnnotator, yahoo, trainEntityFilterGatherer, trainLinkBackCollectiveGatherer,
+						trainIndividualAdvancedAnnotationGatherer, wikiToFreebase, keepNEOnly, anchorMaxED);
 
 				/*A2WDataset single = new ERDDatasetFilter(new SMAPHDataset(
 						"datasets/smaph/single_test.xml", wikiApi), wikiApi,
@@ -208,14 +189,14 @@ public class GenerateTrainingAndTest {
 				A2WDataset smaphTrainA = new GERDAQDataset(
 						"datasets/gerdaq/gerdaq_trainingA.xml", wikiApi);
 				gatherExamples(bingAnnotator, smaphTrainA,
-						trainEntityFilterGatherer, trainLevel1AnnotationGatherer, null, trainLinkBackCollectiveGatherer,
-						trainIndividualAnnotationGatherer,trainIndividualAdvancedAnnotationGatherer, wikiToFreebase, arLevel1, arNormLevel1, keepNEOnly, anchorMaxED);
+						trainEntityFilterGatherer, trainLinkBackCollectiveGatherer,
+						trainIndividualAdvancedAnnotationGatherer, wikiToFreebase, keepNEOnly, anchorMaxED);
 
 				A2WDataset smaphTrainB = new GERDAQDataset(
 						"datasets/gerdaq/gerdaq_trainingB.xml", wikiApi);
 				gatherExamples(bingAnnotator, smaphTrainB,
-						trainEntityFilterGatherer, null, trainLinkBackLevel2Gatherer, trainLinkBackCollectiveGatherer,
-						trainIndividualAnnotationGatherer,trainIndividualAdvancedAnnotationGatherer, wikiToFreebase, arLevel1, arNormLevel1, keepNEOnly, anchorMaxED);
+						trainEntityFilterGatherer, trainLinkBackCollectiveGatherer,
+						trainIndividualAdvancedAnnotationGatherer, wikiToFreebase, keepNEOnly, anchorMaxED);
 
 				/*A2WDataset smaphDevel = new SMAPHDataset(
 						"datasets/gerdaq/gerdaq_devel.xml", wikiApi);
@@ -239,25 +220,25 @@ public class GenerateTrainingAndTest {
 				A2WDataset smaphTrainA = new ERDDatasetFilter(new GERDAQDataset(
 						"datasets/gerdaq/gerdaq_trainingA.xml", wikiApi), wikiApi);
 				gatherExamples(bingAnnotator, smaphTrainA,
-						trainEntityFilterGatherer, trainLevel1AnnotationGatherer, null, trainLinkBackCollectiveGatherer,
-						trainIndividualAnnotationGatherer,trainIndividualAdvancedAnnotationGatherer, wikiToFreebase, arLevel1, arNormLevel1, keepNEOnly, anchorMaxED);
+						trainEntityFilterGatherer, trainLinkBackCollectiveGatherer,
+						trainIndividualAdvancedAnnotationGatherer, wikiToFreebase, keepNEOnly, anchorMaxED);
 
 				A2WDataset smaphTrainB = new ERDDatasetFilter(new GERDAQDataset(
 						"datasets/gerdaq/gerdaq_trainingB.xml", wikiApi), wikiApi);
 				gatherExamples(bingAnnotator, smaphTrainB,
-						trainEntityFilterGatherer, null, trainLinkBackLevel2Gatherer, trainLinkBackCollectiveGatherer,
-						trainIndividualAnnotationGatherer,trainIndividualAdvancedAnnotationGatherer, wikiToFreebase, arLevel1, arNormLevel1, keepNEOnly, anchorMaxED);
+						trainEntityFilterGatherer, trainLinkBackCollectiveGatherer,
+						trainIndividualAdvancedAnnotationGatherer, wikiToFreebase, keepNEOnly, anchorMaxED);
 			}
 		}
-		if (develEntityFilterGatherer != null || develLinkBackLevel2Gatherer != null || develLinkBackCollectiveGatherer != null|| develIndividualAnnotationGatherer != null || develIndividualAdvancedAnnotationGatherer != null) {
+		if (develEntityFilterGatherer != null || develLinkBackCollectiveGatherer != null|| develIndividualAdvancedAnnotationGatherer != null) {
 			if (opt == OptDataset.ERD_CHALLENGE) {
 				boolean keepNEOnly = true;
 				A2WDataset smaphDevel = new ERDDatasetFilter(new GERDAQDataset(
 						"datasets/gerdaq/gerdaq_devel.xml", wikiApi), wikiApi);
 				gatherExamples(bingAnnotator, smaphDevel,
 						develEntityFilterGatherer,
-						develLevel1AnnotationGatherer, develLinkBackLevel2Gatherer, develLinkBackCollectiveGatherer,
-						develIndividualAnnotationGatherer,develIndividualAdvancedAnnotationGatherer, wikiToFreebase, arLevel1, arNormLevel1,
+						develLinkBackCollectiveGatherer,
+						develIndividualAdvancedAnnotationGatherer, wikiToFreebase,
 						keepNEOnly, anchorMaxED);
 
 			}
@@ -272,8 +253,8 @@ public class GenerateTrainingAndTest {
 				A2WDataset smaphDevel = new GERDAQDataset(
 						"datasets/gerdaq/gerdaq_devel.xml", wikiApi);
 				gatherExamples(bingAnnotator, smaphDevel,
-						develEntityFilterGatherer, develLevel1AnnotationGatherer, develLinkBackLevel2Gatherer, develLinkBackCollectiveGatherer,
-						develIndividualAnnotationGatherer,develIndividualAdvancedAnnotationGatherer,  wikiToFreebase, arLevel1, arNormLevel1, keepNEOnly, anchorMaxED);
+						develEntityFilterGatherer, develLinkBackCollectiveGatherer,
+						develIndividualAdvancedAnnotationGatherer,  wikiToFreebase, keepNEOnly, anchorMaxED);
 				/*A2WDataset smaphSingle = new SMAPHDataset(
 						"datasets/smaph/single_test.xml", wikiApi);
 				gatherExamples(bingAnnotator, smaphSingle,
@@ -285,8 +266,8 @@ public class GenerateTrainingAndTest {
 				A2WDataset smaphDevel = new ERDDatasetFilter(new GERDAQDataset(
 						"datasets/gerdaq/gerdaq_devel.xml", wikiApi), wikiApi);
 				gatherExamples(bingAnnotator, smaphDevel,
-						develEntityFilterGatherer, develLevel1AnnotationGatherer, develLinkBackLevel2Gatherer, develLinkBackCollectiveGatherer,
-						develIndividualAnnotationGatherer,develIndividualAdvancedAnnotationGatherer,  wikiToFreebase, arLevel1, arNormLevel1, keepNEOnly, anchorMaxED);
+						develEntityFilterGatherer, develLinkBackCollectiveGatherer,
+						develIndividualAdvancedAnnotationGatherer,  wikiToFreebase, keepNEOnly, anchorMaxED);
 			}
 
 		}

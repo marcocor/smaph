@@ -38,7 +38,6 @@ import it.unipi.di.acube.smaph.learn.featurePacks.BindingFeaturePack;
 import it.unipi.di.acube.smaph.learn.featurePacks.EntityFeaturePack;
 import it.unipi.di.acube.smaph.learn.featurePacks.FeaturePack;
 import it.unipi.di.acube.smaph.learn.models.entityfilters.EntityFilter;
-import it.unipi.di.acube.smaph.learn.models.linkback.annotationRegressor.AnnotationRegressor;
 import it.unipi.di.acube.smaph.learn.normalizer.FeatureNormalizer;
 import it.unipi.di.acube.smaph.linkback.CollectiveLinkBack;
 import it.unipi.di.acube.smaph.linkback.LinkBack;
@@ -708,12 +707,9 @@ public class SmaphAnnotator implements Sa2WSystem {
 			List<Tag> EFCandidates,
 			List<Pair<FeaturePack<HashSet<Annotation>>, Double>> lbVectorsToF1,
 			List<HashSet<Annotation>> BRCandidates,
-			List<Pair<FeaturePack<Annotation>, Boolean>> annVectorsToPresence,
 			List<Pair<FeaturePack<Annotation>, Boolean>> advancedAnnVectorsToPresence,
 			List<Annotation> ARCandidates, boolean keepNEOnly,
 			BindingGenerator bg,
-			AnnotationRegressor arLevel1,
-			FeatureNormalizer arNormLevel1,
 			WikipediaToFreebase wikiToFreeb, double anchorMaxED)
 					throws Exception {
 

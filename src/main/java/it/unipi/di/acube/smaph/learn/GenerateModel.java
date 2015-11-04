@@ -153,7 +153,7 @@ public class GenerateModel {
 		ExampleGatherer<Tag, HashSet<Tag>> develEntityFilterGatherer = new ExampleGatherer<Tag, HashSet<Tag>>();
 		GenerateTrainingAndTest.gatherExamplesTrainingAndDevel(
 				bingAnnotator, trainEntityFilterGatherer,
-				develEntityFilterGatherer,null, null, null, null, null, null, null, null, null, null, null, null, wikiApi,
+				develEntityFilterGatherer, null, null, null, null, wikiApi,
 				wikiToFreebase, freebApi, opt, -1);
 		//ScaleFeatureNormalizer fNorm = new ScaleFeatureNormalizer(trainEntityFilterGatherer);
 		//trainEntityFilterGatherer.dumpExamplesLibSvm("train_ef_scaled.dat", fNorm);
@@ -233,9 +233,7 @@ public class GenerateModel {
 		ExampleGatherer<Annotation, HashSet<Annotation>> develAdvancedAnnotationGatherer = new ExampleGatherer<Annotation, HashSet<Annotation>>();
 		GenerateTrainingAndTest.gatherExamplesTrainingAndDevel(
 				bingAnnotator, null, null, null,
-				null, null, null, null, null, null, null, 
-				trainAdvancedAnnotationGatherer, develAdvancedAnnotationGatherer,  null,
-				null, wikiApi, wikiToFreebase, freebApi, opt, anchorMaxED);
+				null, trainAdvancedAnnotationGatherer, develAdvancedAnnotationGatherer, wikiApi, wikiToFreebase, freebApi, opt, anchorMaxED);
 		trainAdvancedAnnotationGatherer.dumpExamplesLibSvm("train_adv_ann_noscaled.dat", new NoFeatureNormalizer());
 
 		System.out.println("Building normalizer...");
@@ -357,8 +355,8 @@ public class GenerateModel {
 		ExampleGatherer<HashSet<Annotation>, HashSet<Annotation>> trainLinkBackGatherer = new ExampleGatherer<HashSet<Annotation>, HashSet<Annotation>>();
 		ExampleGatherer<HashSet<Annotation>, HashSet<Annotation>> develLinkBackGatherer = new ExampleGatherer<HashSet<Annotation>, HashSet<Annotation>>();
 		GenerateTrainingAndTest.gatherExamplesTrainingAndDevel(
-				bingAnnotator, null, null, null, null, null, null, trainLinkBackGatherer,
-				develLinkBackGatherer, null, null, null, null,null, null, wikiApi, wikiToFreebase, freebApi, opt, -1);
+				bingAnnotator, null, null, trainLinkBackGatherer,
+				develLinkBackGatherer, null, null, wikiApi, wikiToFreebase, freebApi, opt, -1);
 		WATRelatednessComputer.flush();
 
 		//List<Triple<BindingRegressor, FeatureNormalizer, int[]>> regressors = getLibLinearBindingRegressors(featuresSetsToTest, trainLinkBackGatherer, develLinkBackGatherer, mcrs);
