@@ -257,8 +257,8 @@ public class GenerateTrainingAndTest {
 				/*A2WDataset smaphSingle = new GERDAQDataset(
 						"datasets/gerdaq/single_test.xml", wikiApi);
 				gatherExamples(bingAnnotator, smaphSingle,
-						trainEntityFilterGatherer, trainLinkBackCollectiveGatherer,
-						trainIndividualAdvancedAnnotationGatherer, wikiToFreebase, keepNEOnly, anchorMaxED);*/
+						develEntityFilterGatherer, develLinkBackCollectiveGatherer,
+						develIndividualAdvancedAnnotationGatherer, wikiToFreebase, keepNEOnly, anchorMaxED);*/
 			}
 			else if (opt == OptDataset.SMAPH_DATASET_NE){
 				boolean keepNEOnly = true;
