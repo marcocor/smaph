@@ -45,7 +45,7 @@ public class CollectiveLinkBack implements LinkBack {
 				acceptedEntities, wikiApi);
 
 		for (HashSet<Annotation> binding : bindings) {
-			//Discard bindings that have entities w/o anchors
+			//Discard bindings that have entities w/o anchors TODO: don't like.
 			boolean bad = false;
 			for (Annotation a : binding)
 				if (!EntityToAnchors.e2a().containsId(a.getConcept()))
