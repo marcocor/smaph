@@ -200,17 +200,17 @@ def generate_and_test_model(ftrs_to_try, qid_cand_to_score, opt_vals, ranker, tr
 	gen_ftr_file(ftrs_to_try)
 	models = build_models(ftrs_to_try, opt_vals, ranker, train_file, validate_file, tree=tree, leaf=leaf)
 	employed_ftrs = [get_model_used_features(m) for m in models]
-	for m_f in zip(models, employed_ftrs_m):
-		print("generated model: {} employed_features:{}".format(m_f[0], ftr_set_string(m_f[1]), file=sys.stderr))
+	for m_f in zip(models, employed_ftrs):
+		print("generated model: {} employed_features ({} features):{}".format(m_f[0], len(m_f[1]), ftr_set_string(m_f[1])), file=sys.stderr)
 	models_and_f1s = test_models(models, qid_cand_to_score, validate_file)
 	for p in models_and_f1s:
 		print("model {} F1={}".format(*p), file=sys.stderr)
 	model, f1 = max(models_and_f1s, key=lambda p: p[1])
-	return model, f1, set.union(*employed_ftrs)
+	return model, f1, sorted(set.union(*employed_ftrs))
 
 def get_model_used_features(model_file):
 	with open(model_file) as f:
 		file_content = [l for l in f.readlines() if not l.startswith("#")]
 	root = ET.fromstring("".join(file_content))
-	return set([f.text.strip() for f in root.findall(".//feature")])
+	return set([int(f.text.strip()) for f in root.findall(".//feature")])
 
