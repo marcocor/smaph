@@ -6,10 +6,11 @@ import os.path
 import sys
 import hashlib
 import re
+import xml.etree.ElementTree as ET
 from collections import Counter
 
 RANKLIB_PATH = "../libs/RankLib-2.5.jar"
-JAVA_OPTS_TRAIN="-Xmx3g"
+JAVA_OPTS_TRAIN="-Xmx4g"
 JAVA_OPTS_SCORE="-Xmx512m"
 
 def ftr_string_set(s):
@@ -28,6 +29,7 @@ def ftr_string_set(s):
 assert ftr_string_set("1-2,5-6,8,10-12") == [1,2,5,6,8,10,11,12]
 
 def ftr_set_string(ftrs):
+	ftrs = sorted(ftrs)
 	ftr_list = ""
 	i = 0
 	last_inserted = -1
@@ -197,9 +199,18 @@ def generate_and_test_model(ftrs_to_try, qid_cand_to_score, opt_vals, ranker, tr
 	print("testing feature set: {}".format(ftrs_to_try), file=sys.stderr)
 	gen_ftr_file(ftrs_to_try)
 	models = build_models(ftrs_to_try, opt_vals, ranker, train_file, validate_file, tree=tree, leaf=leaf)
-	print("generated models: {}".format(" ".join(models)), file=sys.stderr)
+	employed_ftrs = [get_model_used_features(m) for m in models]
+	for m_f in zip(models, employed_ftrs_m):
+		print("generated model: {} employed_features:{}".format(m_f[0], ftr_set_string(m_f[1]), file=sys.stderr))
 	models_and_f1s = test_models(models, qid_cand_to_score, validate_file)
 	for p in models_and_f1s:
 		print("model {} F1={}".format(*p), file=sys.stderr)
 	model, f1 = max(models_and_f1s, key=lambda p: p[1])
-	return model, f1
+	return model, f1, set.union(*employed_ftrs)
+
+def get_model_used_features(model_file):
+	with open(model_file) as f:
+		file_content = [l for l in f.readlines() if not l.startswith("#")]
+	root = ET.fromstring("".join(file_content))
+	return set([f.text.strip() for f in root.findall(".//feature")])
+

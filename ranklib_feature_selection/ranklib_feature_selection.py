@@ -10,9 +10,11 @@ import argparse
 RANKLIB_PATH = "../libs/RankLib-2.5.jar"
 RANKER = 6
 
-def ftr_selection_loop(good_ftr, ftr_buckets_left, qid_cand_to_score, best_f1, update_foo):
+def ftr_selection_loop(good_ftr, valid_ftrs, ftr_buckets_left, qid_cand_to_score, best_f1, update_foo):
 	print("all feature buckets to try: {}".format(ftr_buckets_left), file=sys.stderr)
 	while True:
+		candidate_ftrs = [f for f in valid_ftrs if f not in good_ftr] if update_foo == increment_features else good_ftr
+		ftr_buckets_left = get_feature_buckets(candidate_ftrs, step)
 		better_alternatives = []
 		print("starting iteration with feature set: {}".format(good_ftr), file=sys.stderr)
 		for feature_bucket in ftr_buckets_left:
@@ -30,12 +32,13 @@ def ftr_selection_loop(good_ftr, ftr_buckets_left, qid_cand_to_score, best_f1, u
 			for feature_bucket in zip(*better_alternatives)[1]:
 				print("trying to add/remove {}".format(feature_bucket), file=sys.stderr)
 				ftrs_to_try = update_foo(good_ftr, feature_bucket)
-				model, f1 = generate_and_test_model(ftrs_to_try, qid_cand_to_score, OPT_VALS, RANKER, TRAIN_DATA, VALIDATE_DATA)
+				model, f1, employed_ftrs = generate_and_test_model(ftrs_to_try, qid_cand_to_score, OPT_VALS, RANKER, TRAIN_DATA, VALIDATE_DATA)
 				if is_improvement(f1, ftrs_to_try, best_f1, good_ftr):
 					best_f1 = f1
-					good_ftr = ftrs_to_try
 					ftr_buckets_left.remove(feature_bucket)
+					good_ftr = employed_ftrs
 					print("vertical pruning: found best F1={} selected feature {}".format(best_f1, feature_bucket), file=sys.stderr)
+					print("Features actually employed by these models ({} features): {}".format(len(employed_ftrs), ftr_set_string(employed_ftrs)), file=sys.stderr)
 				else:
 					print("vertical pruning: no new best found with features {} (F1={})".format(feature_bucket, best_f1), file=sys.stderr)
 		if not ftr_buckets_left:
@@ -52,10 +55,8 @@ def get_feature_buckets(all_ftrs, step):
 	return sorted(ftr_buckets_left)
 
 def do_one_phase(update_foo, good_ftr, valid_ftrs, best_f1, step):
-	candidate_ftrs = [f for f in valid_ftrs if f not in good_ftr] if update_foo == increment_features else good_ftr
-	ftr_buckets_left = get_feature_buckets(candidate_ftrs, step)
 	print("Stage: {} - {} by {}".format(update_foo.__name__, step, step), file=sys.stderr)
-	good_ftr, best_f1 = ftr_selection_loop(good_ftr, ftr_buckets_left, qid_cand_to_score, best_f1, update_foo)
+	good_ftr, best_f1 = ftr_selection_loop(good_ftr, valid_ftrs, ftr_buckets_left, qid_cand_to_score, best_f1, update_foo)
 	print("Overall best features: {}".format(good_ftr), file=sys.stderr)
 	print("Overall best score: {}".format(best_f1), file=sys.stderr)
 	
@@ -80,20 +81,24 @@ if __name__ == '__main__':
 	parser.add_argument('--dataset', help="Dataset code (e.g. ERD-S2S3S6)", required=True)
 	parser.add_argument('--startset', help="Feature set to start with (e.g. 1,3,5-10,24). Default: use all features (no features for 'increment' method)", required=False, default="")
 	parser.add_argument('--leaves', help="Number of tree leaves (e.g. 5,7,10-20). Default: 10.", required=False, default="10")
+	parser.add_argument('--opt_vals', help="Values to optimize NDGC with. (e.g. 5,7,10-20). Default: 12-23.", required=False, default="12-23")
 	args = parser.parse_args()
 
-	good_ftr = ftr_string_set(args.startset)
 	leaves = ftr_string_set(args.leaves)
+	OPT_VALS = ftr_string_set(args.opt_vals)
 
-	OPT_VALS = range(12,17+1)
 	TRAIN_DATA = "../train_binding_ranking_{}.dat".format(args.dataset)
 	VALIDATE_DATA = "../devel_binding_ranking_{}.dat".format(args.dataset)
 	
 	print("Loading solutions F1...", file=sys.stderr)
 	qid_cand_to_score = load_f1s(VALIDATE_DATA)
-	
+
+	print("Upper bound on macro-F1: {}".format(get_max_macrof1(qid_cand_to_score)), file=sys.stderr)
+
 	print("Getting valid features...", file=sys.stderr)
 	valid_ftrs = get_valid_ftrs(VALIDATE_DATA)
+
+	good_ftr = ftr_string_set(args.startset) if args.startset else valid_ftrs
 	
 	if args.method == 'ablation':
 		main_method, secondary_method = decrement_features, increment_features
@@ -103,8 +108,10 @@ if __name__ == '__main__':
 	if args.method in['increment', 'ablation']:
 		print("Testing initial feature set", file=sys.stderr)
 		for leaf in leaves:
-			_, best_f1 = generate_and_test_model(good_ftr if good_ftr else valid_ftrs, qid_cand_to_score, OPT_VALS, RANKER, TRAIN_DATA, VALIDATE_DATA, leaf=[leaf])
+			_, best_f1, employed_ftrs = generate_and_test_model(good_ftr, qid_cand_to_score, OPT_VALS, RANKER, TRAIN_DATA, VALIDATE_DATA, leaf=[leaf])
 		print("Initial best score: {}".format(best_f1), file=sys.stderr)
+		print("Initial features actually employed by these models ({} features): {}".format(len(employed_ftrs), ftr_set_string(employed_ftrs)), file=sys.stderr)
+		good_ftr = employed_ftrs
 	
 		if args.method == 'increment' and not good_ftr: #start from scratch
 			best_f1 = 0.0
