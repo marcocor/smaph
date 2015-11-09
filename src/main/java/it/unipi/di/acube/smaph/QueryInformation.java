@@ -19,8 +19,10 @@ public class QueryInformation {
 	public List<Pair<String, Integer>> bingBoldsAndRankNS;
 	public int resultsCountNS;
 	public double webTotalWS;
+	public double resultsCountWS;
 	public HashMap<String, Pair<Integer, Integer>> annTitlesToIdAndRankWS;
 	public List<Pair<String, Integer>> bingBoldsAndRankWS;
+	public HashMap<Integer, Integer> idToRankWS;
 	public HashMap<Tag, List<String>> entityToBoldsSA;
 	public HashMap<Tag, List<String>> entityToMentionsSA;
 	public HashMap<Tag, List<Integer>> entityToRanksSA;

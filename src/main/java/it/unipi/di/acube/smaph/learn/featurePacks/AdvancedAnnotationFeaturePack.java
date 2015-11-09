@@ -33,27 +33,11 @@ public class AdvancedAnnotationFeaturePack extends FeaturePack<Annotation> {
 		super(null);
 	}
 	
-	private static HashMap<String, Double> mergeFeatureVectors(List<HashMap<String, Double>> list) {
-		HashMap<String, Double> merged = new HashMap<String, Double>();
-		for (HashMap<String, Double> ftrVec : list)
-			for (String fName : ftrVec.keySet())
-				if (fName.startsWith("is_s")) {
-					if (merged.containsKey(fName) && merged.get(fName) == 1.0 && ftrVec.get(fName) == 1.0)
-							throw new RuntimeException("Multiple vectors for same entity/source " + fName);
-					if (!merged.containsKey(fName) || merged.get(fName) == 0.0)
-						merged.put(fName, ftrVec.get(fName));
-				} else if (!merged.containsKey(fName))
-					merged.put(fName, ftrVec.get(fName));
-				else
-					throw new RuntimeException("Double feature " + fName);
-		return merged;
-	}
-
 	public static HashMap<String, Double> getFeaturesStatic(Annotation a, String query, QueryInformation qi, WikipediaApiInterface wikiApi) {
 		Tag entity = new Tag(a.getConcept());
 		String mention = query.substring(a.getPosition(), a.getPosition() + a.getLength());
 		List<Pair<String, Integer>> anchorAndOccurrencies = EntityToAnchors.e2a().getAnchors(a.getConcept());
-		HashMap<String, Double> entityFeatures = mergeFeatureVectors(EntityFeaturePack.getFeatures(entity, query, qi, wikiApi)); //TODO: don't like this.
+		HashMap<String, Double> entityFeatures = EntityFeaturePack.getFeatures(entity, query, qi, wikiApi);
 		List<String> bolds = null;
 		if (qi.entityToBoldsSA.containsKey(entity))
 			bolds = qi.entityToBoldsSA.get(entity);

@@ -205,9 +205,8 @@ public class SmaphAnnotator implements Sa2WSystem {
 				if (predictNEonly
 						&& !ERDDatasetFilter.EntityIsNE(wikiApi, candidate.getConcept()))
 					continue;
-				boolean accept = false;
-				for (EntityFeaturePack fp : EntityFeaturePack.getAllFeaturePacks(candidate, query, qi, wikiApi))
-					accept |= entityFilter.filterEntity(fp, entityFilterNormalizer);
+				EntityFeaturePack fp = new EntityFeaturePack(candidate, query, qi, wikiApi);
+				boolean accept = entityFilter.filterEntity(fp, entityFilterNormalizer);
 				if (accept){
 					acceptedEntities.add(candidate);
 					if (debugger != null)
@@ -506,24 +505,27 @@ public class SmaphAnnotator implements Sa2WSystem {
 		HashMap<Integer, HashSet<String>> rankToBoldsWS = null;
 		Set<Tag> candidatesWS = null;
 		double webTotalWS = Double.NaN;
+		int resultsCountWS = -1;
+		HashMap<Integer, Integer> rankToIdWS = null;
 		if (includeSourceWikiSearch | includeSourceNormalSearch) {
 			resCountAndWebTotalWS = takeBingData(query, bingBoldsAndRankWS,
 					wikiSearchUrls, null, null, topKWikiSearch, true);
 			webTotalWS = resCountAndWebTotalWS.getMiddle();
-			HashMap<Integer, Integer> rankToIdWikiSearch = urlsToRankID(wikiSearchUrls);
+			resultsCountWS = resCountAndWebTotalWS.getLeft();
+			rankToIdWS = urlsToRankID(wikiSearchUrls);
 			candidatesWS = new HashSet<>();
-			for (int wid : rankToIdWikiSearch.values())
+			for (int wid : rankToIdWS.values())
 				candidatesWS.add(new Tag(wid));
 			rankToBoldsWS = new HashMap<>();
 			SmaphUtils.mapRankToBoldsLC(bingBoldsAndRankWS, rankToBoldsWS, null);
 			if (debugger != null) {
-				debugger.addSource3SearchResult(query, rankToIdWikiSearch,
+				debugger.addSource3SearchResult(query, rankToIdWS,
 						wikiSearchUrls);
 				debugger.addBingResponseWikiSearch(query,
 						resCountAndWebTotalWS.getRight());
 
 			}
-			annTitlesToIdAndRankWS = adjustTitles(rankToIdWikiSearch);
+			annTitlesToIdAndRankWS = adjustTitles(rankToIdWS);
 		}
 
 		/** Annotate snippets */
@@ -553,16 +555,18 @@ public class SmaphAnnotator implements Sa2WSystem {
 		qi.allBoldsNS = allBoldsNS;
 		qi.bingBoldsAndRankNS = bingBoldsAndRankNS;
 		qi.resultsCountNS = resultsCountNS;
-		
+
+		qi.idToRankWS = SmaphUtils.inverseMap(rankToIdWS);
 		qi.annTitlesToIdAndRankWS = annTitlesToIdAndRankWS;
 		qi.webTotalWS = webTotalWS;
 		qi.bingBoldsAndRankWS = bingBoldsAndRankWS;
-		
+		qi.resultsCountWS = resultsCountWS; 
+
 		qi.entityToBoldsSA = entityToBoldsSA;
 		qi.entityToMentionsSA = entityToMentionsSA;
 		qi.entityToRanksSA = entityToRanksSA;
 		qi.entityToAdditionalInfosSA = entiyToAdditionalInfosSA;
-		
+
 		qi.candidatesSA = filteredAnnotationsSA;
 		qi.candidatesNS = candidatesNS;
 		qi.candidatesWS = candidatesWS;
@@ -721,11 +725,11 @@ public class SmaphAnnotator implements Sa2WSystem {
 				if (keepNEOnly
 						&& !ERDDatasetFilter.EntityIsNE(wikiApi, tag.getConcept()))
 					continue;
-				for (FeaturePack<Tag> features : EntityFeaturePack.getAllFeaturePacks(tag, query, qi, wikiApi)){
-					EFVectorsToPresence.add(new Pair<FeaturePack<Tag>, Boolean>(features, goldStandard.contains(tag)));
-					if (EFCandidates != null)
-						EFCandidates.add(tag);
-				}
+				FeaturePack<Tag> features  = new EntityFeaturePack(tag, query, qi, wikiApi);
+				EFVectorsToPresence.add(new Pair<FeaturePack<Tag>, Boolean>(features, goldStandard.contains(tag)));
+				if (EFCandidates != null)
+					EFCandidates.add(tag);
+
 				System.out.printf("%d in query [%s] is a %s example.%n",
 						tag.getConcept(), query,
 						goldStandard.contains(tag) ? "positive"
