@@ -21,6 +21,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.Vector;
+import java.util.stream.Collectors;
 
 public class CollectiveLinkBack implements LinkBack {
 	private BindingRegressor bindingRegressorModel;
@@ -40,17 +41,22 @@ public class CollectiveLinkBack implements LinkBack {
 	public static List<Pair<HashSet<Annotation>,BindingFeaturePack>> getBindingFeaturePacks(String query,
 			Set<Tag> acceptedEntities, QueryInformation qi, BindingGenerator bg, WikipediaApiInterface wikiApi, SmaphAnnotatorDebugger debugger){
 		List<Pair<HashSet<Annotation>,BindingFeaturePack>> featurePacks = new Vector<>();
+		//TODO: don't like.
+		acceptedEntities = acceptedEntities.stream().filter(e -> EntityToAnchors.e2a().containsId(e.getConcept())).collect(Collectors.toCollection(HashSet::new));
+		
 		// Generate all possible bindings
 		List<HashSet<Annotation>> bindings = bg.getBindings(query, qi,
 				acceptedEntities, wikiApi);
 
 		for (HashSet<Annotation> binding : bindings) {
-			//Discard bindings that have entities w/o anchors TODO: don't like.
-			boolean bad = false;
+			//Discard bindings that have entities w/o anchors
+			/*boolean bad = false;
 			for (Annotation a : binding)
-				if (!EntityToAnchors.e2a().containsId(a.getConcept()))
+				if (!EntityToAnchors.e2a().containsId(a.getConcept())){
 					bad = true;
-			if (bad) continue;
+					throw new RuntimeException();
+				}
+			if (bad) continue;*/
 
 			HashMap<Annotation, HashMap<String, Double>> debugAnnotationFeatures = new HashMap<>();
 			HashMap<String, Double> debugBindingFeatures = new HashMap<>();
