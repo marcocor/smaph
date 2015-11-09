@@ -10,13 +10,13 @@ import argparse
 RANKLIB_PATH = "../libs/RankLib-2.5.jar"
 RANKER = 6
 
-def ftr_selection_loop(good_ftr, valid_ftrs, ftr_buckets_left, qid_cand_to_score, best_f1, update_foo):
-	print("all feature buckets to try: {}".format(ftr_buckets_left), file=sys.stderr)
+def ftr_selection_loop(good_ftr, valid_ftrs, qid_cand_to_score, best_f1, update_foo, step):
 	while True:
 		candidate_ftrs = [f for f in valid_ftrs if f not in good_ftr] if update_foo == increment_features else good_ftr
 		ftr_buckets_left = get_feature_buckets(candidate_ftrs, step)
-		better_alternatives = []
 		print("starting iteration with feature set: {}".format(good_ftr), file=sys.stderr)
+		print("all feature buckets to try: {}".format(ftr_buckets_left), file=sys.stderr)
+		better_alternatives = []
 		for feature_bucket in ftr_buckets_left:
 			ftrs_to_try = update_foo(good_ftr, feature_bucket)
 			model, f1 = generate_and_test_model(ftrs_to_try, qid_cand_to_score, OPT_VALS, RANKER, TRAIN_DATA, VALIDATE_DATA)
@@ -56,7 +56,7 @@ def get_feature_buckets(all_ftrs, step):
 
 def do_one_phase(update_foo, good_ftr, valid_ftrs, best_f1, step):
 	print("Stage: {} - {} by {}".format(update_foo.__name__, step, step), file=sys.stderr)
-	good_ftr, best_f1 = ftr_selection_loop(good_ftr, valid_ftrs, ftr_buckets_left, qid_cand_to_score, best_f1, update_foo)
+	good_ftr, best_f1 = ftr_selection_loop(good_ftr, valid_ftrs, qid_cand_to_score, best_f1, update_foo, step)
 	print("Overall best features: {}".format(good_ftr), file=sys.stderr)
 	print("Overall best score: {}".format(best_f1), file=sys.stderr)
 	
@@ -125,8 +125,9 @@ if __name__ == '__main__':
 
 	print("Parameter tuning", file=sys.stderr)
 	for l in leaves:
-		model, best_f1 = generate_and_test_model(good_ftr, qid_cand_to_score, OPT_VALS, RANKER, TRAIN_DATA, VALIDATE_DATA, leaf=[l])
+		model, best_f1, employed_ftrs = generate_and_test_model(good_ftr, qid_cand_to_score, OPT_VALS, RANKER, TRAIN_DATA, VALIDATE_DATA, leaf=[l])
 		print("Tuning - Overall best model: {}".format(model), file=sys.stderr)
 		print("Tuning - Overall best score: {}".format(best_f1), file=sys.stderr)
+		print("Tunint - Features actually employed by these models ({} features): {}".format(len(employed_ftrs), ftr_set_string(employed_ftrs)), file=sys.stderr)
 			
 	
