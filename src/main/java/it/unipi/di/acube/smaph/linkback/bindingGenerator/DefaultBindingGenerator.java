@@ -34,136 +34,11 @@ public class DefaultBindingGenerator implements BindingGenerator {
 		}
 	}
 	
-	
-	public List<HashSet<Annotation>> getAllBindingsStefanXXXX(String query,
-			HashMap<Tag, String[]> entityToBoldsS1, HashMap<Tag, String[]> entityToBoldS2S3, HashMap<Tag, String> entitiesToTitles) {
-		
-		List<List<Pair<Integer, Integer>>> allSegmentations = pruneSegmentations(query, entityToBoldsS1, entityToBoldS2S3, entitiesToTitles);
-
-		System.out.println(allSegmentations.size());
-
-		//generate bindings fixing the fixed ones
-		HashSet<HashSet<Annotation>> insertedAnnotationSets = new HashSet<>();
-		List<HashSet<Annotation>> annotationSets = new Vector<>();
-		for (List<Pair<Integer, Integer>> segmentation : allSegmentations) {
-			List<List<Tag>> candidatesForSegmentation = new Vector<>();
-			HashSet<Tag> candidatesForSegmentationSet = new HashSet<>();
-			for (Pair<Integer, Integer> segment : segmentation) {
-				List<Tag> candidatesForSegment = new Vector<>();
-				candidatesForSegmentation.add(candidatesForSegment);
-
-				HashSet<Tag> candidatesForSegmentSet = new HashSet<>();
-					
-				//if (segmentFixedCandidates.containsKey(segment)){
-				//	candidatesForSegment.addAll(segmentFixedCandidates.get(segment));
-				//}
-			//	else {
-					// This segment may not be linked to any entity.
-					candidatesForSegment.add(new Tag(-1));
-					candidatesForSegmentSet.add(new Tag(-1));
-					candidatesForSegmentationSet.add(new Tag(-1));
-
-					//Link candidates from source1 according to bold edit distance
-					
-					// add tags that were not fixed to any segment to all segments
-					
-					for (Tag tag : entityToBoldsS1.keySet()) {
-						double minEditDistance = 1.0;
-						for (String tagText : entityToBoldsS1.get(tag))
-							minEditDistance = Math.min(
-									SmaphUtils.getNormEditDistanceLC(query
-											.substring(segment.first,
-													segment.second), tagText),
-									minEditDistance);
-						if (minEditDistance <= 0.3){
-							candidatesForSegment.add(tag);
-							candidatesForSegmentSet.add(tag);
-							candidatesForSegmentationSet.add(tag);
-						}
-					}
-					for (Tag tag : entitiesToTitles.keySet()) {
-						if (candidatesForSegmentSet.contains(tag))
-							continue;
-						if (SmaphUtils.getMinEditDist(
-								entitiesToTitles.get(tag),
-								query.substring(segment.first, segment.second)) <= 0.5) {
-							candidatesForSegment.add(tag);
-							candidatesForSegmentSet.add(tag);
-							candidatesForSegmentationSet.add(tag);
-
-						}
-					}
-					
-					/*for (Tag tag : entitiesToTitles.keySet()) {
-						if (candidatesForSegmentSet.contains(tag))
-							continue;
-						
-						//if (fixedCandidates.contains(tag)) // this is a bad idea, TODO: fixedCandidates is not needed
-						//	continue;
-						candidatesForSegment.add(tag);
-						candidatesForSegmentationSet.add(tag);
-																//		break;
-					}*/
-				
-				//}
-			}
-			for (Tag tag : entitiesToTitles.keySet()) {
-				if (candidatesForSegmentationSet.contains(tag))
-					continue;
-
-				double minEditDistance = Double.POSITIVE_INFINITY;
-				List<Tag> candidatesForBestSegment = null;
-
-				for (int i = 0; i < segmentation.size(); i++) {
-					Pair<Integer, Integer> segment = segmentation.get(i);
-					String segmentStr = query.substring(segment.first,
-							segment.second);
-					double editDistance = SmaphUtils.getMinEditDist(
-							entitiesToTitles.get(tag), segmentStr);
-					if (editDistance < minEditDistance) {
-						minEditDistance = editDistance;
-						candidatesForBestSegment = candidatesForSegmentation
-								.get(i);
-					}
-				}
-				if (minEditDistance < 1.0 && candidatesForBestSegment != null) {
-					candidatesForBestSegment.add(tag);
-					candidatesForSegmentationSet.add(tag);
-				}
-			}
-
-			
-			
-			List<List<Tag>> bindingsForSegmentation = new Vector<>();
-			populateBindings(new Vector<Tag>(), candidatesForSegmentation,
-					bindingsForSegmentation, MAX_BINDINGS_PER_SEGMENTATION);
-			for (List<Tag> tags : bindingsForSegmentation) {
-				HashSet<Annotation> annotations = new HashSet<>();
-				for (int i = 0; i < tags.size(); i++)
-					if (tags.get(i).getConcept() != -1)
-						annotations.add(new Annotation(
-								segmentation.get(i).first,
-								segmentation.get(i).second
-										- segmentation.get(i).first, tags
-										.get(i).getConcept()));
-				if (!insertedAnnotationSets.contains(annotations)) {
-					annotationSets.add(annotations);
-					insertedAnnotationSets.add(annotations);
-				}
-			}
-		}
-		
-		//make sure the empty binding is always contained.
-		if (!insertedAnnotationSets.contains(new HashSet<Annotation>()))
-			annotationSets.add(new HashSet<Annotation>());
-		
-		return annotationSets;
-	}
 	public List<HashSet<Annotation>> getAllBindings(String query,
-			HashMap<Tag, String[]> entityToBoldsS1, HashMap<Tag, String[]> entityToBoldS2S3, HashMap<Tag, String> entitiesToTitles, Set<Tag> acceptedEntities) {
+			HashMap<Tag, String[]> entityToBolds, HashMap<Tag, String> entitiesToTitles, Set<Tag> acceptedEntities) {
 		HashSet<HashSet<Annotation>> insertedAnnotationSets = new HashSet<>();
 		List<HashSet<Annotation>> annotationSets = new Vector<>();
-		List<List<Pair<Integer, Integer>>> segmentations = pruneSegmentations(query, entityToBoldsS1, entityToBoldS2S3, entitiesToTitles);
+		List<List<Pair<Integer, Integer>>> segmentations = pruneSegmentations(query, entityToBolds, entitiesToTitles);
 		
 		for (List<Pair<Integer, Integer>> segmentation : segmentations) {
 			HashSet<Tag> assignedTags = new HashSet<>();
@@ -173,10 +48,10 @@ public class DefaultBindingGenerator implements BindingGenerator {
 				candidatesForSegmentation.add(candidatesForSegment);
 				// This segment may not be linked to any entity.
 				candidatesForSegment.add(new Tag(-1));
-				for (Tag tag : entityToBoldsS1.keySet())
+				for (Tag tag : entityToBolds.keySet())
 					if (acceptedEntities.contains(tag)) {
 						double minEditDistance = 1.0;
-						for (String tagText : entityToBoldsS1.get(tag))
+						for (String tagText : entityToBolds.get(tag))
 							minEditDistance = Math.min(
 							        SmaphUtils.getNormEditDistanceLC(query.substring(segment.first, segment.second), tagText),
 							        minEditDistance);
@@ -212,8 +87,8 @@ public class DefaultBindingGenerator implements BindingGenerator {
 					}
 			}
 			
-			//add orphan tags to closest segment
-			for (Tag tag : entitiesToTitles.keySet())
+			//add orphan tags to closest segment TODO: don't like at all!!!!
+			/*for (Tag tag : entitiesToTitles.keySet())
 				if (acceptedEntities.contains(tag)) {
 					if (assignedTags.contains(tag))
 						continue;
@@ -234,7 +109,7 @@ public class DefaultBindingGenerator implements BindingGenerator {
 						candidatesForBestSegment.add(tag);
 						assignedTags.add(tag);
 					}
-				}
+				}*/
 			
 			//add tags that were not candidates to any segment to all segments
 			for (Tag tag : entitiesToTitles.keySet())
@@ -276,7 +151,7 @@ public class DefaultBindingGenerator implements BindingGenerator {
 	
 
 	private List<List<Pair<Integer, Integer>>> pruneSegmentations(String query,
-			HashMap<Tag, String[]> entityToBoldsS1, HashMap<Tag, String[]> entityToBoldS2S3, HashMap<Tag, String> entitiesToTitles){
+			HashMap<Tag, String[]> entityToBoldsS1, HashMap<Tag, String> entitiesToTitles){
 		//Do an initial pruning of segmentations and entities: if the bold (or title) of an entity found with source1 matches a substring in the query, fix it 
 				List<Pair<Integer, Integer>> segments = SmaphUtils.findSegments(query);
 				
@@ -391,7 +266,7 @@ public class DefaultBindingGenerator implements BindingGenerator {
 		entityToBolds = SmaphUtils.getEntitiesToBoldsList(qi.entityToBoldsSA,
 				qi.allCandidates());
 		HashMap<Tag, String> entitiesToTitles = SmaphUtils.getEntitiesToTitles(acceptedEntities, wikiApi);
-		return getAllBindings(query, entityToBolds, qi.entityToBoldNS, entitiesToTitles, acceptedEntities);
+		return getAllBindings(query, entityToBolds, entitiesToTitles, acceptedEntities);
 		
 	}
 }
