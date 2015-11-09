@@ -40,7 +40,7 @@ public class BindingFeaturePack extends FeaturePack<HashSet<Annotation>> {
 
 			for (String ftrName : AdvancedAnnotationFeaturePack
 					.getFeatureNamesStatic())
-				if (ftrName.startsWith("is_")) {
+				if (ftrName.startsWith("found_")) {
 					ftrNamesVect.add("count_" + ftrName);
 				} else {
 					ftrNamesVect.add("min_" + ftrName);
@@ -101,7 +101,7 @@ public class BindingFeaturePack extends FeaturePack<HashSet<Annotation>> {
 		HashMap<String, Double> entitySetFeatures = new HashMap<>();
 		for (HashMap<String, Double> ftrVectToMerge : allFtrVects) {
 			for (String ftrName : ftrVectToMerge.keySet()) {
-				if (ftrName.startsWith("is_")) {
+				if (ftrName.startsWith("found_")) {
 					String key = "count_" + ftrName;
 					if (!entitySetFeatures.containsKey(key))
 						entitySetFeatures.put(key, 0.0);
