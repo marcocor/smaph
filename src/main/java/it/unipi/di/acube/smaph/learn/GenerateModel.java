@@ -442,10 +442,10 @@ public class GenerateModel {
 		String trainFile = "train_binding_ranking_"+prefix+".dat";
 		String develFile = "devel_binding_ranking_"+prefix+".dat";
 		String normFile = "models/train_binding_ranking_"+prefix+".zscore";
-		double defaultValueNorm = 0.0;
+		//double defaultValueNorm = 0.0;
 
 		System.out.println("Building normalizer...");
-		ZScoreFeatureNormalizer brNorm = new ZScoreFeatureNormalizer(trainLinkBackGatherer, defaultValueNorm);
+		ZScoreFeatureNormalizer brNorm = new ZScoreFeatureNormalizer(trainLinkBackGatherer/*, defaultValueNorm*/);
 		brNorm.dump(normFile);
 		System.out.println("Dumping binding training problems for ranking...");
 		trainLinkBackGatherer.dumpExamplesRankLib(trainFile, brNorm);
@@ -455,7 +455,7 @@ public class GenerateModel {
 		for (int[] ftrs : featuresSetsToTest) {
 			String ftrListFile = generateFeatureListFile(ftrs);
 			for (int modelType : new int[] { 6 }) {
-				for (int ncdgTop : new int[] {15,19,21,23,25}){
+				for (int ncdgTop : new int[] {14,15,19,21,23,24}){
 					String optMetric = "NDCG@" + ncdgTop;
 					String rankModelBase = getModelFileNameBaseRL(ftrs) + ".full";
 					String modelFile = rankModelBase + "." + modelType+ "." + optMetric + "." + prefix + ".model";
@@ -466,7 +466,7 @@ public class GenerateModel {
 					System.out.println("Model trained (binding).");
 
 					BindingRegressor br = new RankLibBindingRegressor(modelFile);
-					FeatureNormalizer brNormLoaded = new ZScoreFeatureNormalizer(normFile, new BindingFeaturePack(), defaultValueNorm);
+					FeatureNormalizer brNormLoaded = new ZScoreFeatureNormalizer(normFile, new BindingFeaturePack()/*, defaultValueNorm*/);
 					res.add(new ImmutableTriple<BindingRegressor, FeatureNormalizer, int[]>(br, brNormLoaded, ftrs));
 				}
 			}
