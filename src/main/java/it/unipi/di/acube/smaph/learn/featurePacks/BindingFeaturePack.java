@@ -99,12 +99,18 @@ public class BindingFeaturePack extends FeaturePack<HashSet<Annotation>> {
 
 		// compute min, max, avg, count
 		HashMap<String, Double> entitySetFeatures = new HashMap<>();
+		
+		// Initialize sources count features to 0.0
+		for (String ftrName : new EntityFeaturePack().getFeatureNames())
+			if (ftrName.startsWith("found_")) {
+				String key = "count_" + ftrName;
+				entitySetFeatures.put(key, 0.0);
+			}	
+		
 		for (HashMap<String, Double> ftrVectToMerge : allFtrVects) {
 			for (String ftrName : ftrVectToMerge.keySet()) {
 				if (ftrName.startsWith("found_")) {
 					String key = "count_" + ftrName;
-					if (!entitySetFeatures.containsKey(key))
-						entitySetFeatures.put(key, 0.0);
 					entitySetFeatures.put(key, entitySetFeatures.get(key) + ftrVectToMerge.get(ftrName));
 				} else {
 					if (!entitySetFeatures.containsKey("min_" + ftrName))
@@ -192,6 +198,13 @@ public class BindingFeaturePack extends FeaturePack<HashSet<Annotation>> {
 					relatednessPairsJaccard.add(WATRelatednessComputer.getJaccardRelatedness(a1.getConcept(), a2.getConcept()));
 					relatednessPairsMW.add(WATRelatednessComputer.getMwRelatedness(a1.getConcept(), a2.getConcept()));
 				}
+		//If there are no entities or one single entity, their coherence is 1.
+		/*bindingFeatures.put("min_relatedness", 1.0);
+		bindingFeatures.put("max_relatedness", 1.0);
+		bindingFeatures.put("avg_relatedness", 1.0);
+		bindingFeatures.put("min_relatedness_mw", 1.0);
+		bindingFeatures.put("max_relatedness_mw", 1.0);
+		bindingFeatures.put("avg_relatedness_mw", 1.0);*/
 		if (relatednessPairsJaccard.size() >= 1){
 			Triple<Double, Double, Double> minMaxAvgRelJaccard = SmaphUtils.getMinMaxAvg(relatednessPairsJaccard);
 			bindingFeatures.put("min_relatedness", minMaxAvgRelJaccard.getLeft());
