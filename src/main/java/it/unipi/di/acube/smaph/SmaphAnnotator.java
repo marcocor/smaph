@@ -465,6 +465,7 @@ public class SmaphAnnotator implements Sa2WSystem {
 		HashMap<Tag, String[]> entityToBoldsNS = new HashMap<>();
 		List<String> allBoldsNS = null;
 		Set<Tag> candidatesNS = null;
+		HashMap<Integer, Integer> idToRankNS = null;
 		if (includeSourceWikiSearch || includeSourceNormalSearch || includeSourceSnippets) {
 			bingBoldsAndRankNS = new Vector<>();
 			urlsNS = new Vector<>();
@@ -477,6 +478,7 @@ public class SmaphAnnotator implements Sa2WSystem {
 			resultsCountNS = resCountAndWebTotalNS.getLeft();
 			webTotalNS = resCountAndWebTotalNS.getMiddle();
 			rankToIdNS = urlsToRankID(urlsNS);
+			idToRankNS  = SmaphUtils.inverseMap(rankToIdNS);
 			rankToBoldsNS = new HashMap<>();
 			allBoldsNS = SmaphUtils.boldPairsToListLC(bingBoldsAndRankNS);
 			SmaphUtils.mapRankToBoldsLC(bingBoldsAndRankNS, rankToBoldsNS, null);
@@ -507,12 +509,14 @@ public class SmaphAnnotator implements Sa2WSystem {
 		double webTotalWS = Double.NaN;
 		int resultsCountWS = -1;
 		HashMap<Integer, Integer> rankToIdWS = null;
+		HashMap<Integer, Integer> idToRankWS = null;
 		if (includeSourceWikiSearch | includeSourceNormalSearch) {
 			resCountAndWebTotalWS = takeBingData(query, bingBoldsAndRankWS,
 					wikiSearchUrls, null, null, topKWikiSearch, true);
 			webTotalWS = resCountAndWebTotalWS.getMiddle();
 			resultsCountWS = resCountAndWebTotalWS.getLeft();
 			rankToIdWS = urlsToRankID(wikiSearchUrls);
+			idToRankWS = SmaphUtils.inverseMap(rankToIdWS);
 			candidatesWS = new HashSet<>();
 			for (int wid : rankToIdWS.values())
 				candidatesWS.add(new Tag(wid));
@@ -549,14 +553,14 @@ public class SmaphAnnotator implements Sa2WSystem {
 		qi.includeSourceWikiSearch = includeSourceWikiSearch;
 		qi.includeSourceSnippets = includeSourceSnippets;
 
-		qi.idToRankNS = SmaphUtils.inverseMap(rankToIdNS);
+		qi.idToRankNS = idToRankNS;
 		qi.entityToBoldNS = entityToBoldsNS;
 		qi.webTotalNS = webTotalNS;
 		qi.allBoldsNS = allBoldsNS;
 		qi.bingBoldsAndRankNS = bingBoldsAndRankNS;
 		qi.resultsCountNS = resultsCountNS;
 
-		qi.idToRankWS = SmaphUtils.inverseMap(rankToIdWS);
+		qi.idToRankWS = idToRankWS;
 		qi.annTitlesToIdAndRankWS = annTitlesToIdAndRankWS;
 		qi.webTotalWS = webTotalWS;
 		qi.bingBoldsAndRankWS = bingBoldsAndRankWS;
