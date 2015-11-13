@@ -104,10 +104,10 @@ public class EntityFeaturePack extends FeaturePack<Tag> {
 		// Normal search (S2) features
 		if (qi.includeSourceNormalSearch) {
 			res.put("found_s2", 0.0);
-			res.put("s2_rank", qi.resultsCountNS + 1.0);
+			/*res.put("s2_rank", qi.resultsCountNS + 1.0);
 			res.put("s2_capitalizedBolds", 0.0);
 			res.put("s2_editDistanceBolds", 1.0);
-			res.put("s2_avgBoldsWords", 0.0);
+			res.put("s2_avgBoldsWords", 0.0);*/
 
 			if (qi.candidatesNS.contains(candidate)) {
 				int rank = qi.idToRankNS.get(wid);
@@ -124,11 +124,11 @@ public class EntityFeaturePack extends FeaturePack<Tag> {
 		// Wikipedia search (S3) features
 		if (qi.includeSourceWikiSearch) {
 			res.put("found_s3", 0.0);
-			res.put("s3_rank", qi.resultsCountWS + 1.0);
+/*			res.put("s3_rank", qi.resultsCountWS + 1.0);
 			res.put("s3_capitalizedBolds", 0.0);
 			res.put("s3_editDistanceBolds", 1.0);
 			res.put("s3_avgBoldsWords", 0.0);
-
+*/
 			if (qi.candidatesWS.contains(candidate)) {
 				int rank = qi.idToRankWS.get(wid);
 				Triple<Double, Double, Double> EDCapitalizedWordcount = getBoldsEDCapitalizedWordcount(query, rank,
@@ -144,7 +144,7 @@ public class EntityFeaturePack extends FeaturePack<Tag> {
 		// Snippet annotation (S6) features
 		if (qi.includeSourceSnippets){
 			res.put("found_s6", 0.0);
-			res.put("s6_freq", 0.0);
+/*			res.put("s6_freq", 0.0);
 			res.put("s6_avgRank", 1.0);
 			res.put("s6_pageRank", 0.0);
 			res.put("s6_min_rho", 0.0);
@@ -168,11 +168,11 @@ public class EntityFeaturePack extends FeaturePack<Tag> {
 			res.put("s6_min_mention_bold_overlap", 1.0);
 			res.put("s6_max_mention_bold_overlap", 1.0);
 			res.put("s6_avg_mention_bold_overlap", 1.0);
-
+*/
 			if (qi.candidatesSA.contains(candidate)) {
 				res.put("found_s6", 1.0);
 				List<HashMap<String, Double>> additionalInfos = qi.entityToAdditionalInfosSA.get(candidate);
-				double pageRank = additionalInfos.get(0).get("pageRank");//TODO Why 0?
+				double pageRank = additionalInfos.get(0).get("pageRank");
 				List<String> mentions = qi.entityToMentionsSA.get(candidate);
 				List<String> bolds = qi.entityToBoldsSA.get(candidate);
 				List<Integer> ranks = qi.entityToRanksSA.get(candidate);
