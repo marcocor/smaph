@@ -10,7 +10,7 @@ import argparse
 RANKLIB_PATH = "../libs/RankLib-2.5.jar"
 RANKER = 6
 
-def ftr_selection_loop(good_ftr, valid_ftrs, qid_cand_to_score, best_f1, update_foo, step):
+def ftr_selection_loop(good_ftr, valid_ftrs, qid_cand_to_score, best_f1, update_foo, step, cpus=None):
 	while True:
 		candidate_ftrs = [f for f in valid_ftrs if f not in good_ftr] if update_foo == increment_features else good_ftr
 		ftr_buckets_left = get_feature_buckets(candidate_ftrs, step)
@@ -19,11 +19,13 @@ def ftr_selection_loop(good_ftr, valid_ftrs, qid_cand_to_score, best_f1, update_
 		better_alternatives = []
 		for feature_bucket in ftr_buckets_left:
 			ftrs_to_try = update_foo(good_ftr, feature_bucket)
-			model, f1 = generate_and_test_model(ftrs_to_try, qid_cand_to_score, OPT_VALS, RANKER, TRAIN_DATA, VALIDATE_DATA)
+			model, f1, _ = generate_and_test_model(ftrs_to_try, qid_cand_to_score, OPT_VALS, RANKER, TRAIN_DATA, VALIDATE_DATA, cpus=cpus)
 			print("achieved f1={} with model {} and feature set {} [added/removed features {}]".format(f1, model, ftrs_to_try, feature_bucket), file=sys.stderr)
 			if is_improvement(f1, ftrs_to_try, best_f1, good_ftr):
 				print("found a better score inside iteration. F1={}".format(f1), file=sys.stderr)
 				better_alternatives = sorted([(f1, feature_bucket)] + better_alternatives, reverse=True)
+			else:
+				print("found no improvement. F1={}".format(f1), file=sys.stderr)
 		if not better_alternatives:
 			print("no advances in this iteration, stopping iterations.", file=sys.stderr)
 			break
@@ -32,7 +34,7 @@ def ftr_selection_loop(good_ftr, valid_ftrs, qid_cand_to_score, best_f1, update_
 			for feature_bucket in zip(*better_alternatives)[1]:
 				print("trying to add/remove {}".format(feature_bucket), file=sys.stderr)
 				ftrs_to_try = update_foo(good_ftr, feature_bucket)
-				model, f1, employed_ftrs = generate_and_test_model(ftrs_to_try, qid_cand_to_score, OPT_VALS, RANKER, TRAIN_DATA, VALIDATE_DATA)
+				model, f1, employed_ftrs = generate_and_test_model(ftrs_to_try, qid_cand_to_score, OPT_VALS, RANKER, TRAIN_DATA, VALIDATE_DATA, cpus=cpus)
 				if is_improvement(f1, ftrs_to_try, best_f1, good_ftr):
 					best_f1 = f1
 					ftr_buckets_left.remove(feature_bucket)
@@ -82,10 +84,12 @@ if __name__ == '__main__':
 	parser.add_argument('--startset', help="Feature set to start with (e.g. 1,3,5-10,24). Default: use all features (no features for 'increment' method)", required=False, default="")
 	parser.add_argument('--leaves', help="Number of tree leaves (e.g. 5,7,10-20). Default: 10.", required=False, default="10")
 	parser.add_argument('--opt_vals', help="Values to optimize NDGC with. (e.g. 5,7,10-20). Default: 12-23.", required=False, default="12-23")
+	parser.add_argument('--cpus', help="Number of training processes to start in parallel.", required=False, default="")
 	args = parser.parse_args()
 
 	leaves = ftr_string_set(args.leaves)
 	OPT_VALS = ftr_string_set(args.opt_vals)
+	cpus = None if not args.cpus else int(args.cpus)
 
 	TRAIN_DATA = "../train_binding_ranking_{}.dat".format(args.dataset)
 	VALIDATE_DATA = "../devel_binding_ranking_{}.dat".format(args.dataset)
@@ -108,7 +112,7 @@ if __name__ == '__main__':
 	if args.method in['increment', 'ablation']:
 		print("Testing initial feature set", file=sys.stderr)
 		for leaf in leaves:
-			_, best_f1, employed_ftrs = generate_and_test_model(good_ftr, qid_cand_to_score, OPT_VALS, RANKER, TRAIN_DATA, VALIDATE_DATA, leaf=[leaf])
+			_, best_f1, employed_ftrs = generate_and_test_model(good_ftr, qid_cand_to_score, OPT_VALS, RANKER, TRAIN_DATA, VALIDATE_DATA, leaf=[leaf], cpus=cpus)
 		print("Initial best score: {}".format(best_f1), file=sys.stderr)
 		print("Initial features actually employed by these models ({} features): {}".format(len(employed_ftrs), ftr_set_string(employed_ftrs)), file=sys.stderr)
 		good_ftr = employed_ftrs
@@ -125,7 +129,7 @@ if __name__ == '__main__':
 
 	print("Parameter tuning", file=sys.stderr)
 	for l in leaves:
-		model, best_f1, employed_ftrs = generate_and_test_model(good_ftr, qid_cand_to_score, OPT_VALS, RANKER, TRAIN_DATA, VALIDATE_DATA, leaf=[l])
+		model, best_f1, employed_ftrs = generate_and_test_model(good_ftr, qid_cand_to_score, OPT_VALS, RANKER, TRAIN_DATA, VALIDATE_DATA, leaf=[l], cpus=cpus)
 		print("Tuning - Overall best model: {}".format(model), file=sys.stderr)
 		print("Tuning - Overall best score: {}".format(best_f1), file=sys.stderr)
 		print("Tunint - Features actually employed by these models ({} features): {}".format(len(employed_ftrs), ftr_set_string(employed_ftrs)), file=sys.stderr)

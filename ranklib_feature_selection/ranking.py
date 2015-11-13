@@ -96,7 +96,7 @@ def get_valid_ftrs(train_file):
 				diverse_features |= set([f for f in f_dict.keys() if first_line[f] != f_dict[f]])
 	return sorted(list(diverse_features))
 
-def build_models(ftrs_to_try, opt_vals, ranker, train_file, validate_file, optimize="NDCG", model_name_prefix="", tree=[1000], leaf=[10]):
+def build_models(ftrs_to_try, opt_vals, ranker, train_file, validate_file, optimize="NDCG", model_name_prefix="", tree=[1000], leaf=[10], cpus=None):
 	get_name = lambda optimize, t, l, op, model_name_base : '{4}.t{1}.l{2}.{0}@{3}'.format(optimize, t, l, op, model_name_base)
 	ftrs_string = hashlib.md5(ftr_set_string(ftrs_to_try)).hexdigest()
 	features_file = ftr_filename(ftrs_string)
@@ -109,7 +109,7 @@ def build_models(ftrs_to_try, opt_vals, ranker, train_file, validate_file, optim
 		print("all models already trained, skipping", file=sys.stderr)
 	else:
 		cmds = ['"java {} -jar {} -ranker {} -feature {} -train {} -validate {}'.format(JAVA_OPTS_TRAIN, RANKLIB_PATH, ranker, features_file, train_file, validate_file) + ' -metric2t {0}@{3} -tree {1} -leaf {2} -save {5}"'.format(*(p + (get_name(*p),))) for p in to_train_param]
-		cmd = "parallel --gnu ::: {}".format(" ".join(cmds))
+		cmd = "parallel {} --gnu ::: {}".format("" if cpus is None else "-P {}".format(cpus), " ".join(cmds))
 		print(cmd, file=sys.stderr)
 		os.system(cmd)
 	for p in models_param:
@@ -195,10 +195,10 @@ def gen_ftr_file(ftrs):
 			f.write("\n")
 	return filename
 
-def generate_and_test_model(ftrs_to_try, qid_cand_to_score, opt_vals, ranker, train_file, validate_file, tree=[1000], leaf=[10]):
+def generate_and_test_model(ftrs_to_try, qid_cand_to_score, opt_vals, ranker, train_file, validate_file, tree=[1000], leaf=[10], cpus=None):
 	print("testing feature set: {}".format(ftrs_to_try), file=sys.stderr)
 	gen_ftr_file(ftrs_to_try)
-	models = build_models(ftrs_to_try, opt_vals, ranker, train_file, validate_file, tree=tree, leaf=leaf)
+	models = build_models(ftrs_to_try, opt_vals, ranker, train_file, validate_file, tree=tree, leaf=leaf, cpus=cpus)
 	employed_ftrs = [get_model_used_features(m) for m in models]
 	for m_f in zip(models, employed_ftrs):
 		print("generated model: {} employed_features ({} features):{}".format(m_f[0], len(m_f[1]), ftr_set_string(m_f[1])), file=sys.stderr)
