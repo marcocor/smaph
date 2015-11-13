@@ -252,10 +252,10 @@ public class EntityFeaturePack extends FeaturePack<Tag> {
 		for (String source : sources)
 			if (features.containsKey("found_" + source)) {
 				long count = features.keySet().stream().filter(fn -> fn.startsWith(source + "_")).count();
-				if ((source.equals("s2") || source.equals("s3")) && count != 4)
-					throw new RuntimeException(String.format("Sources 2 and 3 must have 4 fetures set. %d found.", count));
-				if (source.equals("s6") && count != 24)
-					throw new RuntimeException(String.format("Source 6 must have 24 fetures set. %d found.", count));
+				if ((source.equals("s2") || source.equals("s3")) && count != 4 && count != 0)
+					throw new RuntimeException(String.format("Sources 2 and 3 must have 0 or 4 fetures set. %d found.", count));
+				if (source.equals("s6") && count != 24 && count != 0)
+					throw new RuntimeException(String.format("Source 6 must have 0 or 24 fetures set. %d found.", count));
 				ftrCount += count;
 				ftrCount ++;
 			}
