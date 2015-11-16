@@ -872,6 +872,21 @@ public class SmaphAnnotator implements Sa2WSystem {
 				bindingToFtrsAndF1.size());
 	}
 
+	public Pair<HashSet<ScoredAnnotation>, Integer> getLBUpperBound3(String query, HashSet<Annotation> goldStandardAnn,
+	        double maxAnchorEd) throws Exception {
+		QueryInformation qi = getQueryInformation(query);
+		List<Annotation> candidateAnnotations = AdvancedIndividualLinkback.getAnnotations(query, qi.allCandidates(), qi,
+		        maxAnchorEd);
+		StrongAnnotationMatch sam = new StrongAnnotationMatch(wikiApi);
+
+		HashSet<ScoredAnnotation> bestBindingScored = new HashSet<>();
+		for (Annotation a : candidateAnnotations) {
+			if (goldStandardAnn.stream().anyMatch(p -> sam.match(a, p)))
+				bestBindingScored.add(new ScoredAnnotation(a.getPosition(), a.getLength(), a.getConcept(), 1.0f));
+		}
+		return new Pair<HashSet<ScoredAnnotation>, Integer>(bestBindingScored, candidateAnnotations.size());
+	}
+
 	public HashSet<ScoredAnnotation> getUpperBoundMentions(String query,
 			HashSet<Annotation> goldStandardAnn, BindingGenerator bg)
 					throws Exception {
