@@ -46,8 +46,10 @@ public class AdvancedIndividualLinkback implements LinkBack {
 			for (Pair<Integer, Integer> segment : segments) {
 				String segmentStr = query.substring(segment.first, segment.second);
 				for (Pair<String, Integer> anchor : entityAnchors) {
-					if (SmaphUtils.getNormEditDistance(anchor.first, segmentStr) < anchorMaxED)
+					if (SmaphUtils.getNormEditDistance(anchor.first, segmentStr) < anchorMaxED){
 						annotations.add(new Annotation(segment.first, segment.second - segment.first, t.getConcept()));
+						break;
+					}
 				}
 			}
 		}
