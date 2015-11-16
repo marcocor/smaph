@@ -61,6 +61,15 @@ def parse_line(l):
 	f1 = float(l[-1][3:])
 	return [(int(fv[0:fv.index(":")]), float(fv[fv.index(":")+1:])) for fv in l[2:-2]], f1, int(l[1][4:])
 
+def get_ftr_mins(dataset_file, ftrs):
+	ftr_min = dict()
+	with open(dataset_file) as f:
+		for l in f:
+			for f, v in parse_line(l)[0]:
+				if f in ftrs and (f not in ftr_min or ftr_min[f]> v):
+					ftr_min[f] = v
+	return ftr_min
+
 def load_f1s(validate_file):
 	qid_cand_to_score = dict()
 	i = None
@@ -96,13 +105,16 @@ def get_valid_ftrs(train_file):
 				diverse_features |= set([f for f in f_dict.keys() if first_line[f] != f_dict[f]])
 	return sorted(list(diverse_features))
 
+def get_model_base_name(dataset_file, model_name_prefix=""):
+	return "models/" + model_name_prefix + "model_" + os.path.basename(dataset_file) + "_" 
+
 def build_models(ftrs_to_try, opt_vals, ranker, train_file, validate_file, optimize="NDCG", model_name_prefix="", tree=[1000], leaf=[10], cpus=None):
 	get_name = lambda optimize, t, l, op, model_name_base : '{4}.t{1}.l{2}.{0}@{3}'.format(optimize, t, l, op, model_name_base)
 	ftrs_string = hashlib.md5(ftr_set_string(ftrs_to_try)).hexdigest()
 	features_file = ftr_filename(ftrs_string)
 	if not os.path.isfile(features_file):
 		gen_ftr_file(ftrs_to_try)
-	model_name_base = "models/" + model_name_prefix + "model_" + os.path.basename(train_file) + "_" + ftrs_string 
+	model_name_base = get_model_base_name(train_file, model_name_prefix) + ftrs_string 
 	models_param = [(optimize, t, l, o, model_name_base) for t in tree for l in leaf for o in opt_vals]
 	to_train_param = [p for p in models_param if not os.path.isfile(get_name(*p))]
 	if not to_train_param:
@@ -116,7 +128,7 @@ def build_models(ftrs_to_try, opt_vals, ranker, train_file, validate_file, optim
 		assert(os.path.isfile(get_name(*p)))
 	return [get_name(*p) for p in models_param]
 
-def get_scores(scores_file, qid_cand_to_f1):
+def load_scores(scores_file, qid_cand_to_f1):
 	qid_to_score_and_f1 = dict()
 	with open(scores_file) as f:
 		for l in f:
@@ -124,6 +136,10 @@ def get_scores(scores_file, qid_cand_to_f1):
 			qid, cand, p_score = int(t[0]), int(t[1]), float(t[2])
 			if qid not in qid_to_score_and_f1 or qid_to_score_and_f1[qid][0] < p_score:
 				qid_to_score_and_f1[qid] = (p_score, qid_cand_to_f1[(qid, cand)])
+	return qid_to_score_and_f1
+
+def get_scores(scores_file, qid_cand_to_f1):
+	qid_to_score_and_f1 = load_scores(scores_file, qid_cand_to_f1)
 	return numpy.mean(zip(*qid_to_score_and_f1.values())[1])
 
 def get_scores_f1_qid_and_maxf1(scores_file, qid_cand_to_f1):

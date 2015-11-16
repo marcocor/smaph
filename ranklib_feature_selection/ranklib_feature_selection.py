@@ -6,6 +6,7 @@ import os.path
 import sys
 from ranking import *
 import argparse
+import shutil
 
 RANKLIB_PATH = "../libs/RankLib-2.5.jar"
 RANKER = 6
@@ -128,10 +129,16 @@ if __name__ == '__main__':
 		good_ftr, best_f1 = do_one_phase(secondary_method, good_ftr, valid_ftrs, best_f1, 1)
 
 	print("Parameter tuning", file=sys.stderr)
+	overall_best_f1, overall_best_model = -1, None
 	for l in leaves:
 		model, best_f1, employed_ftrs = generate_and_test_model(good_ftr, qid_cand_to_score, OPT_VALS, RANKER, TRAIN_DATA, VALIDATE_DATA, leaf=[l], cpus=cpus)
+		if best_f1 > overall_best_f1:
+			overall_best_f1, overall_best_model = best_f1, model
 		print("Tuning - Overall best model: {}".format(model), file=sys.stderr)
 		print("Tuning - Overall best score: {}".format(best_f1), file=sys.stderr)
 		print("Tunint - Features actually employed by these models ({} features): {}".format(len(employed_ftrs), ftr_set_string(employed_ftrs)), file=sys.stderr)
-			
+
+	if overall_best_model:
+		print("Exporting best model {} to {}".format(overall_best_model, get_model_base_name(TRAIN_DATA) + "best"), file=sys.stderr)
+		shutil.copy(overall_best_model, get_model_base_name(TRAIN_DATA) + "best")
 	
