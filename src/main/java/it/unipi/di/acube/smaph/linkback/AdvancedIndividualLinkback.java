@@ -36,7 +36,7 @@ public class AdvancedIndividualLinkback implements LinkBack {
 		this.edthreshold = edthreshold;
 	}
 
-	public static List<Annotation> getAnnotations(String query, Set<Tag> acceptedEntities, QueryInformation qi, double anchorMaxED) {
+	public static List<Annotation> getAnnotations(String query, Set<Tag> acceptedEntities, double anchorMaxED) {
 		List<Pair<Integer, Integer>> segments = SmaphUtils.findSegments(query);
 		List<Annotation> annotations = new Vector<>();
 		for (Tag t : acceptedEntities) {
@@ -45,12 +45,8 @@ public class AdvancedIndividualLinkback implements LinkBack {
 			List<Pair<String, Integer>> entityAnchors = EntityToAnchors.e2a().getAnchors(t.getConcept());
 			for (Pair<Integer, Integer> segment : segments) {
 				String segmentStr = query.substring(segment.first, segment.second);
-				for (Pair<String, Integer> anchor : entityAnchors) {
-					if (SmaphUtils.getNormEditDistance(anchor.first, segmentStr) < anchorMaxED){
-						annotations.add(new Annotation(segment.first, segment.second - segment.first, t.getConcept()));
-						break;
-					}
-				}
+				if (entityAnchors.stream().anyMatch(anchor -> SmaphUtils.getNormEditDistance(anchor.first, segmentStr) < anchorMaxED))
+					annotations.add(new Annotation(segment.first, segment.second - segment.first, t.getConcept()));
 			}
 		}
 		return annotations;
@@ -60,7 +56,7 @@ public class AdvancedIndividualLinkback implements LinkBack {
 	public HashSet<ScoredAnnotation> linkBack(String query, HashSet<Tag> acceptedEntities, QueryInformation qi) {
 
 		List<Pair<Annotation, Double>> scoreAndAnnotations = new Vector<>();
-		for (Annotation a : getAnnotations(query, acceptedEntities, qi, edthreshold)) {
+		for (Annotation a : getAnnotations(query, acceptedEntities, edthreshold)) {
 			double score = ar.predictScore(new AdvancedAnnotationFeaturePack(a, query, qi, wikiApi),
 					annFn);
 			scoreAndAnnotations.add(new Pair<Annotation, Double>(a, score));

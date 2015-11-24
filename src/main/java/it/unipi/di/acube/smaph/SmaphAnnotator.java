@@ -794,7 +794,7 @@ public class SmaphAnnotator implements Sa2WSystem {
 
 		List<Triple<Annotation, AdvancedAnnotationFeaturePack, Boolean>> annAndFtrsAndPresence = new Vector<>();
 		for (Annotation a : AdvancedIndividualLinkback.getAnnotations(query,
-				qi.allCandidates(), qi, anchorMaxED)) {
+				qi.allCandidates(), anchorMaxED)) {
 			boolean inGold = false;
 			for (Annotation goldAnn : goldStandardAnn)
 				if (annotationMatch.match(goldAnn, a)) {
@@ -875,7 +875,7 @@ public class SmaphAnnotator implements Sa2WSystem {
 	public Pair<HashSet<ScoredAnnotation>, Integer> getLBUpperBound3(String query, HashSet<Annotation> goldStandardAnn,
 	        double maxAnchorEd) throws Exception {
 		QueryInformation qi = getQueryInformation(query);
-		List<Annotation> candidateAnnotations = AdvancedIndividualLinkback.getAnnotations(query, qi.allCandidates(), qi,
+		List<Annotation> candidateAnnotations = AdvancedIndividualLinkback.getAnnotations(query, qi.allCandidates(),
 		        maxAnchorEd);
 		StrongAnnotationMatch sam = new StrongAnnotationMatch(wikiApi);
 
@@ -885,6 +885,21 @@ public class SmaphAnnotator implements Sa2WSystem {
 				bestBindingScored.add(new ScoredAnnotation(a.getPosition(), a.getLength(), a.getConcept(), 1.0f));
 		}
 		return new Pair<HashSet<ScoredAnnotation>, Integer>(bestBindingScored, candidateAnnotations.size());
+	}
+
+	public HashSet<ScoredAnnotation> getLBUpperBound4(String query, HashSet<Annotation> gold) throws Exception {
+		List<Pair<Integer, Integer>> segments = SmaphUtils.findSegments(query);
+		Set<Tag> entities = getQueryInformation(query).allCandidates();
+		HashSet<ScoredAnnotation> solution = new HashSet<>();
+		StrongAnnotationMatch sam = new StrongAnnotationMatch(wikiApi);
+
+		for (Pair<Integer, Integer> segment : segments)
+			for (Tag entity : entities) {
+				Annotation a = new Annotation(segment.first, segment.second - segment.first, entity.getConcept());
+				if (gold.stream().anyMatch(ga -> sam.match(a, ga)))
+					solution.add(new ScoredAnnotation(segment.first, segment.second - segment.first, entity.getConcept(), 1.0f));
+			}
+		return solution;
 	}
 
 	public HashSet<ScoredAnnotation> getUpperBoundMentions(String query,
