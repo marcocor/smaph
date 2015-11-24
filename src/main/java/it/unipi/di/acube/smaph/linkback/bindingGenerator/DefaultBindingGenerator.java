@@ -18,22 +18,6 @@ public class DefaultBindingGenerator implements BindingGenerator {
 	private static final int MAX_SEGMENTATIONS_AFTER_FILTER = 150;//150;
 	private static final int MAX_BINDINGS_PER_SEGMENTATION = 50;//50;
 
-	private static void populateBindings(List<Tag> chosenCandidates,
-			List<List<Tag>> candidates, List<List<Tag>> bindings, int maxBindings) {
-		if (bindings.size() >= maxBindings)
-			return;
-		if (chosenCandidates.size() == candidates.size()) {
-			bindings.add(new Vector<Tag>(chosenCandidates));
-			return;
-		}
-		List<Tag> candidatesToExpand = candidates.get(chosenCandidates.size());
-		for (Tag candidate : candidatesToExpand) {
-			List<Tag> nextChosenCandidates = new Vector<>(chosenCandidates);
-			nextChosenCandidates.add(candidate);
-			populateBindings(nextChosenCandidates, candidates, bindings, maxBindings);
-		}
-	}
-	
 	public List<HashSet<Annotation>> getAllBindings(String query,
 			HashMap<Tag, String[]> entityToBolds, HashMap<Tag, String> entitiesToTitles, Set<Tag> acceptedEntities) {
 		HashSet<HashSet<Annotation>> insertedAnnotationSets = new HashSet<>();
@@ -119,10 +103,9 @@ public class DefaultBindingGenerator implements BindingGenerator {
 					for (List<Tag> candidatesForSegment : candidatesForSegmentation)
 						candidatesForSegment.add(tag);
 				}
-			
-			List<List<Tag>> bindingsForSegmentation = new Vector<>();
-			populateBindings(new Vector<Tag>(), candidatesForSegmentation,
-					bindingsForSegmentation, MAX_BINDINGS_PER_SEGMENTATION);
+
+			List<List<Tag>> bindingsForSegmentation = SmaphUtils.getBindings(candidatesForSegmentation, MAX_BINDINGS_PER_SEGMENTATION);
+
 			for (List<Tag> tags : bindingsForSegmentation) {
 				HashSet<Annotation> annotations = new HashSet<>();
 				for (int i = 0; i < tags.size(); i++)

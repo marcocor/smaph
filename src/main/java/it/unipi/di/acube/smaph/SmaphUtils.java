@@ -352,7 +352,7 @@ public class SmaphUtils {
 		
 	private static void addBIOToken(int n, char token, String sequence,
 			List<String> sequences, int limit) {
-		if (sequences.size() >= limit)
+		if (limit >= 0 && sequences.size() >= limit)
 			return;
 		sequence += token;
 		if (n > 0) {
@@ -687,14 +687,41 @@ public class SmaphUtils {
 		return (float) occurrences / (float) resultsCount;
 	}
 
-	public static double getFrequency(List<Pair<String, Integer>> boldAndRanks,
-			String bold, int resultsCount) {
+	public static double getFrequency(List<Pair<String, Integer>> boldAndRanks, String bold, int resultsCount) {
 		HashMap<String, HashSet<Integer>> positions = SmaphUtils.findPositionsLC(boldAndRanks);
 		return getFrequency(positions.get(bold.toLowerCase()).size(), resultsCount);
 	}
 
 	public static <T1, T2> HashMap<T1, T2> inverseMap(HashMap<T2, T1> map) {
 		return (HashMap<T1, T2>) map.entrySet().stream().collect(Collectors.toMap(Map.Entry::getValue, Map.Entry::getKey));
-    }
-}
+	}
 
+	private static void populateBindingsRec(List<Tag> chosenCandidates, List<List<Tag>> candidates, List<List<Tag>> bindings,
+	        int maxBindings) {
+		if (maxBindings > 0 && bindings.size() >= maxBindings)
+			return;
+		if (chosenCandidates.size() == candidates.size()) {
+			bindings.add(new Vector<Tag>(chosenCandidates));
+			return;
+		}
+		List<Tag> candidatesToExpand = candidates.get(chosenCandidates.size());
+		for (Tag candidate : candidatesToExpand) {
+			List<Tag> nextChosenCandidates = new Vector<>(chosenCandidates);
+			nextChosenCandidates.add(candidate);
+			populateBindingsRec(nextChosenCandidates, candidates, bindings, maxBindings);
+		}
+	}
+
+	/**
+	 * @param candidates for each segment, the list of candidates it may be linked to
+	 * @param maxBindings the maximum number of returned bindings (ignored if less than 1)
+	 * @return the possible bindings for a single segmentations
+	 */
+	public static List<List<Tag>> getBindings(List<List<Tag>> candidates, int maxBindings) {
+		List<List<Tag>> bindings = new Vector<List<Tag>>();
+		List<Tag> chosenCandidates = new Vector<Tag>();
+		populateBindingsRec(chosenCandidates, candidates, bindings, maxBindings);
+		return bindings;
+	}
+
+}
