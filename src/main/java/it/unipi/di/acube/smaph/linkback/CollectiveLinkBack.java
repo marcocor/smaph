@@ -45,9 +45,12 @@ public class CollectiveLinkBack implements LinkBack {
 		acceptedEntities = acceptedEntities.stream().filter(e -> EntityToAnchors.e2a().containsId(e.getConcept())).collect(Collectors.toCollection(HashSet::new));
 		
 		// Generate all possible bindings
+		System.err.println("Generating bindings.");
 		List<HashSet<Annotation>> bindings = bg.getBindings(query, qi,
 				acceptedEntities, wikiApi);
+		System.err.println(String.format("Generated %d bindings.", bindings.size()));
 
+		System.err.println("Generating Binding Features.");
 		for (HashSet<Annotation> binding : bindings) {
 			//Discard bindings that have entities w/o anchors
 			/*boolean bad = false;
@@ -67,6 +70,8 @@ public class CollectiveLinkBack implements LinkBack {
 				debugger.addLinkbackBindingFeatures(query, binding, debugAnnotationFeatures, debugBindingFeatures);
 
 		}
+		System.err.println("Generated Binding Features.");
+
 		return featurePacks;
 	}
 
