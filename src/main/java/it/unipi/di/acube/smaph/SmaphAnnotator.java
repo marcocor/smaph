@@ -433,17 +433,19 @@ public class SmaphAnnotator implements Sa2WSystem {
 			int wid;
 			try {
 				wid = wikiApi.getIdByTitle(rankToTitle.get(rank));
+				if (wid > 0)
+					wid = wikiApi.dereference(wid);
 			} catch (IOException e) {
 				throw new RuntimeException(e);
 			}
-			if (wid > 0) {
+			if (wid > 0 && !result.containsValue(wid)) {
 				result.put(rank, wid);
 				SmaphAnnotatorDebugger.out.printf(
 						"Found Wikipedia url:%s rank:%d id:%d%n",
 						urls.get(rank), rank, wid);
 			} else
 				SmaphAnnotatorDebugger.out.printf(
-						"Discarding Wikipedia url:%s rank:%d id:%d%n",
+						"Discarding Wikipedia url:%s rank:%d id:%d (double entity or invalid title)%n",
 						urls.get(rank), rank, wid);
 		}
 		return result;

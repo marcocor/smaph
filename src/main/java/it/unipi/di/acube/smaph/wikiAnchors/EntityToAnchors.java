@@ -16,23 +16,18 @@ import java.io.InputStreamReader;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map.Entry;
-import java.util.NavigableSet;
-import java.util.TreeSet;
 import java.util.Vector;
-import java.util.zip.GZIPInputStream;
 
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONWriter;
 import org.mapdb.BTreeMap;
-import org.mapdb.Bind;
 import org.mapdb.DB;
 import org.mapdb.DBMaker;
-import org.mapdb.Fun;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class EntityToAnchors {
-	public static final String DEFAULT_INPUT = "./data/anchors.gz";
+	public static final String DEFAULT_INPUT = "./data/anchors.tsv";
 	public static final String DATASET_FILENAME = "./mapdb/e2a_dataset";
 	private static EntityToAnchors e2a;
 
@@ -50,26 +45,28 @@ public class EntityToAnchors {
 	/**
 	 * From anchor to anchor-ID
 	 */
-	private BTreeMap<String, Integer> vocab;
+	private BTreeMap<String, Integer> anchorToAid;
+	
+	/**
+	 * From anchor-ID to snchor
+	 */
+	private BTreeMap<Integer, String> aidToAnchor;
 	
 	/**
 	 * anchor-ID -> how many times the anchor has been seen 
 	 */
 	private BTreeMap<Integer, Integer> anchorToOccurrences;	
 	
-	NavigableSet<Fun.Tuple2<Integer, String>> vocabInverse;
-
 	private static Logger logger = LoggerFactory.getLogger(EntityToAnchors.class.getName());
 
 	private static EntityToAnchors fromDB() {
-		logger.info("Loading E2A database.");
+		logger.info("Opening E2A database.");
 		EntityToAnchors e2a = new EntityToAnchors(DBMaker
 				.newFileDB(new File(DATASET_FILENAME))
 				.transactionDisable()
 				.closeOnJvmShutdown()
 				.readOnly()
 				.cacheLRUEnable()
-		        // .compressionEnable()
 		        .make());
 		logger.info("Loading E2A database done.");
 		return e2a;
@@ -79,10 +76,9 @@ public class EntityToAnchors {
 		this.db = db;
 		entityToAnchorIDs = db.getTreeMap("entityToAnchorIDs");
 		entityToFreqs = db.getTreeMap("entityToFreqs");
-		vocab = db.getTreeMap("vocab");
+		anchorToAid = db.getTreeMap("anchorToAid");
+		aidToAnchor = db.getTreeMap("aidToAnchor");
 		anchorToOccurrences = db.getTreeMap("anchorToOccurrences");
-		vocabInverse = new TreeSet<Fun.Tuple2<Integer, String>>();
-		Bind.mapInverse(vocab, vocabInverse);
     }
 
 	public static EntityToAnchors e2a() {
@@ -94,9 +90,9 @@ public class EntityToAnchors {
 	public static void createDB(String file) throws FileNotFoundException,
 			IOException {
 		
-		InputStream gzipStream = new GZIPInputStream(new FileInputStream(file));
+		InputStream inputStream = new FileInputStream(file);
 		BufferedReader buffered = new BufferedReader(new InputStreamReader(
-				gzipStream, "UTF-8"));
+				inputStream, "UTF-8"));
 
 		logger.info("Building database...");
 		EntityToAnchors mdb = new EntityToAnchors(
@@ -106,50 +102,54 @@ public class EntityToAnchors {
 				.asyncWriteEnable()
 		        .asyncWriteFlushDelay(100)
 				.cacheLRUEnable()
-		        // .compressionEnable()
 		        .make());
 
-		String line = null;
 		long count = 0;
-		long processedGbs = 0;
+		long processedMbs = 0;
 		Int2ObjectOpenHashMap<Int2IntArrayMap> entityToAnchorIDToFreqBuffer = new Int2ObjectOpenHashMap<Int2IntArrayMap>();
 		
-		int lastId = 0;
+		int lastAnchorId = 0;
+		String line = null;
 		while ((line = buffered.readLine()) != null) {
 			count += line.length();
-			if (count > processedGbs * (1024 * 1024 * 1024))
-				logger.info(String.format("Read %d GiB.", processedGbs++));
+			if (count > processedMbs * (10 * 1024 * 1024))
+				logger.info(String.format("Read %d MiB.", 10*(processedMbs++)));
 			
-			int tabIdx = line.indexOf('\t');
-			int idLastIdx = line.indexOf('\t', tabIdx + 1);
-			String anchor = line.substring(0, tabIdx);
+			String[] tokens = line.split("\t");
+			if (tokens.length != 3){
+				buffered.close();
+				throw new RuntimeException("Read line: [" + line + "] should have three tokens.");
+			}
+			
+			String anchor = tokens[0].toLowerCase();
+			int freq = Integer.parseInt(tokens[2]);
 
-			if (!mdb.vocab.containsKey(anchor)){
-				mdb.vocab.put(anchor, lastId);
-				lastId++;
+			if (!mdb.anchorToAid.containsKey(anchor)){
+				mdb.anchorToAid.put(anchor, lastAnchorId);
+				mdb.aidToAnchor.put(lastAnchorId, anchor);
+				lastAnchorId++;
 			}
 				
-			Integer aId = mdb.vocab.get(anchor);
+			Integer aId = mdb.anchorToAid.get(anchor);
 			
-			int pageId = Integer
-					.parseInt(line.substring(tabIdx + 1, idLastIdx));
+			int pageId = Integer.parseInt(tokens[1]);
 
-			Int2IntArrayMap map = entityToAnchorIDToFreqBuffer.get(pageId);
-			if (map == null){
-				map = new Int2IntArrayMap();
-				entityToAnchorIDToFreqBuffer.put(pageId, map);
+			Int2IntArrayMap aidToFreqMap = entityToAnchorIDToFreqBuffer.get(pageId);
+			if (aidToFreqMap == null){
+				aidToFreqMap = new Int2IntArrayMap();
+				entityToAnchorIDToFreqBuffer.put(pageId, aidToFreqMap);
 			}
-			if (!map.containsKey(aId))
-				map.put(aId.intValue(), 1);
+			if (!aidToFreqMap.containsKey(aId))
+				aidToFreqMap.put(aId.intValue(), freq);
 			else
-				map.put(aId.intValue(), 1 + map.get(aId)); //increase the occurrence for anchor by +1
+				aidToFreqMap.put(aId.intValue(), freq + aidToFreqMap.get(aId)); //increase the occurrence for anchor by freq (this should only happen for anchors with different case, same content.)
 			
 			if (!mdb.anchorToOccurrences.containsKey(aId))
 				mdb.anchorToOccurrences.put(aId, 0);
-			mdb.anchorToOccurrences.put(aId, mdb.anchorToOccurrences.get(aId) + 1);
+			mdb.anchorToOccurrences.put(aId, mdb.anchorToOccurrences.get(aId) + freq);
 		}
 		buffered.close();
-		logger.info(String.format("Finished reading %s (%d GBs)", file, processedGbs));
+		logger.info(String.format("Finished reading %s (%.1f MBs)", file, count / 1024.0 / 1024.0));
 		
 		logger.info("Copying entity-to-anchor mappings in db...");
 		int c = 0;
@@ -179,13 +179,12 @@ public class EntityToAnchors {
 		mdb.db.close();
 	}
 	
-	private String idToAnchor(int aId) {
-		String anchor = null;
-		for (String a : Fun.filter(vocabInverse, aId))
-			if (anchor != null)
-				throw new RuntimeException("Double anchor for id " + aId);
-			else
-				anchor = a;
+	
+
+	public String idToAnchor(int aId){
+		String anchor = aidToAnchor.get(Integer.valueOf(aId));
+		if (anchor == null)
+			throw new RuntimeException("Anchor-ID "+aId+"not present.");
 		return anchor;
 	}
 	
@@ -237,14 +236,14 @@ public class EntityToAnchors {
 	}
 	
 	public int getAnchorGlobalOccurrences(String anchor){
-		Integer aId = vocab.get(anchor);
+		Integer aId = anchorToAid.get(anchor);
 		if (aId == null)
-			throw new RuntimeException("Anchor "+anchor+"not present in vocabulary.");
+			throw new RuntimeException("Anchor "+anchor+"not present.");
 		return anchorToOccurrences.get(aId);
 	}
 	
 	public double getCommonness(String anchor, int entity){
-		if (!vocab.containsKey(anchor))
+		if (!anchorToAid.containsKey(anchor))
 			return 0.0;
 		return ((double)getFrequency(anchor, entity)) / getAnchorGlobalOccurrences(anchor);
 	}
@@ -257,9 +256,9 @@ public class EntityToAnchors {
 		if (!containsId(entity))
 			throw new RuntimeException("Anchors for page id=" + entity
 					+ " not found.");
-		if (!vocab.containsKey(anchor))
-			throw new RuntimeException("Anchors "+anchor+" is not contained in the vocabulary.");
-		int aid = vocab.get(anchor);
+		if (!anchorToAid.containsKey(anchor))
+			throw new RuntimeException("Anchors "+anchor+" not present.");
+		int aid = anchorToAid.get(anchor);
 		
 		int[] anchors = entityToAnchorIDs.get(entity);
 		int[] freqs = entityToFreqs.get(entity);

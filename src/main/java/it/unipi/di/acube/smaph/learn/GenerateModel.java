@@ -85,12 +85,12 @@ public class GenerateModel {
 		wikiToFreebase = new WikipediaToFreebase("mapdb");
 		EntityToVect.initialize();
 
-		generateEFModel();
-		//generateAnnotationModel();
-		//generateCollectiveModel();
+		//generateEFModel();
+		generateCollectiveModel();
 		//generateStackedModel();
 		//generateIndividualAdvancedAnnotationModel();
 		WATAnnotator.flush();
+		WATRelatednessComputer.flush();
 	}
 
 	public static void generateEFModel() throws Exception {
@@ -216,12 +216,12 @@ public class GenerateModel {
 		int[][] featuresSetsToTest = new int[][] { SmaphUtils
 				.getAllFtrVect(new AdvancedAnnotationFeaturePack().getFeatureCount())};
 		OptDataset opt = OptDataset.SMAPH_DATASET;
-		double anchorMaxED = 0.5;
+		double anchorMaxED = 0.7;
 		WikipediaToFreebase wikiToFreebase = new WikipediaToFreebase("mapdb");
 		List<ModelConfigurationResult> mcrs = new Vector<>();
 		SmaphAnnotator bingAnnotator = GenerateTrainingAndTest
 				.getDefaultBingAnnotatorGatherer(wikiApi,
-						bingKey, false, false, true);
+						bingKey, true, true, true);
 
 		ExampleGatherer<Annotation, HashSet<Annotation>> trainAdvancedAnnotationGatherer = new ExampleGatherer<Annotation, HashSet<Annotation>>();
 		ExampleGatherer<Annotation, HashSet<Annotation>> develAdvancedAnnotationGatherer = new ExampleGatherer<Annotation, HashSet<Annotation>>();
@@ -241,7 +241,7 @@ public class GenerateModel {
 
 			for (int modelType : new int[] { 13 }) {
 				for (double c = 1.0; c <= 1.0; c += 0.5) {
-					String ARModel = getModelFileNameBaseAF(ftrs, c);
+					String ARModel = getModelFileNameBaseAF(ftrs, c, anchorMaxED);
 					String modelFile = ARModel + "." + modelType
 							+ ".regressor.model";
 					fNorm.dump(ARModel + ".regressor.zscore");
@@ -281,7 +281,7 @@ public class GenerateModel {
 						}*/
 
 
-					for (double thr = 0.0; thr <= 1.0; thr += 0.1) {
+					for (double thr = -1.0; thr <= 1.5; thr += 0.1) {
 						System.out.println("Testing threshold "+thr);
 
 						MetricsResultSet metrics = TuneModelLibSvm.ParameterTester
@@ -339,7 +339,8 @@ public class GenerateModel {
 		else if (opt == OptDataset.SMAPH_DATASET_NE) prefix = "SMAPHNE-";
 		else throw new RuntimeException("OptDataset not recognized.");
 		prefix += (useS2 ? "S2" : "") + (useS3 ? "S3" : "") + (useS6 ? "S6" : "");
-
+		prefix += ".before.with.merged-nodefault-newanchors";
+		
 		List<ModelConfigurationResult> mcrs = new Vector<>();
 		SmaphAnnotator bingAnnotator = GenerateTrainingAndTest
 				.getDefaultBingAnnotatorGatherer(wikiApi, 
@@ -492,9 +493,9 @@ public class GenerateModel {
 	}
 
 	private static String getModelFileNameBaseAF(int[] ftrs,
-			double c) {
-		return String.format("models/model_%s_AF_%.8f",
-				getFtrListRepresentation(ftrs), c);
+			double c, double anchorMaxED) {
+		return String.format("models/model_%s_AF_%.8f_%.3f",
+				getFtrListRepresentation(ftrs), c, anchorMaxED);
 	}
 
 	private static String generateFeatureListFile(int[] ftrs) throws IOException {
