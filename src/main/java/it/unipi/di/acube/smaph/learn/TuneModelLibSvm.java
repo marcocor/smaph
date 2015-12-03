@@ -16,9 +16,9 @@
 
 package it.unipi.di.acube.smaph.learn;
 
-import it.unipi.di.acube.batframework.data.Annotation;
+import it.cnr.isti.hpc.erd.WikipediaToFreebase;
+import it.unipi.di.acube.BingInterface;
 import it.unipi.di.acube.batframework.data.Tag;
-import it.unipi.di.acube.batframework.metrics.MetricsResultSet;
 import it.unipi.di.acube.batframework.systemPlugins.WATAnnotator;
 import it.unipi.di.acube.batframework.utils.FreebaseApi;
 import it.unipi.di.acube.batframework.utils.Pair;
@@ -27,89 +27,18 @@ import it.unipi.di.acube.smaph.SmaphAnnotator;
 import it.unipi.di.acube.smaph.SmaphConfig;
 import it.unipi.di.acube.smaph.SmaphUtils;
 import it.unipi.di.acube.smaph.learn.GenerateTrainingAndTest.OptDataset;
-import it.unipi.di.acube.smaph.learn.SolutionComputer.BindingSolutionComputer;
+import it.unipi.di.acube.smaph.learn.ParameterTester.ParameterTesterEF;
 import it.unipi.di.acube.smaph.learn.featurePacks.EntityFeaturePack;
-import it.unipi.di.acube.smaph.learn.featurePacks.FeaturePack;
-import it.unipi.di.acube.smaph.learn.models.entityfilters.EntityFilter;
-import it.unipi.di.acube.smaph.learn.models.entityfilters.LibSvmEntityFilter;
-import it.unipi.di.acube.smaph.learn.models.linkback.annotationRegressor.AnnotationRegressor;
-import it.unipi.di.acube.smaph.learn.models.linkback.bindingRegressor.BindingRegressor;
-import it.unipi.di.acube.smaph.learn.normalizer.FeatureNormalizer;
-import it.unipi.di.acube.smaph.learn.normalizer.ZScoreFeatureNormalizer;
-import it.unipi.di.acube.BingInterface;
-import it.cnr.isti.hpc.erd.WikipediaToFreebase;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Vector;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-
-import libsvm.svm;
-import libsvm.svm_model;
-import libsvm.svm_parameter;
-import libsvm.svm_problem;
+import java.io.Serializable;
+import java.util.*;
+import java.util.concurrent.*;
 
 public class TuneModelLibSvm {
 	private static final int THREADS_NUM = 4;
 
 	public enum OptimizaionProfiles {
 		MAXIMIZE_TN, MAXIMIZE_MICRO_F1, MAXIMIZE_MACRO_F1
-	}
-
-	public static svm_parameter getParametersEF(double wPos, double wNeg,
-			double gamma, double C) {
-		svm_parameter param = new svm_parameter();
-		param.svm_type = svm_parameter.C_SVC;
-		param.kernel_type = svm_parameter.RBF;
-		param.degree = 2;
-		param.gamma = gamma;
-		param.coef0 = 0;
-		param.nu = 0.5;
-		param.cache_size = 100;
-		param.C = C;
-		param.eps = 0.001;
-		param.p = 0.1;
-		param.shrinking = 1;
-		param.probability = 0;
-		param.nr_weight = 2;
-		param.weight_label = new int[] { 1, -1 };
-		param.weight = new double[] { wPos, wNeg };
-		return param;
-	}
-
-	public static svm_parameter getParametersLB(
-			double gamma, double c) {
-		svm_parameter param = new svm_parameter();
-		param.svm_type = svm_parameter.EPSILON_SVR;
-		param.kernel_type = svm_parameter.LINEAR;
-		param.degree = 2;
-		param.gamma = gamma;
-		param.coef0 = 0;
-		param.nu = 0.5;
-		param.cache_size = 100;
-		param.C = c;
-		param.eps = 0.001;
-		param.p = 0.1;
-		param.shrinking = 1;
-		param.probability = 0;
-		param.nr_weight = 2;
-		param.weight_label = new int[] { };
-		param.weight = new double[] { };
-		return param;	}
-
-	public static svm_parameter getParametersEFRegressor(double gamma, double c) {
-
-		svm_parameter params = getParametersEF (-1, -1, gamma, c);
-		params.svm_type = svm_parameter.EPSILON_SVR;
-		return params;
 	}
 
 	public static double computeExpParameter(double max, double min,
@@ -131,8 +60,6 @@ public class TuneModelLibSvm {
 		return (int) Math.round(Math
 				.pow((weight - min) / kappa, 1.0 / exp));
 	}
-
-
 
 	public static void main(String[] args) throws Exception {
 		Locale.setDefault(Locale.US);
@@ -182,18 +109,6 @@ public class TuneModelLibSvm {
 
 		BingInterface.flush();
 		wikiApi.flush();
-	}
-
-	public static svm_model trainModel(svm_parameter param, 
-			svm_problem trainProblem) {
-		String error_msg = svm.svm_check_parameter(trainProblem, param);
-
-		if (error_msg != null) {
-			System.err.print("ERROR: " + error_msg + "\n");
-			System.exit(1);
-		}
-
-		return svm.svm_train(trainProblem, param);
 	}
 
 	private static Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult> trainIterative(
@@ -253,10 +168,8 @@ public class TuneModelLibSvm {
 			{
 				Vector<ModelConfigurationResult> scoreboardFtrSelection = new Vector<>();
 
-				new AblationFeatureSelector(bestwPos, bestwNeg, bestGamma, bestC,
-						trainGatherer, develGatherer, featuresToInclude,
-						optProfile, optProfileThreshold, scoreboardFtrSelection, wikiApi)
-				.run();
+				ParameterTesterEF pt = new ParameterTesterEF(bestwPos, bestwNeg, featuresToInclude, trainGatherer, develGatherer, bestGamma, bestC, scoreboardFtrSelection, wikiApi);
+				new AblationFeatureSelector<Tag, HashSet<Tag>>(pt, optProfile, optProfileThreshold, scoreboardFtrSelection).run();
 
 				/*				new IncrementalFeatureSelector(bestwPos, bestwNeg, bestGamma,
 						bestC, trainGatherer, develGatherer, optProfile,
@@ -337,143 +250,8 @@ public class TuneModelLibSvm {
 		return new Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult>(
 				globalScoreboard, ModelConfigurationResult.findBest(
 						globalScoreboard, optProfile, optProfileThreshold));
-
 	}
 
-	public static class ParameterTester implements
-	Callable<ModelConfigurationResult> {
-		private double wPos, wNeg, gamma, C;
-		private ExampleGatherer<Tag, HashSet<Tag>> trainGatherer;
-		private ExampleGatherer<Tag, HashSet<Tag>> testGatherer;
-		private int[] features;
-		Vector<ModelConfigurationResult> scoreboard;
-		private WikipediaApiInterface wikiApi;
-
-		public ParameterTester(double wPos, double wNeg, int[] features,
-				ExampleGatherer<Tag, HashSet<Tag>> trainEQFGatherer,
-				ExampleGatherer<Tag, HashSet<Tag>> testEQFGatherer,
-				OptimizaionProfiles optProfile, double optProfileThreshold,
-				double gamma, double C,
-				Vector<ModelConfigurationResult> scoreboard, WikipediaApiInterface wikiApi) {
-			this.wPos = wPos;
-			this.wNeg = wNeg;
-			this.features = features;
-			this.trainGatherer = trainEQFGatherer;
-			this.testGatherer = testEQFGatherer;
-			this.scoreboard = scoreboard;
-			this.gamma = gamma;
-			this.C = C;
-			this.wikiApi = wikiApi;
-		}
-
-		public static MetricsResultSet testEntityFilter(EntityFilter model, ExampleGatherer<Tag, HashSet<Tag>> testGatherer, int[] features, FeatureNormalizer scaleFn, SolutionComputer<Tag, HashSet<Tag>> sc){
-
-			List<Pair<Vector<Pair<FeaturePack<Tag>, Tag>>, HashSet<Tag>>> ftrsAndDatasAndGolds = testGatherer.getDataAndFeaturePacksAndGoldOnePerInstance();
-
-			List<HashSet<Tag>> golds = new Vector<>();
-			List<List<Pair<Tag, Double>>> candidateAndPreds = new Vector<>();
-			for (Pair<Vector<Pair<FeaturePack<Tag>, Tag>>, HashSet<Tag>> ftrsAndDatasAndGold : ftrsAndDatasAndGolds) {
-				golds.add(ftrsAndDatasAndGold.second);
-				List<Pair<Tag, Double>> candidateAndPred = new Vector<>();
-				candidateAndPreds.add(candidateAndPred);
-				for (Pair<FeaturePack<Tag>, Tag> p : ftrsAndDatasAndGold.first)
-					candidateAndPred.add(new Pair<Tag, Double>(p.second, model.filterEntity(p.first, scaleFn)? 1.0 : 0.0));
-			}
-
-			try {
-				return sc.getResults(candidateAndPreds, golds);
-			} catch (IOException e) {
-				throw new RuntimeException(e);
-			}
-		}
-
-
-		public static MetricsResultSet testAnnotationRegressorModel(AnnotationRegressor model, ExampleGatherer<Annotation, HashSet<Annotation>> testGatherer, FeatureNormalizer scaleFn, SolutionComputer<Annotation, HashSet<Annotation>> sc) throws IOException{
-			List<HashSet<Annotation>> golds = new Vector<>();
-			List<List<Pair<Annotation, Double>>> candidateAndPreds = new Vector<>();
-			for (Pair<Vector<Pair<FeaturePack<Annotation>, Annotation>>, HashSet<Annotation>> ftrsAndDatasAndGold : testGatherer.getDataAndFeaturePacksAndGoldOnePerInstance()) {
-				golds.add(ftrsAndDatasAndGold.second);
-				List<Pair<Annotation, Double>> candidateAndPred = new Vector<>();
-				candidateAndPreds.add(candidateAndPred);
-				for (Pair<FeaturePack<Annotation>, Annotation> p : ftrsAndDatasAndGold.first){
-					double predictedScore = model.predictScore(p.first, scaleFn);
-					candidateAndPred.add(new Pair<Annotation, Double>(p.second, predictedScore));
-				}
-			}
-
-			try {
-				return sc.getResults(candidateAndPreds, golds);
-			} catch (IOException e) {
-				throw new RuntimeException(e);
-			}
-		}
-
-		public static MetricsResultSet testBindingRegressorModel(BindingRegressor model, ExampleGatherer<HashSet<Annotation>, HashSet<Annotation>> testGatherer, FeatureNormalizer scaleFn, BindingSolutionComputer sc) throws IOException{
-			List<HashSet<Annotation>> golds = new Vector<>();
-			List<List<Pair<HashSet<Annotation>, Double>>> candidateAndPreds = new Vector<>();
-			for (Pair<Vector<Pair<FeaturePack<HashSet<Annotation>>, HashSet<Annotation>>>, HashSet<Annotation>> ftrsAndDatasAndGold : testGatherer.getDataAndFeaturePacksAndGoldOnePerInstance()) {
-				Vector<Pair<FeaturePack<HashSet<Annotation>>, HashSet<Annotation>>> ftrsAndBindings = ftrsAndDatasAndGold.first;
-				HashSet<Annotation> gold = ftrsAndDatasAndGold.second; 
-
-				golds.add(gold);
-
-				List<FeaturePack<HashSet<Annotation>>> packs = new Vector<>();
-				for (Pair<FeaturePack<HashSet<Annotation>>, HashSet<Annotation>> ftrsAndBinding: ftrsAndBindings)
-					packs.add(ftrsAndBinding.first);
-
-				double[] scores = model.getScores(packs, scaleFn);
-				if (scores.length != ftrsAndDatasAndGold.first.size())
-					throw new RuntimeException("Invalid scores retrieved.");
-
-				List<Pair<HashSet<Annotation>, Double>> candidateAndPred = new Vector<>();
-				candidateAndPreds.add(candidateAndPred);
-				for (int i = 0; i < scores.length; i++)
-					candidateAndPred.add(new Pair<HashSet<Annotation>, Double>(ftrsAndBindings.get(i).second, scores[i]));
-			}
-
-			try {
-				return sc.getResults(candidateAndPreds, golds);
-			} catch (IOException e) {
-				throw new RuntimeException(e);
-			}
-		}
-
-
-		@Override
-		public ModelConfigurationResult call() throws Exception {
-
-			ZScoreFeatureNormalizer scaleFn = new ZScoreFeatureNormalizer(trainGatherer);
-			svm_problem trainProblem = trainGatherer.generateLibSvmProblem(this.features, scaleFn);
-
-			svm_parameter param = getParametersEF(wPos, wNeg, gamma, C);
-
-			svm_model model = trainModel(param,
-					trainProblem);
-			EntityFilter ef = new LibSvmEntityFilter(model);
-
-			MetricsResultSet metrics = testEntityFilter(ef, testGatherer, this.features, scaleFn, new SolutionComputer.TagSetSolutionComputer(wikiApi));
-
-			int tp = metrics.getGlobalTp();
-			int fp = metrics.getGlobalFp();
-			int fn = metrics.getGlobalFn();
-			float microF1 = metrics.getMicroF1();
-			float macroF1 = metrics.getMacroF1();
-			float macroRec = metrics.getMacroRecall();
-			float macroPrec = metrics.getMacroPrecision();
-
-			ModelConfigurationResult mcr = new ModelConfigurationResult(
-					features, wPos, wNeg, gamma, C, tp, fp, fn,
-					testGatherer.getExamplesCount() - tp - fp - fn, microF1,
-					macroF1, macroRec, macroPrec);
-
-			synchronized (scoreboard) {
-				scoreboard.add(mcr);
-			}
-			return mcr;
-
-		}
-
-	}
 	static class GammaCSelector implements Callable<Pair<Double, Double>> {
 		private double gammaMin, gammaMax, cMin, cMax, wPos, wNeg;
 		private double optProfileThreshold;
@@ -531,9 +309,9 @@ public class TuneModelLibSvm {
 							steps);
 					gamma = TuneModelLibSvm.computeExpParameter(gammaMax, gammaMin,
 							kappaGamma, gammaI, steps);
-					futures.add(execServ.submit(new ParameterTester(wPos, wNeg,
+					futures.add(execServ.submit(new ParameterTester.ParameterTesterEF(wPos, wNeg,
 							features, trainGatherer,
-							testGatherer, optProfile, optProfileThreshold,
+							testGatherer,
 							gamma, c, scoreboard, wikiApi)));
 				}
 
@@ -552,7 +330,6 @@ public class TuneModelLibSvm {
 
 			return new Pair<Double, Double>(best.getWPos(), best.getWNeg());
 		}
-
 	}
 
 	static class WeightSelector implements Callable<Pair<Double, Double>> {
@@ -618,10 +395,8 @@ public class TuneModelLibSvm {
 					kappaPos, posI, steps)) <= wPosMax; posI++)
 				for (int negI = 0; (wNeg = TuneModelLibSvm.computeExpParameter(wNegMax, wNegMin,
 						kappaNeg, negI, steps)) <= wNegMax; negI++)
-					futures.add(execServ.submit(new ParameterTester(wPos, wNeg,
-							features, trainGatherer,
-							testGatherer, optProfile, optProfileThreshold,
-							gamma, C, scoreboard, wikiApi)));
+					futures.add(execServ.submit(new ParameterTester.ParameterTesterEF(wPos, wNeg, features, trainGatherer,
+					        testGatherer, gamma, C, scoreboard, wikiApi)));
 
 			ModelConfigurationResult best = null;
 			for (Future<ModelConfigurationResult> future : futures)
@@ -641,33 +416,18 @@ public class TuneModelLibSvm {
 
 	}
 
-	static class AblationFeatureSelector implements Runnable {
-		private double wPos, wNeg, gamma, C;
+	static class AblationFeatureSelector<E extends Serializable,G extends Serializable> implements Runnable {
 		private double optProfileThreshold;
-		private ExampleGatherer<Tag, HashSet<Tag>> trainGatherer;
-		private ExampleGatherer<Tag, HashSet<Tag>> testGatherer;
 		private OptimizaionProfiles optProfile;
 		Vector<ModelConfigurationResult> scoreboard;
-		private WikipediaApiInterface wikiApi;
-		private int[] featuresToInclude;
+		private ParameterTester<E, G> pt;
 
-		public AblationFeatureSelector(double wPos, double wNeg, double gamma,
-				double C,
-				ExampleGatherer<Tag, HashSet<Tag>> trainGatherer,
-				ExampleGatherer<Tag, HashSet<Tag>> testGatherer,
-				int[] featuresToInclude, OptimizaionProfiles optProfile, double optProfileThreshold,
-				Vector<ModelConfigurationResult> scoreboard, WikipediaApiInterface wikiApi) {
-			this.wNeg = wNeg;
-			this.wPos = wPos;
+		public AblationFeatureSelector(ParameterTester<E, G> pt, OptimizaionProfiles optProfile, double optProfileThreshold,
+				Vector<ModelConfigurationResult> scoreboard) {
 			this.optProfileThreshold = optProfileThreshold;
-			this.trainGatherer = trainGatherer;
-			this.testGatherer = testGatherer;
 			this.optProfile = optProfile;
 			this.scoreboard = scoreboard;
-			this.gamma = gamma;
-			this.C = C;
-			this.wikiApi = wikiApi;
-			this.featuresToInclude = featuresToInclude;
+			this.pt = pt;
 		}
 
 		@Override
@@ -675,9 +435,7 @@ public class TuneModelLibSvm {
 
 			ModelConfigurationResult bestBase;
 			try {
-				bestBase = new ParameterTester(wPos, wNeg, featuresToInclude,
-						trainGatherer, testGatherer, optProfile,
-						optProfileThreshold, gamma, C, scoreboard, wikiApi).call();
+				bestBase = pt.call();
 			} catch (Exception e1) {
 				e1.printStackTrace();
 				throw new RuntimeException(e1);
@@ -700,11 +458,7 @@ public class TuneModelLibSvm {
 
 					try {
 						Future<ModelConfigurationResult> future = execServ
-								.submit(new ParameterTester(wPos, wNeg,
-										pickedFtrsIteration, trainGatherer,
-										testGatherer, optProfile,
-										optProfileThreshold, gamma, C,
-										scoreboard, wikiApi));
+								.submit(pt.cloneWithFeatures(pickedFtrsIteration));
 						futures.add(future);
 						futureToFtrId.put(future, testFtrId);
 
@@ -736,31 +490,19 @@ public class TuneModelLibSvm {
 		}
 	}
 
-	static class IncrementalFeatureSelector implements Runnable {
-		private double wPos, wNeg, gamma, C;
+	static class IncrementalFeatureSelector<E extends Serializable, G extends Serializable> implements Runnable {
 		private double optProfileThreshold;
-		private ExampleGatherer<Tag, HashSet<Tag>> trainGatherer;
-		private ExampleGatherer<Tag, HashSet<Tag>> testGatherer;
+		private ExampleGatherer<E, G> testGatherer;
 		private OptimizaionProfiles optProfile;
 		Vector<ModelConfigurationResult> scoreboard;
-		private WikipediaApiInterface wikiApi;
+		private ParameterTester<E, G> pt;
 
-		public IncrementalFeatureSelector(double wPos, double wNeg,
-				double gamma, double C,
-				ExampleGatherer<Tag, HashSet<Tag>> trainGatherer,
-				ExampleGatherer<Tag, HashSet<Tag>> testGatherer,
-				OptimizaionProfiles optProfile, double optProfileThreshold,
-				Vector<ModelConfigurationResult> scoreboard, WikipediaApiInterface wikiApi) {
-			this.wNeg = wNeg;
-			this.wPos = wPos;
-			this.optProfileThreshold = optProfileThreshold;
-			this.trainGatherer = trainGatherer;
+		public IncrementalFeatureSelector(ParameterTester<E,G> pt, ExampleGatherer<E, G>testGatherer, Vector<ModelConfigurationResult> scoreboard, OptimizaionProfiles optProfile, double optProfileThreshold) {
+			this.pt = pt;
 			this.testGatherer = testGatherer;
-			this.optProfile = optProfile;
 			this.scoreboard = scoreboard;
-			this.gamma = gamma;
-			this.C = C;
-			this.wikiApi = wikiApi;
+			this.optProfile = optProfile;
+			this.optProfileThreshold = optProfileThreshold;
 		}
 
 		@Override
@@ -793,11 +535,7 @@ public class TuneModelLibSvm {
 
 					try {
 						Future<ModelConfigurationResult> future = execServ
-								.submit(new ParameterTester(wPos, wNeg,
-										pickedFtrsIteration, trainGatherer,
-										testGatherer, optProfile,
-										optProfileThreshold, gamma, C,
-										scoreboard, wikiApi));
+								.submit(pt);
 						futures.add(future);
 						futureToFtrId.put(future, testFtrId);
 
@@ -828,9 +566,7 @@ public class TuneModelLibSvm {
 					bestBase = bestIter;
 					ftrToTry.remove(Integer.valueOf(bestFtrId));
 				}
-
 			}
 		}
 	}
-
 }

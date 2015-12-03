@@ -1,0 +1,226 @@
+package it.unipi.di.acube.smaph.learn;
+
+import it.unipi.di.acube.batframework.data.Annotation;
+import it.unipi.di.acube.batframework.data.Tag;
+import it.unipi.di.acube.batframework.metrics.MetricsResultSet;
+import it.unipi.di.acube.batframework.utils.Pair;
+import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
+import it.unipi.di.acube.smaph.learn.featurePacks.FeaturePack;
+import it.unipi.di.acube.smaph.learn.models.entityfilters.EntityFilter;
+import it.unipi.di.acube.smaph.learn.models.entityfilters.LibSvmEntityFilter;
+import it.unipi.di.acube.smaph.learn.models.linkback.annotationRegressor.AnnotationRegressor;
+import it.unipi.di.acube.smaph.learn.models.linkback.bindingRegressor.BindingRegressor;
+import it.unipi.di.acube.smaph.learn.normalizer.FeatureNormalizer;
+import it.unipi.di.acube.smaph.learn.normalizer.ZScoreFeatureNormalizer;
+
+import java.io.IOException;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Vector;
+import java.util.concurrent.Callable;
+
+import libsvm.svm;
+import libsvm.svm_model;
+import libsvm.svm_parameter;
+import libsvm.svm_problem;
+
+public abstract class ParameterTester<E, G> implements Callable<ModelConfigurationResult> {
+	public abstract ParameterTester<E, G> cloneWithFeatures(int[] ftrs);
+	public abstract ParameterTester<E, G> cloneWithWeights(double wPos, double wNeg);
+
+	public static svm_parameter getParametersEF(double wPos, double wNeg,
+			double gamma, double C) {
+		svm_parameter param = new svm_parameter();
+		param.svm_type = svm_parameter.C_SVC;
+		param.kernel_type = svm_parameter.RBF;
+		param.degree = 2;
+		param.gamma = gamma;
+		param.coef0 = 0;
+		param.nu = 0.5;
+		param.cache_size = 100;
+		param.C = C;
+		param.eps = 0.001;
+		param.p = 0.1;
+		param.shrinking = 1;
+		param.probability = 0;
+		param.nr_weight = 2;
+		param.weight_label = new int[] { 1, -1 };
+		param.weight = new double[] { wPos, wNeg };
+		return param;
+	}
+
+	public static svm_parameter getParametersLB(double gamma, double c) {
+		svm_parameter param = new svm_parameter();
+		param.svm_type = svm_parameter.EPSILON_SVR;
+		param.kernel_type = svm_parameter.LINEAR;
+		param.degree = 2;
+		param.gamma = gamma;
+		param.coef0 = 0;
+		param.nu = 0.5;
+		param.cache_size = 100;
+		param.C = c;
+		param.eps = 0.001;
+		param.p = 0.1;
+		param.shrinking = 1;
+		param.probability = 0;
+		param.nr_weight = 2;
+		param.weight_label = new int[] { };
+		param.weight = new double[] { };
+		return param;	}
+
+	public static svm_parameter getParametersEFRegressor(double gamma, double c) {
+
+		svm_parameter params = getParametersEF (-1, -1, gamma, c);
+		params.svm_type = svm_parameter.EPSILON_SVR;
+		return params;
+	}
+	public static svm_model trainModel(svm_parameter param, 
+			svm_problem trainProblem) {
+		String error_msg = svm.svm_check_parameter(trainProblem, param);
+
+		if (error_msg != null) {
+			System.err.print("ERROR: " + error_msg + "\n");
+			System.exit(1);
+		}
+
+		return svm.svm_train(trainProblem, param);
+	}
+	
+	public static MetricsResultSet testEntityFilter(EntityFilter model, ExampleGatherer<Tag, HashSet<Tag>> testGatherer, int[] features, FeatureNormalizer scaleFn, SolutionComputer<Tag, HashSet<Tag>> sc){
+		List<Pair<Vector<Pair<FeaturePack<Tag>, Tag>>, HashSet<Tag>>> ftrsAndDatasAndGolds = testGatherer.getDataAndFeaturePacksAndGoldOnePerInstance();
+
+		List<HashSet<Tag>> golds = new Vector<>();
+		List<List<Pair<Tag, Double>>> candidateAndPreds = new Vector<>();
+		for (Pair<Vector<Pair<FeaturePack<Tag>, Tag>>, HashSet<Tag>> ftrsAndDatasAndGold : ftrsAndDatasAndGolds) {
+			golds.add(ftrsAndDatasAndGold.second);
+			List<Pair<Tag, Double>> candidateAndPred = new Vector<>();
+			candidateAndPreds.add(candidateAndPred);
+			for (Pair<FeaturePack<Tag>, Tag> p : ftrsAndDatasAndGold.first)
+				candidateAndPred.add(new Pair<Tag, Double>(p.second, model.filterEntity(p.first, scaleFn)? 1.0 : 0.0));
+		}
+
+		try {
+			return sc.getResults(candidateAndPreds, golds);
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	public static MetricsResultSet testAnnotationRegressorModel(AnnotationRegressor model, ExampleGatherer<Annotation, HashSet<Annotation>> testGatherer, FeatureNormalizer scaleFn, SolutionComputer<Annotation, HashSet<Annotation>> sc) throws IOException{
+		List<HashSet<Annotation>> golds = new Vector<>();
+		List<List<Pair<Annotation, Double>>> candidateAndPreds = new Vector<>();
+		for (Pair<Vector<Pair<FeaturePack<Annotation>, Annotation>>, HashSet<Annotation>> ftrsAndDatasAndGold : testGatherer.getDataAndFeaturePacksAndGoldOnePerInstance()) {
+			golds.add(ftrsAndDatasAndGold.second);
+			List<Pair<Annotation, Double>> candidateAndPred = new Vector<>();
+			candidateAndPreds.add(candidateAndPred);
+			for (Pair<FeaturePack<Annotation>, Annotation> p : ftrsAndDatasAndGold.first){
+				double predictedScore = model.predictScore(p.first, scaleFn);
+				candidateAndPred.add(new Pair<Annotation, Double>(p.second, predictedScore));
+			}
+		}
+
+		try {
+			return sc.getResults(candidateAndPreds, golds);
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	public static MetricsResultSet testBindingRegressorModel(BindingRegressor model, ExampleGatherer<HashSet<Annotation>, HashSet<Annotation>> testGatherer, FeatureNormalizer scaleFn, SolutionComputer<HashSet<Annotation>, HashSet<Annotation>> sc) throws IOException{
+		List<HashSet<Annotation>> golds = new Vector<>();
+		List<List<Pair<HashSet<Annotation>, Double>>> candidateAndPreds = new Vector<>();
+		for (Pair<Vector<Pair<FeaturePack<HashSet<Annotation>>, HashSet<Annotation>>>, HashSet<Annotation>> ftrsAndDatasAndGold : testGatherer.getDataAndFeaturePacksAndGoldOnePerInstance()) {
+			Vector<Pair<FeaturePack<HashSet<Annotation>>, HashSet<Annotation>>> ftrsAndBindings = ftrsAndDatasAndGold.first;
+			HashSet<Annotation> gold = ftrsAndDatasAndGold.second; 
+
+			golds.add(gold);
+
+			List<FeaturePack<HashSet<Annotation>>> packs = new Vector<>();
+			for (Pair<FeaturePack<HashSet<Annotation>>, HashSet<Annotation>> ftrsAndBinding: ftrsAndBindings)
+				packs.add(ftrsAndBinding.first);
+
+			double[] scores = model.getScores(packs, scaleFn);
+			if (scores.length != ftrsAndDatasAndGold.first.size())
+				throw new RuntimeException("Invalid scores retrieved.");
+
+			List<Pair<HashSet<Annotation>, Double>> candidateAndPred = new Vector<>();
+			candidateAndPreds.add(candidateAndPred);
+			for (int i = 0; i < scores.length; i++)
+				candidateAndPred.add(new Pair<HashSet<Annotation>, Double>(ftrsAndBindings.get(i).second, scores[i]));
+		}
+
+		try {
+			return sc.getResults(candidateAndPreds, golds);
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	public static class ParameterTesterEF extends ParameterTester<Tag, HashSet<Tag>> {
+		private double wPos, wNeg, gamma, C;
+		private ExampleGatherer<Tag, HashSet<Tag>> trainGatherer;
+		private ExampleGatherer<Tag, HashSet<Tag>> testGatherer;
+		private int[] features;
+		Vector<ModelConfigurationResult> scoreboard;
+		private WikipediaApiInterface wikiApi;
+
+		public ParameterTesterEF(double wPos, double wNeg, int[] features,
+				ExampleGatherer<Tag, HashSet<Tag>> trainEQFGatherer,
+				ExampleGatherer<Tag, HashSet<Tag>> testEQFGatherer,
+				double gamma, double C,
+				Vector<ModelConfigurationResult> scoreboard, WikipediaApiInterface wikiApi) {
+			this.wPos = wPos;
+			this.wNeg = wNeg;
+			this.features = features;
+			this.trainGatherer = trainEQFGatherer;
+			this.testGatherer = testEQFGatherer;
+			this.scoreboard = scoreboard;
+			this.gamma = gamma;
+			this.C = C;
+			this.wikiApi = wikiApi;
+		}
+
+		@Override
+		public ModelConfigurationResult call() throws Exception {
+
+			ZScoreFeatureNormalizer scaleFn = new ZScoreFeatureNormalizer(trainGatherer);
+			svm_problem trainProblem = trainGatherer.generateLibSvmProblem(this.features, scaleFn);
+
+			svm_parameter param = getParametersEF(wPos, wNeg, gamma, C);
+
+			svm_model model = trainModel(param, trainProblem);
+			EntityFilter ef = new LibSvmEntityFilter(model);
+
+			MetricsResultSet metrics = testEntityFilter(ef, testGatherer, this.features, scaleFn, new SolutionComputer.TagSetSolutionComputer(wikiApi));
+
+			int tp = metrics.getGlobalTp();
+			int fp = metrics.getGlobalFp();
+			int fn = metrics.getGlobalFn();
+			float microF1 = metrics.getMicroF1();
+			float macroF1 = metrics.getMacroF1();
+			float macroRec = metrics.getMacroRecall();
+			float macroPrec = metrics.getMacroPrecision();
+
+			ModelConfigurationResult mcr = new ModelConfigurationResult(
+					features, wPos, wNeg, gamma, C, tp, fp, fn,
+					testGatherer.getExamplesCount() - tp - fp - fn, microF1,
+					macroF1, macroRec, macroPrec);
+
+			synchronized (scoreboard) {
+				scoreboard.add(mcr);
+			}
+			return mcr;
+		}
+
+		@Override
+        public ParameterTester<Tag, HashSet<Tag>> cloneWithFeatures(int[] ftrs) {
+			return new ParameterTesterEF(wPos, wNeg, ftrs, trainGatherer, testGatherer, gamma, C, scoreboard, wikiApi);
+        }
+
+		@Override
+        public ParameterTester<Tag, HashSet<Tag>> cloneWithWeights(double wPos, double wNeg) {
+			return new ParameterTesterEF(wPos, wNeg, features, trainGatherer, testGatherer, gamma, C, scoreboard, wikiApi);
+		}
+	}
+
+}

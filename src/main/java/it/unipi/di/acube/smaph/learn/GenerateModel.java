@@ -35,7 +35,9 @@ import it.unipi.di.acube.smaph.learn.featurePacks.BindingFeaturePack;
 import it.unipi.di.acube.smaph.learn.featurePacks.EntityFeaturePack;
 import it.unipi.di.acube.smaph.learn.models.entityfilters.EntityFilter;
 import it.unipi.di.acube.smaph.learn.models.entityfilters.LibSvmEntityFilter;
+import it.unipi.di.acube.smaph.learn.models.linkback.annotationRegressor.AnnotationRegressor;
 import it.unipi.di.acube.smaph.learn.models.linkback.annotationRegressor.LibLinearAnnotatorRegressor;
+import it.unipi.di.acube.smaph.learn.models.linkback.annotationRegressor.LibSvmAnnotationRegressor;
 import it.unipi.di.acube.smaph.learn.models.linkback.bindingRegressor.BindingRegressor;
 import it.unipi.di.acube.smaph.learn.models.linkback.bindingRegressor.LibLinearBindingRegressor;
 import it.unipi.di.acube.smaph.learn.models.linkback.bindingRegressor.RankLibBindingRegressor;
@@ -56,8 +58,7 @@ import libsvm.svm_model;
 import libsvm.svm_parameter;
 import libsvm.svm_problem;
 
-import org.apache.commons.lang3.tuple.ImmutableTriple;
-import org.apache.commons.lang3.tuple.Triple;
+import org.apache.commons.lang3.tuple.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -86,9 +87,9 @@ public class GenerateModel {
 		EntityToVect.initialize();
 
 		//generateEFModel();
-		generateCollectiveModel();
+		//generateCollectiveModel();
 		//generateStackedModel();
-		//generateIndividualAdvancedAnnotationModel();
+		generateIndividualAdvancedAnnotationModel();
 		WATAnnotator.flush();
 		WATRelatednessComputer.flush();
 	}
@@ -125,14 +126,14 @@ public class GenerateModel {
 					{2.88435, 1.0},
 					{2.88435, 1.2},
 					{2.88435, 1.4},
-					{2.88435, 1.6},
-					{2.88435, 1.8},
-					{2.88435, 2.0},
-					{2.88435, 2.2},
+					{3.85075, 1.3},
+					{3.85075, 1.4},
+					{3.85075, 1.5},
 			};
 			featuresSetsToTest = new int[][] {
 					SmaphUtils.getAllFtrVect(EntityFeaturePack.ftrNames.length),
-					{1,2,6,7,8,9,10,11,12,13,14,15,16,17,18,20,21,22,23,24,25,26,27,28,29,31,32,35,37,38,39,40},
+					{1,2,    6,7,8,9,10,11,12,13,14,15,16,17,18,20,21,22,23,24,25,26,27,28,29,   31,32,35,   37,38,39,40},
+					{1,2,3,4,6,7,8,     11,12,13,14,15,16,   18,20,21,22,23,24,25,26,27,28,29,30,31,32,35,36,37,38,39,40}
 			};
 
 		}
@@ -169,15 +170,15 @@ public class GenerateModel {
 							gamma, C) + filePrefix;
 
 					svm_problem trainProblem = trainEntityFilterGatherer.generateLibSvmProblem(ftrToTestArray, fNormEF);
-					svm_parameter param = TuneModelLibSvm.getParametersEF(wPos,
+					svm_parameter param = ParameterTester.getParametersEF(wPos,
 							wNeg, gamma, C);						
 					System.out.println("Training binary classifier...");
-					svm_model model = TuneModelLibSvm.trainModel(param,
+					svm_model model = ParameterTester.trainModel(param,
 							trainProblem);
 					svm.svm_save_model(fileBase + ".model", model);
 					fNormEF.dump(fileBase + ".zscore");
 					EntityFilter ef = new LibSvmEntityFilter(model);
-					MetricsResultSet metrics = TuneModelLibSvm.ParameterTester.testEntityFilter(ef, develEntityFilterGatherer, ftrToTestArray, fNormEF, new SolutionComputer.TagSetSolutionComputer(wikiApi));
+					MetricsResultSet metrics = ParameterTester.testEntityFilter(ef, develEntityFilterGatherer, ftrToTestArray, fNormEF, new SolutionComputer.TagSetSolutionComputer(wikiApi));
 
 					int tp = metrics.getGlobalTp();
 					int fp = metrics.getGlobalFp();
@@ -214,7 +215,9 @@ public class GenerateModel {
 
 	public static void generateIndividualAdvancedAnnotationModel() throws Exception {
 		int[][] featuresSetsToTest = new int[][] { SmaphUtils
-				.getAllFtrVect(new AdvancedAnnotationFeaturePack().getFeatureCount())};
+				.getAllFtrVect(new AdvancedAnnotationFeaturePack().getFeatureCount()),
+				new int[]{1,2,3,4,6,7,8,11,12,13,14,15,16,18,20,21,22,23,24,25,26,27,28,29,30,31,32,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55},
+		};
 		OptDataset opt = OptDataset.SMAPH_DATASET;
 		double anchorMaxED = 0.7;
 		WikipediaToFreebase wikiToFreebase = new WikipediaToFreebase("mapdb");
@@ -233,6 +236,78 @@ public class GenerateModel {
 		System.out.println("Building normalizer...");
 		ZScoreFeatureNormalizer fNorm = new ZScoreFeatureNormalizer(trainAdvancedAnnotationGatherer);
 
+		//List<Triple<AnnotationRegressor, Double, int[]>> annAndFeatures = getLiblinearAnnotationRegressor(trainAdvancedAnnotationGatherer, develAdvancedAnnotationGatherer, featuresSetsToTest, fNorm, anchorMaxED, mcrs);
+		List<Triple<AnnotationRegressor, Double, int[]>> annAndFeatures = getLibsvmAnnotationRegressor(trainAdvancedAnnotationGatherer, develAdvancedAnnotationGatherer, featuresSetsToTest, fNorm, anchorMaxED, mcrs);
+
+		for (Triple<AnnotationRegressor, Double, int[]> t : annAndFeatures){
+			for (double thr = -1.0; thr <= -0.6; thr += 0.05) {
+				System.out.println("Testing threshold "+thr);
+
+				MetricsResultSet metrics = ParameterTester
+						.testAnnotationRegressorModel(
+								t.getLeft(),
+								develAdvancedAnnotationGatherer,
+								fNorm,
+								new SolutionComputer.AnnotationSetSolutionComputer(
+										wikiApi, thr));
+
+				int tp = metrics.getGlobalTp();
+				int fp = metrics.getGlobalFp();
+				int fn = metrics.getGlobalFn();
+				float microF1 = metrics.getMicroF1();
+				float macroF1 = metrics.getMacroF1();
+				float macroRec = metrics.getMacroRecall();
+				float macroPrec = metrics.getMacroPrecision();
+				int totVects = develAdvancedAnnotationGatherer
+						.getExamplesCount();
+				mcrs.add(new ModelConfigurationResult(t.getRight(), -1, -1,
+						-1, t.getMiddle(), tp, fp, fn, totVects - tp - fp - fn,
+						microF1, macroF1, macroRec, macroPrec));
+			}
+		}
+
+		for (ModelConfigurationResult mcr : mcrs)
+			System.out.printf("%.5f%%\t%.5f%%\t%.5f%%%n",
+					mcr.getMacroPrecision() * 100, mcr.getMacroRecall() * 100,
+					mcr.getMacroF1() * 100);
+		for (ModelConfigurationResult mcr : mcrs)
+			System.out.println(mcr.getReadable());
+
+	}
+
+	private static List<Triple<AnnotationRegressor, Double, int[]>> getLibsvmAnnotationRegressor(ExampleGatherer<Annotation, HashSet<Annotation>> trainAdvancedAnnotationGatherer, ExampleGatherer<Annotation, HashSet<Annotation>> develAdvancedAnnotationGatherer, int[][] featuresSetsToTest, ZScoreFeatureNormalizer fNorm, double anchorMaxED, List<ModelConfigurationResult> mcrs) throws Exception{
+		List<Triple<AnnotationRegressor, Double, int[]>> res = new Vector<>();
+		for (int[] ftrs : featuresSetsToTest) {
+			String trainFileLibLinear = "train_adv_ann_scaled.dat";
+			System.out.println("Dumping Annotation problems...");
+			trainAdvancedAnnotationGatherer.dumpExamplesLibSvm(trainFileLibLinear, fNorm, ftrs);
+			//develAdvancedAnnotationGatherer.dumpExamplesLibSvm("devel_adv_ann_scaled.dat", fNorm, ftrs);
+			double[][] paramsToTest = new double[][] {
+					{0.02500, 1.0}
+			};
+			for (double[] paramsToTestArray : paramsToTest) {
+				double gamma = paramsToTestArray[0];
+				double C = paramsToTestArray[1];
+				String fileBase = getModelFileNameBaseAF(
+						ftrs, C,
+						gamma, anchorMaxED) + ".libsvm";
+
+				svm_problem trainProblem = trainAdvancedAnnotationGatherer.generateLibSvmProblem(ftrs, fNorm);
+				svm_parameter param = ParameterTester.getParametersEFRegressor(gamma, C);						
+				System.out.println("Training binary classifier...");
+				svm_model model = ParameterTester.trainModel(param,
+						trainProblem);
+				svm.svm_save_model(fileBase + ".model", model);
+				fNorm.dump(fileBase + ".zscore");
+				AnnotationRegressor annReg = new LibSvmAnnotationRegressor(model);
+				res.add(new ImmutableTriple<AnnotationRegressor, Double, int[]>(annReg, C, ftrs));
+			}
+		}
+		return res;
+	}
+
+	private static List<Triple<AnnotationRegressor, Double, int[]>> getLiblinearAnnotationRegressor(ExampleGatherer<Annotation, HashSet<Annotation>> trainAdvancedAnnotationGatherer, ExampleGatherer<Annotation, HashSet<Annotation>> develAdvancedAnnotationGatherer, int[][] featuresSetsToTest, ZScoreFeatureNormalizer fNorm, double anchorMaxED, List<ModelConfigurationResult> mcrs) throws Exception{
+		List<Triple<AnnotationRegressor, Double, int[]>> res = new Vector<>();
 		for (int[] ftrs : featuresSetsToTest) {
 			String trainFileLibLinear = "train_adv_ann_scaled.dat";
 			System.out.println("Dumping Annotation problems...");
@@ -258,64 +333,32 @@ public class GenerateModel {
 							modelFile);
 
 					/*String dumpPredictionFile = String.format("dump_predictions.%d.%.3f.dat", modelType, c);
-						if (dumpPredictionFile != null) {
-							List<Triple<FeaturePack<Annotation>, Double, Double>> featuresAndExpectedAndPred = new Vector<>();
-							List<List<Pair<Annotation, Double>>> candidateAndPreds = new Vector<>();
-							for (Pair<Vector<Pair<FeaturePack<Annotation>, Annotation>>, HashSet<Annotation>> ftrsAndDatasAndGold : develAdvancedAnnotationGatherer
-							        .getDataAndFeaturePacksAndGoldOnePerInstance()) {
-								List<Pair<Annotation, Double>> candidateAndPred = new Vector<>();
-								candidateAndPreds.add(candidateAndPred);
-								for (Pair<FeaturePack<Annotation>, Annotation> p : ftrsAndDatasAndGold.first) {
-									double predictedScore = annReg.predictScore(p.first, fNorm);
-									featuresAndExpectedAndPred.add(new ImmutableTriple<FeaturePack<Annotation>, Double, Double>(
-									        p.first, SolutionComputer.AnnotationSetSolutionComputer.candidateScoreStatic(
-									                p.second, ftrsAndDatasAndGold.second, new StrongMentionAnnotationMatch()),
-									        predictedScore));
-								}
+					if (dumpPredictionFile != null) {
+						List<Triple<FeaturePack<Annotation>, Double, Double>> featuresAndExpectedAndPred = new Vector<>();
+						List<List<Pair<Annotation, Double>>> candidateAndPreds = new Vector<>();
+						for (Pair<Vector<Pair<FeaturePack<Annotation>, Annotation>>, HashSet<Annotation>> ftrsAndDatasAndGold : develAdvancedAnnotationGatherer
+						        .getDataAndFeaturePacksAndGoldOnePerInstance()) {
+							List<Pair<Annotation, Double>> candidateAndPred = new Vector<>();
+							candidateAndPreds.add(candidateAndPred);
+							for (Pair<FeaturePack<Annotation>, Annotation> p : ftrsAndDatasAndGold.first) {
+								double predictedScore = annReg.predictScore(p.first, fNorm);
+								featuresAndExpectedAndPred.add(new ImmutableTriple<FeaturePack<Annotation>, Double, Double>(
+								        p.first, SolutionComputer.AnnotationSetSolutionComputer.candidateScoreStatic(
+								                p.second, ftrsAndDatasAndGold.second, new StrongMentionAnnotationMatch()),
+								        predictedScore));
 							}
+						}
 
-							PrintWriter writer = new PrintWriter(dumpPredictionFile, "UTF-8");
-							for (Triple<FeaturePack<Annotation>, Double, Double> t : featuresAndExpectedAndPred)
-								writer.printf("%.6f\t%.6f\n", t.getMiddle(), t.getRight());
-							writer.close();
-						}*/
-
-
-					for (double thr = -1.0; thr <= 1.5; thr += 0.1) {
-						System.out.println("Testing threshold "+thr);
-
-						MetricsResultSet metrics = TuneModelLibSvm.ParameterTester
-								.testAnnotationRegressorModel(
-										annReg,
-										develAdvancedAnnotationGatherer,
-										fNorm,
-										new SolutionComputer.AnnotationSetSolutionComputer(
-												wikiApi, thr));
-
-						int tp = metrics.getGlobalTp();
-						int fp = metrics.getGlobalFp();
-						int fn = metrics.getGlobalFn();
-						float microF1 = metrics.getMicroF1();
-						float macroF1 = metrics.getMacroF1();
-						float macroRec = metrics.getMacroRecall();
-						float macroPrec = metrics.getMacroPrecision();
-						int totVects = develAdvancedAnnotationGatherer
-								.getExamplesCount();
-						mcrs.add(new ModelConfigurationResult(ftrs, -1, -1,
-								-1, c, tp, fp, fn, totVects - tp - fp - fn,
-								microF1, macroF1, macroRec, macroPrec));
-					}
+						PrintWriter writer = new PrintWriter(dumpPredictionFile, "UTF-8");
+						for (Triple<FeaturePack<Annotation>, Double, Double> t : featuresAndExpectedAndPred)
+							writer.printf("%.6f\t%.6f\n", t.getMiddle(), t.getRight());
+						writer.close();
+					}*/
+					res.add(new ImmutableTriple<AnnotationRegressor, Double, int[]>(annReg, c, ftrs));
 				}
 			}
-
 		}
-		for (ModelConfigurationResult mcr : mcrs)
-			System.out.printf("%.5f%%\t%.5f%%\t%.5f%%%n",
-					mcr.getMacroPrecision() * 100, mcr.getMacroRecall() * 100,
-					mcr.getMacroF1() * 100);
-		for (ModelConfigurationResult mcr : mcrs)
-			System.out.println(mcr.getReadable());
-
+		return res;
 	}
 
 	public static void generateCollectiveModel() throws Exception {
@@ -340,7 +383,7 @@ public class GenerateModel {
 		else throw new RuntimeException("OptDataset not recognized.");
 		prefix += (useS2 ? "S2" : "") + (useS3 ? "S3" : "") + (useS6 ? "S6" : "");
 		prefix += ".before.with.merged-nodefault-newanchors";
-		
+
 		List<ModelConfigurationResult> mcrs = new Vector<>();
 		SmaphAnnotator bingAnnotator = GenerateTrainingAndTest
 				.getDefaultBingAnnotatorGatherer(wikiApi, 
@@ -358,7 +401,7 @@ public class GenerateModel {
 		List<Triple<BindingRegressor, FeatureNormalizer, int[]>> regressors = getRanklibBindingRegressors(featuresSetsToTest, trainLinkBackGatherer, develLinkBackGatherer, mcrs, prefix);
 
 		for (Triple<BindingRegressor, FeatureNormalizer, int[]> t : regressors){
-			MetricsResultSet metrics = TuneModelLibSvm.ParameterTester
+			MetricsResultSet metrics = ParameterTester
 					.testBindingRegressorModel(
 							t.getLeft(),
 							develLinkBackGatherer,
@@ -496,6 +539,11 @@ public class GenerateModel {
 			double c, double anchorMaxED) {
 		return String.format("models/model_%s_AF_%.8f_%.3f",
 				getFtrListRepresentation(ftrs), c, anchorMaxED);
+	}
+	private static String getModelFileNameBaseAF(int[] ftrs,
+			double c, double gamma, double anchorMaxED) {
+		return String.format("models/model_%s_AF_%.8f_%.3f_%.8f",
+				getFtrListRepresentation(ftrs), c, anchorMaxED, gamma);
 	}
 
 	private static String generateFeatureListFile(int[] ftrs) throws IOException {

@@ -35,6 +35,7 @@ import it.unipi.di.acube.smaph.learn.models.entityfilters.EntityFilter;
 import it.unipi.di.acube.smaph.learn.models.entityfilters.LibSvmEntityFilter;
 import it.unipi.di.acube.smaph.learn.models.entityfilters.NoEntityFilter;
 import it.unipi.di.acube.smaph.learn.models.linkback.annotationRegressor.LibLinearAnnotatorRegressor;
+import it.unipi.di.acube.smaph.learn.models.linkback.annotationRegressor.LibSvmAnnotationRegressor;
 import it.unipi.di.acube.smaph.learn.models.linkback.bindingRegressor.LibLinearBindingRegressor;
 import it.unipi.di.acube.smaph.learn.models.linkback.bindingRegressor.RankLibBindingRegressor;
 import it.unipi.di.acube.smaph.learn.normalizer.FeatureNormalizer;
@@ -336,7 +337,7 @@ public class GenerateTrainingAndTest {
 			WikipediaApiInterface wikiApi, String bingKey,
 			String AAFModelFileBase, String AAFScaleFile, double annotationFilterThreshold, double anchorMaxED) throws FileNotFoundException, ClassNotFoundException, IOException {
 		return getDefaultBingAnnotatorParam( wikiApi, 
-				bingKey, new NoEntityFilter(), null, new AdvancedIndividualLinkback(new LibLinearAnnotatorRegressor(AAFModelFileBase), new ZScoreFeatureNormalizer(AAFScaleFile, new AdvancedAnnotationFeaturePack()), wikiApi, annotationFilterThreshold, anchorMaxED), false, false, true);
+				bingKey, new NoEntityFilter(), null, new AdvancedIndividualLinkback(new LibSvmAnnotationRegressor(AAFModelFileBase), new ZScoreFeatureNormalizer(AAFScaleFile, new AdvancedAnnotationFeaturePack()), wikiApi, annotationFilterThreshold, anchorMaxED), true, true, true);
 	}
 
 }
