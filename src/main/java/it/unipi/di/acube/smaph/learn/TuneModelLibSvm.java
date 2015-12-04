@@ -70,11 +70,9 @@ public class TuneModelLibSvm {
 		BingInterface.setCache(SmaphConfig.getDefaultBingCache());
 		WATAnnotator.setCache("wikisense.cache");
 
-		WikipediaApiInterface wikiApi = new WikipediaApiInterface("wid.cache",
-				"redirect.cache");
+		WikipediaApiInterface wikiApi = new WikipediaApiInterface("wid.cache", "redirect.cache");
 		FreebaseApi freebApi = new FreebaseApi(freebKey, freebCache);
 
-		Vector<ModelConfigurationResult> bestEFModels = new Vector<>();
 		OptDataset opt = OptDataset.SMAPH_DATASET;
 		WikipediaToFreebase wikiToFreebase = new WikipediaToFreebase(
 				"mapdb");
@@ -99,11 +97,9 @@ public class TuneModelLibSvm {
 		for (ModelConfigurationResult res : modelAndStatsEF.first)
 			System.out.println(res.getReadable());
 
-		bestEFModels.add(modelAndStatsEF.second);
 		System.gc();
 
-		for (ModelConfigurationResult modelAndStatsEFi : bestEFModels)
-			System.out.println("Best EF:" + modelAndStatsEFi.getReadable());
+		System.out.println("Best EF:" + modelAndStatsEF.second.getReadable());
 
 		System.out.println("Flushing Bing API...");
 
@@ -175,12 +171,13 @@ public class TuneModelLibSvm {
 						bestC, trainGatherer, develGatherer, optProfile,
 						optProfileThreshold, scoreboardFtrSelection, wikiApi)
 						.run();
-				 */				bestFtr = ModelConfigurationResult
-						 .findBest(scoreboardFtrSelection, optProfile,
-								 optProfileThreshold);
-				 globalScoreboard.addAll(scoreboardFtrSelection);
-				 System.err.printf("Done feature selection (iteration %d).%n",
-						 iteration);
+				 */
+				bestFtr = ModelConfigurationResult
+						.findBest(scoreboardFtrSelection, optProfile,
+								optProfileThreshold);
+				globalScoreboard.addAll(scoreboardFtrSelection);
+				System.err.printf("Done feature selection (iteration %d).%n",
+						iteration);
 			}
 			int[] bestFeatures = bestFtr.getFeatures();
 
@@ -396,7 +393,7 @@ public class TuneModelLibSvm {
 				for (int negI = 0; (wNeg = TuneModelLibSvm.computeExpParameter(wNegMax, wNegMin,
 						kappaNeg, negI, steps)) <= wNegMax; negI++)
 					futures.add(execServ.submit(new ParameterTester.ParameterTesterEF(wPos, wNeg, features, trainGatherer,
-					        testGatherer, gamma, C, scoreboard, wikiApi)));
+							testGatherer, gamma, C, scoreboard, wikiApi)));
 
 			ModelConfigurationResult best = null;
 			for (Future<ModelConfigurationResult> future : futures)
