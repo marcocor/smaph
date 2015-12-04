@@ -132,6 +132,7 @@ public class GenerateTrainingAndTest {
 			ExampleGatherer<HashSet<Annotation>, HashSet<Annotation>> develLinkBackCollectiveGatherer,
 			ExampleGatherer<Annotation, HashSet<Annotation>> trainIndividualAdvancedAnnotationGatherer,
 			ExampleGatherer<Annotation, HashSet<Annotation>> develIndividualAdvancedAnnotationGatherer,
+			List<String> trainInstances, List<String> develInstances,
 			WikipediaApiInterface wikiApi, WikipediaToFreebase wikiToFreebase,
 			FreebaseApi freebApi, OptDataset opt, double anchorMaxED) throws Exception {
 		if (trainEntityFilterGatherer != null || trainLinkBackCollectiveGatherer != null || trainIndividualAdvancedAnnotationGatherer != null) {
@@ -185,6 +186,14 @@ public class GenerateTrainingAndTest {
 				 * gatherExamples(bingAnnotator, erd, trainEntityFilterGatherer,
 				 * trainLinkBackGatherer, wikiToFreebase);
 				 */
+				if (trainInstances != null){
+					trainInstances.addAll(smaphTrainA.getTextInstanceList());
+					trainInstances.addAll(smaphTrainB.getTextInstanceList());
+					trainInstances.addAll(smaphTest.getTextInstanceList());
+					trainInstances.addAll(smaphDevel.getTextInstanceList());
+					trainInstances.addAll(yahoo.getTextInstanceList());
+				}
+
 			} else if (opt == OptDataset.SMAPH_DATASET) {
 				boolean keepNEOnly = false;
 				A2WDataset smaphTrainA = new GERDAQDataset(
@@ -215,6 +224,10 @@ public class GenerateTrainingAndTest {
 				gatherExamples(bingAnnotator, smaphSingle,
 						trainEntityFilterGatherer, trainLinkBackCollectiveGatherer,
 						trainIndividualAdvancedAnnotationGatherer, wikiToFreebase, keepNEOnly, anchorMaxED);*/
+				if (trainInstances != null){
+					trainInstances.addAll(smaphTrainA.getTextInstanceList());
+					trainInstances.addAll(smaphTrainB.getTextInstanceList());
+				}
 			} else if (opt == OptDataset.SMAPH_DATASET_NE) {
 				boolean keepNEOnly = true;
 				A2WDataset smaphTrainA = new ERDDatasetFilter(new GERDAQDataset(
@@ -228,6 +241,10 @@ public class GenerateTrainingAndTest {
 				gatherExamples(bingAnnotator, smaphTrainB,
 						trainEntityFilterGatherer, trainLinkBackCollectiveGatherer,
 						trainIndividualAdvancedAnnotationGatherer, wikiToFreebase, keepNEOnly, anchorMaxED);
+				if (trainInstances != null){
+					trainInstances.addAll(smaphTrainA.getTextInstanceList());
+					trainInstances.addAll(smaphTrainB.getTextInstanceList());
+				}
 			}
 		}
 		if (develEntityFilterGatherer != null || develLinkBackCollectiveGatherer != null|| develIndividualAdvancedAnnotationGatherer != null) {
@@ -240,7 +257,9 @@ public class GenerateTrainingAndTest {
 						develLinkBackCollectiveGatherer,
 						develIndividualAdvancedAnnotationGatherer, wikiToFreebase,
 						keepNEOnly, anchorMaxED);
-
+				if (develInstances != null){
+					develInstances.addAll(smaphDevel.getTextInstanceList());
+				}
 			}
 			else if (opt == OptDataset.SMAPH_DATASET){
 				boolean keepNEOnly = false;
@@ -260,6 +279,9 @@ public class GenerateTrainingAndTest {
 				gatherExamples(bingAnnotator, smaphSingle,
 						develEntityFilterGatherer, develLinkBackCollectiveGatherer,
 						develIndividualAdvancedAnnotationGatherer, wikiToFreebase, keepNEOnly, anchorMaxED);*/
+				if (develInstances != null){
+					develInstances.addAll(smaphDevel.getTextInstanceList());
+				}
 			}
 			else if (opt == OptDataset.SMAPH_DATASET_NE){
 				boolean keepNEOnly = true;
@@ -268,6 +290,9 @@ public class GenerateTrainingAndTest {
 				gatherExamples(bingAnnotator, smaphDevel,
 						develEntityFilterGatherer, develLinkBackCollectiveGatherer,
 						develIndividualAdvancedAnnotationGatherer,  wikiToFreebase, keepNEOnly, anchorMaxED);
+				if (develInstances != null){
+					develInstances.addAll(smaphDevel.getTextInstanceList());
+				}
 			}
 
 		}

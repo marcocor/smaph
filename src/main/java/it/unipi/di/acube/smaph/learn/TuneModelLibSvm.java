@@ -88,7 +88,7 @@ public class TuneModelLibSvm {
 
 		GenerateTrainingAndTest.gatherExamplesTrainingAndDevel(
 				bingAnnotator, trainEntityFilterGatherer,
-				develEntityFilterGatherer, null, null, null, null, wikiApi, wikiToFreebase, freebApi, opt,-1);
+				develEntityFilterGatherer, null, null, null, null, null, null, wikiApi, wikiToFreebase, freebApi, opt,-1);
 		int[] ftrToInclude = SmaphUtils.getAllFtrVect(new EntityFeaturePack().getFeatureCount());
 
 
