@@ -20,12 +20,11 @@ import it.unipi.di.acube.smaph.learn.TuneModelLibSvm.OptimizaionProfiles;
 
 import java.io.Serializable;
 import java.util.List;
-import java.util.Vector;
 
 public class ModelConfigurationResult implements Serializable {
 	private static final long serialVersionUID = 1L;
 	private int[] pickedFtrs;
-	private double wPos, wNeg, gamma, c;
+	private double wPos, wNeg, gamma, c, thr;
 	
 	private int totalInstances;
 	private int tp;
@@ -35,11 +34,12 @@ public class ModelConfigurationResult implements Serializable {
 	private float microf1, fnRate, macrof1, macroPrec, macroRec;
 
 	public ModelConfigurationResult(int[] pickedFtrsI, double wPos,
-			double wNeg, double gamma, double c, int tp, int fp, int fn,
+			double wNeg, double gamma, double c, double thr, int tp, int fp, int fn,
 			int tn, float microF1, float macroF1, float macroRec, float macroPrec) {
 		this.pickedFtrs = pickedFtrsI.clone();
 		this.wPos = wPos;
 		this.wNeg = wNeg;
+		this.thr = thr;
 		this.totalInstances = tp + fp + fn + tn;
 		this.tp = tp;
 		this.fp = fp;
@@ -61,8 +61,8 @@ public class ModelConfigurationResult implements Serializable {
 		ftrsString = pickedFtrs.length == 0 ? "null!" : ftrsString.substring(0,
 				ftrsString.length() - 1);
 		return String
-				.format("Features:%s wPos:%.5f wNeg:%.5f gamma:%.5f C:%.5f tot=%d TP=%d FP=%d FN=%d TN=%d -> FN_rate=%.2f%% mic-F1=%.2f%% mac-P/R/F1=%.2f%%/%.2f%%/%.2f%%",
-						ftrsString, wPos, wNeg, gamma, c,
+				.format("Features:%s wPos:%.5f wNeg:%.5f gamma:%.5f C:%.5f Thr:%.5f tot=%d TP=%d FP=%d FN=%d TN=%d -> FN_rate=%.2f%% mic-F1=%.2f%% mac-P/R/F1=%.2f%%/%.2f%%/%.2f%%",
+						ftrsString, wPos, wNeg, gamma, c, thr,
 						totalInstances, tp, fp, fn, tn, fnRate * 100,
 						microf1 * 100, macroPrec*100,macroRec*100, macrof1 * 100);
 	}
@@ -160,5 +160,13 @@ public class ModelConfigurationResult implements Serializable {
 	public int getFN() {
 		return this.fn;
 	}
+
+	public Double getC() {
+	    return this.c;
+    }
+
+	public Double getGamma() {
+	    return this.gamma;
+    }
 
 }

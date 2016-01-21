@@ -3,17 +3,22 @@ package it.unipi.di.acube.smaph.learn;
 import it.unipi.di.acube.batframework.data.Annotation;
 import it.unipi.di.acube.batframework.data.Tag;
 import it.unipi.di.acube.batframework.metrics.MetricsResultSet;
+import it.unipi.di.acube.batframework.metrics.StrongAnnotationMatch;
 import it.unipi.di.acube.batframework.utils.Pair;
 import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
+import it.unipi.di.acube.smaph.learn.SolutionComputer.AnnotationSetSolutionComputer;
+import it.unipi.di.acube.smaph.learn.TuneModelLibSvm.OptimizaionProfiles;
 import it.unipi.di.acube.smaph.learn.featurePacks.FeaturePack;
 import it.unipi.di.acube.smaph.learn.models.entityfilters.EntityFilter;
 import it.unipi.di.acube.smaph.learn.models.entityfilters.LibSvmEntityFilter;
 import it.unipi.di.acube.smaph.learn.models.linkback.annotationRegressor.AnnotationRegressor;
+import it.unipi.di.acube.smaph.learn.models.linkback.annotationRegressor.LibSvmAnnotationRegressor;
 import it.unipi.di.acube.smaph.learn.models.linkback.bindingRegressor.BindingRegressor;
 import it.unipi.di.acube.smaph.learn.normalizer.FeatureNormalizer;
 import it.unipi.di.acube.smaph.learn.normalizer.ZScoreFeatureNormalizer;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Vector;
@@ -27,6 +32,7 @@ import libsvm.svm_problem;
 public abstract class ParameterTester<E, G> implements Callable<ModelConfigurationResult> {
 	public abstract ParameterTester<E, G> cloneWithFeatures(int[] ftrs);
 	public abstract ParameterTester<E, G> cloneWithWeights(double wPos, double wNeg);
+	public abstract ParameterTester<E, G> cloneWithGammaC(double gamma, double C);
 
 	public static svm_parameter getParametersEF(double wPos, double wNeg,
 			double gamma, double C) {
@@ -85,7 +91,7 @@ public abstract class ParameterTester<E, G> implements Callable<ModelConfigurati
 
 		return svm.svm_train(trainProblem, param);
 	}
-	
+
 	public static MetricsResultSet testEntityFilter(EntityFilter model, ExampleGatherer<Tag, HashSet<Tag>> testGatherer, int[] features, FeatureNormalizer scaleFn, SolutionComputer<Tag, HashSet<Tag>> sc){
 		List<Pair<Vector<Pair<FeaturePack<Tag>, Tag>>, HashSet<Tag>>> ftrsAndDatasAndGolds = testGatherer.getDataAndFeaturePacksAndGoldOnePerInstance();
 
@@ -156,25 +162,120 @@ public abstract class ParameterTester<E, G> implements Callable<ModelConfigurati
 		}
 	}
 
+	public static class ParameterTesterAR extends ParameterTester<Annotation, HashSet<Annotation>>{
+		private ExampleGatherer<Annotation, HashSet<Annotation>> trainGatherer;
+		private ExampleGatherer<Annotation, HashSet<Annotation>> testGatherer;
+		private int[] features;
+		private WikipediaApiInterface wikiApi;
+		private double gamma, C;
+		private double optProfileThr;
+		private OptimizaionProfiles optProfile;
+		private int thrSteps;
+
+		public ParameterTesterAR(int[] features,
+				ExampleGatherer<Annotation, HashSet<Annotation>> trainGatherer,
+				ExampleGatherer<Annotation, HashSet<Annotation>> testGatherer,
+				double gamma, double C, OptimizaionProfiles optProfile, double optProfileThr,
+				int thrSteps,
+				WikipediaApiInterface wikiApi) {
+			this.features = features;
+			this.trainGatherer = trainGatherer;
+			this.testGatherer = testGatherer;
+			this.gamma = gamma;
+			this.C = C;
+			this.wikiApi = wikiApi;
+			this.optProfileThr = optProfileThr;
+			this.optProfile = optProfile;
+			this.thrSteps =thrSteps;
+		}
+
+		@Override
+		public ModelConfigurationResult call() throws Exception {
+			ZScoreFeatureNormalizer scaleFn = new ZScoreFeatureNormalizer(trainGatherer);
+			svm_problem trainProblem = trainGatherer.generateLibSvmProblem(this.features, scaleFn);
+
+			svm_parameter param = getParametersEFRegressor(gamma, C);
+
+			svm_model model = trainModel(param, trainProblem);
+			LibSvmAnnotationRegressor ar = new LibSvmAnnotationRegressor(model);
+
+
+			List<HashSet<Annotation>> golds = new Vector<>();
+			List<List<Pair<Annotation, Double>>> candidateAndPreds = new Vector<>();
+			List<Double> positiveScores = new Vector<>();
+			for (Pair<Vector<Pair<FeaturePack<Annotation>, Annotation>>, HashSet<Annotation>> ftrsAndDatasAndGold : testGatherer.getDataAndFeaturePacksAndGoldOnePerInstance()) {
+				golds.add(ftrsAndDatasAndGold.second);
+				List<Pair<Annotation, Double>> candidateAndPred = new Vector<>();
+				candidateAndPreds.add(candidateAndPred);
+				for (Pair<FeaturePack<Annotation>, Annotation> p : ftrsAndDatasAndGold.first){
+					double predictedScore = ar.predictScore(p.first, scaleFn);
+					candidateAndPred.add(new Pair<Annotation, Double>(p.second, predictedScore));
+					StrongAnnotationMatch am = new StrongAnnotationMatch(wikiApi);
+					if (AnnotationSetSolutionComputer.candidateScoreStatic(p.second, ftrsAndDatasAndGold.second, am) == 1.0)
+						positiveScores.add(predictedScore);
+				}
+			}
+
+			Collections.sort(positiveScores);
+			double thrMin = positiveScores.get((int) (positiveScores.size() * 0.05));
+			double thrMax = positiveScores.get((int) (positiveScores.size() * 0.95));
+
+			List<ModelConfigurationResult> configurations = new Vector<>();
+			for (int i = 0; i < thrSteps; i++) {
+				double thr = thrMin + i * (thrMax - thrMin) / thrSteps;
+				MetricsResultSet metrics = new SolutionComputer.AnnotationSetSolutionComputer(wikiApi, thr).getResults(candidateAndPreds, golds);
+				int tp = metrics.getGlobalTp();
+				int fp = metrics.getGlobalFp();
+				int fn = metrics.getGlobalFn();
+				float microF1 = metrics.getMicroF1();
+				float macroF1 = metrics.getMacroF1();
+				float macroRec = metrics.getMacroRecall();
+				float macroPrec = metrics.getMacroPrecision();
+
+				configurations.add(new ModelConfigurationResult(
+						features, -1, -1, gamma, C, thr, tp, fp, fn,
+						testGatherer.getExamplesCount() - tp - fp - fn, microF1,
+						macroF1, macroRec, macroPrec));
+			}
+
+			ModelConfigurationResult mcr = ModelConfigurationResult.findBest(configurations, optProfile, optProfileThr);
+
+			return mcr;
+		}
+
+		@Override
+		public ParameterTester<Annotation, HashSet<Annotation>> cloneWithFeatures(int[] ftrs) {
+			return new ParameterTesterAR(ftrs, trainGatherer, testGatherer, gamma, C, optProfile, optProfileThr, thrSteps, wikiApi);
+		}
+
+		@Override
+		public ParameterTester<Annotation, HashSet<Annotation>> cloneWithWeights(double wPos, double wNeg) {
+			return null;
+		}
+
+		@Override
+        public ParameterTester<Annotation, HashSet<Annotation>> cloneWithGammaC(double gamma, double C) {
+	        return new ParameterTesterAR(features, trainGatherer, testGatherer, gamma, C, optProfile, optProfileThr, thrSteps, wikiApi);
+        }
+	}
+
 	public static class ParameterTesterEF extends ParameterTester<Tag, HashSet<Tag>> {
 		private double wPos, wNeg, gamma, C;
 		private ExampleGatherer<Tag, HashSet<Tag>> trainGatherer;
 		private ExampleGatherer<Tag, HashSet<Tag>> testGatherer;
 		private int[] features;
-		Vector<ModelConfigurationResult> scoreboard;
 		private WikipediaApiInterface wikiApi;
 
 		public ParameterTesterEF(double wPos, double wNeg, int[] features,
 				ExampleGatherer<Tag, HashSet<Tag>> trainEQFGatherer,
 				ExampleGatherer<Tag, HashSet<Tag>> testEQFGatherer,
 				double gamma, double C,
-				Vector<ModelConfigurationResult> scoreboard, WikipediaApiInterface wikiApi) {
+				WikipediaApiInterface wikiApi) {
 			this.wPos = wPos;
 			this.wNeg = wNeg;
 			this.features = features;
 			this.trainGatherer = trainEQFGatherer;
 			this.testGatherer = testEQFGatherer;
-			this.scoreboard = scoreboard;
 			this.gamma = gamma;
 			this.C = C;
 			this.wikiApi = wikiApi;
@@ -202,24 +303,26 @@ public abstract class ParameterTester<E, G> implements Callable<ModelConfigurati
 			float macroPrec = metrics.getMacroPrecision();
 
 			ModelConfigurationResult mcr = new ModelConfigurationResult(
-					features, wPos, wNeg, gamma, C, tp, fp, fn,
+					features, wPos, wNeg, gamma, C, -1, tp, fp, fn,
 					testGatherer.getExamplesCount() - tp - fp - fn, microF1,
 					macroF1, macroRec, macroPrec);
 
-			synchronized (scoreboard) {
-				scoreboard.add(mcr);
-			}
 			return mcr;
 		}
 
 		@Override
-        public ParameterTester<Tag, HashSet<Tag>> cloneWithFeatures(int[] ftrs) {
-			return new ParameterTesterEF(wPos, wNeg, ftrs, trainGatherer, testGatherer, gamma, C, scoreboard, wikiApi);
-        }
+		public ParameterTester<Tag, HashSet<Tag>> cloneWithFeatures(int[] ftrs) {
+			return new ParameterTesterEF(wPos, wNeg, ftrs, trainGatherer, testGatherer, gamma, C, wikiApi);
+		}
 
 		@Override
-        public ParameterTester<Tag, HashSet<Tag>> cloneWithWeights(double wPos, double wNeg) {
-			return new ParameterTesterEF(wPos, wNeg, features, trainGatherer, testGatherer, gamma, C, scoreboard, wikiApi);
+		public ParameterTester<Tag, HashSet<Tag>> cloneWithWeights(double wPos, double wNeg) {
+			return new ParameterTesterEF(wPos, wNeg, features, trainGatherer, testGatherer, gamma, C, wikiApi);
+		}
+
+		@Override
+        public ParameterTester<Tag, HashSet<Tag>> cloneWithGammaC(double gamma, double C) {
+			return new ParameterTesterEF(wPos, wNeg, features, trainGatherer, testGatherer, gamma, C, wikiApi);
 		}
 	}
 

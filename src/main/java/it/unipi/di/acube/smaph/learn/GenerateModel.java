@@ -195,7 +195,7 @@ public class GenerateModel {
 					float macroPrec = metrics.getMacroPrecision();
 					int totVects = develEntityFilterGatherer.getExamplesCount();
 					mcrs.add(new ModelConfigurationResult(ftrToTestArray, wPos,
-							wNeg, gamma, C, tp, fp, fn, totVects - tp
+							wNeg, gamma, C, -1, tp, fp, fn, totVects - tp
 							- fp - fn, microF1, macroF1, macroRec,
 							macroPrec));
 
@@ -222,7 +222,8 @@ public class GenerateModel {
 	public static void generateIndividualAdvancedAnnotationModel() throws Exception {
 		int[][] featuresSetsToTest = new int[][] { SmaphUtils
 				.getAllFtrVect(new AdvancedAnnotationFeaturePack().getFeatureCount()),
-				new int[]{1,2,3,4,6,7,8,11,12,13,14,15,16,18,20,21,22,23,24,25,26,27,28,29,30,31,32,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55},
+				new int[]{2,3,4,5,6,7,8,10,12,13,16,17,18,20,21,23,24,25,26,27,28,29,30,31,32,34,36,37,38,39,41,44,45,46,47,48,50,51,52,54,55},
+				new int[] {1,2,3,4,6,7,8,9,10,12,14,18,21,22,24,26,27,28,29,30,32,33,35,36,38,40,41,42,43,44,45,46,47,48,49,50,51,54,55},
 		};
 		OptDataset opt = OptDataset.SMAPH_DATASET;
 		double anchorMaxED = 0.7;
@@ -250,7 +251,7 @@ public class GenerateModel {
 		double bestMacroF1 = Double.NEGATIVE_INFINITY;
 		double bestThr = -1;
 		for (Triple<AnnotationRegressor, Double, int[]> t : annAndFeatures){
-			for (double thr = -1.0; thr <= -0.6; thr += 0.05 /*double thr = 0.5; thr <= 1.4; thr += 0.1*/) {
+			for (double thr = -0.78387; thr <= -0.68; thr += 0.02 /*double thr = 0.5; thr <= 1.4; thr += 0.1*/) {
 				System.out.println("Testing threshold "+thr);
 
 				MetricsResultSet metrics = ParameterTester
@@ -271,7 +272,7 @@ public class GenerateModel {
 				int totVects = develAdvancedAnnotationGatherer
 						.getExamplesCount();
 				mcrs.add(new ModelConfigurationResult(t.getRight(), -1, -1,
-						-1, t.getMiddle(), tp, fp, fn, totVects - tp - fp - fn,
+						-1, t.getMiddle(), thr, tp, fp, fn, totVects - tp - fp - fn,
 						microF1, macroF1, macroRec, macroPrec));
 				if (macroF1 > bestMacroF1){
 					bestMacroF1 = macroF1;
@@ -300,7 +301,9 @@ public class GenerateModel {
 			trainAdvancedAnnotationGatherer.dumpExamplesLibSvm(trainFileLibLinear, fNorm, ftrs);
 			//develAdvancedAnnotationGatherer.dumpExamplesLibSvm("devel_adv_ann_scaled.dat", fNorm, ftrs);
 			double[][] paramsToTest = new double[][] {
-					{0.02500, 1.0}
+					//{0.02500, 1.0},
+					{0.01644, 0.90420},
+					{0.02280, 1.17972},
 			};
 			for (double[] paramsToTestArray : paramsToTest) {
 				double gamma = paramsToTestArray[0];
@@ -312,8 +315,7 @@ public class GenerateModel {
 				svm_problem trainProblem = trainAdvancedAnnotationGatherer.generateLibSvmProblem(ftrs, fNorm);
 				svm_parameter param = ParameterTester.getParametersEFRegressor(gamma, C);						
 				System.out.println("Training binary classifier...");
-				svm_model model = ParameterTester.trainModel(param,
-						trainProblem);
+				svm_model model = ParameterTester.trainModel(param, trainProblem);
 				svm.svm_save_model(fileBase + ".model", model);
 				fNorm.dump(fileBase + ".zscore");
 				AnnotationRegressor annReg = new LibSvmAnnotationRegressor(model);
@@ -460,7 +462,7 @@ public class GenerateModel {
 			float macroRec = metrics.getMacroRecall();
 			float macroPrec = metrics.getMacroPrecision();
 			int totVects = develLinkBackGatherer.getExamplesCount();
-			ModelConfigurationResult mcr = new ModelConfigurationResult(t.getRight(), -1, -1, -1, -1,
+			ModelConfigurationResult mcr = new ModelConfigurationResult(t.getRight(), -1, -1, -1, -1, -1,
 					tp, fp, fn, totVects - tp - fp - fn, microF1,
 					macroF1, macroRec, macroPrec);
 			System.out.printf("%.5f%%\t%.5f%%\t%.5f%%%n",
