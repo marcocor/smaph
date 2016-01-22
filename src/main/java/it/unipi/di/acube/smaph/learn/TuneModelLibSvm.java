@@ -39,6 +39,12 @@ import java.io.Serializable;
 import java.util.*;
 import java.util.concurrent.*;
 
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.GnuParser;
+import org.apache.commons.cli.OptionBuilder;
+import org.apache.commons.cli.Options;
+
 public class TuneModelLibSvm {
 	private static final int THREADS_NUM = 4;
 
@@ -65,6 +71,15 @@ public class TuneModelLibSvm {
 	}
 
 	public static void main(String[] args) throws Exception {
+		CommandLineParser parser = new GnuParser();
+		Options options = new Options();
+
+		options.addOption(OptionBuilder.withLongOpt("opt-annotation-regressor").withArgName("OPT_ANN_REG").withDescription("Optimize single-annotation regressor.").create("a"));
+		options.addOption(OptionBuilder.withLongOpt("opt-entity-filter").withArgName("OPT_ENTITY_F").withDescription("Optimize single-entity filter.").create("e"));
+
+		CommandLine line = parser.parse(options, args);
+
+
 		Locale.setDefault(Locale.US);
 		SmaphConfig.setConfigFile("smaph-config.xml");
 		String bingKey = SmaphConfig.getDefaultBingKey();
@@ -81,21 +96,29 @@ public class TuneModelLibSvm {
 		WikipediaToFreebase wikiToFreebase = new WikipediaToFreebase("mapdb");
 
 		SmaphAnnotator bingAnnotator = GenerateTrainingAndTest
-		        .getDefaultBingAnnotatorGatherer(wikiApi, bingKey, true, true, true);
+				.getDefaultBingAnnotatorGatherer(wikiApi, bingKey, true, true, true);
 
+		double maxAnchorSegmentED = 0.7;
 		
-		double maxAnchorSegmentED = 0.7; 
-		/*Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult> modelAndStats = trainIterativeEF(bingAnnotator, opt,
-		        wikiToFreebase, freebApi, maxAnchorSegmentED, OptimizaionProfiles.MAXIMIZE_MACRO_F1, -1.0, wikiApi);*/
-		Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult> modelAndStats = trainIterativeAR(bingAnnotator, opt,
-				wikiToFreebase, freebApi, maxAnchorSegmentED, OptimizaionProfiles.MAXIMIZE_MACRO_F1, -1.0, wikiApi);
+		List<Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult>> modelAndStatsList = new Vector<>();
+		if (line.hasOption("opt-entity-filter")){
+			Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult> modelAndStats = trainIterativeEF(bingAnnotator, opt,
+					wikiToFreebase, freebApi, maxAnchorSegmentED, OptimizaionProfiles.MAXIMIZE_MACRO_F1, -1.0, wikiApi);
+			modelAndStatsList.add(modelAndStats);
+			System.gc();
+		}
+		if (line.hasOption("opt-annotation-regressor")){
+			Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult> modelAndStats = trainIterativeAR(bingAnnotator, opt,
+					wikiToFreebase, freebApi, maxAnchorSegmentED, OptimizaionProfiles.MAXIMIZE_MACRO_F1, -1.0, wikiApi);
+			modelAndStatsList.add(modelAndStats);
+			System.gc();
+		}
 
-		for (ModelConfigurationResult res : modelAndStats.first)
-			System.out.println(res.getReadable());
-
-		System.gc();
-
-		System.out.println("Best model:" + modelAndStats.second.getReadable());
+		for (Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult> modelAndStats: modelAndStatsList){
+			for (ModelConfigurationResult res : modelAndStats.first)
+				System.out.println(res.getReadable());
+			System.out.println("Best model:" + modelAndStats.second.getReadable());
+		}
 
 		System.out.println("Flushing Bing API...");
 
@@ -133,7 +156,7 @@ public class TuneModelLibSvm {
 		ExampleGatherer<Tag, HashSet<Tag>> develGatherer = new ExampleGatherer<Tag, HashSet<Tag>>();
 
 		GenerateTrainingAndTest.gatherExamplesTrainingAndDevel(
-				annotator, develGatherer,
+				annotator, trainGatherer,
 				develGatherer, null, null, null, null, null, null, wikiApi, wikiToFreebase, freebApi, optDs, maxAnchorSegmentED);
 
 		int[] featuresToInclude = SmaphUtils.getAllFtrVect(new EntityFeaturePack().getFeatureCount());
@@ -196,14 +219,14 @@ public class TuneModelLibSvm {
 						finewNegMin, finewNegMax, -1, bestGamma, bestC, fineSteps,
 						bestFeatures, trainGatherer,
 						develGatherer, scoreboardWeightsTuning, wikiApi).run();
-				
+
 				ModelConfigurationResult bestWeightsRes = ModelConfigurationResult
 						.findBest(scoreboardWeightsTuning, optProfile,
 								optProfileThreshold);
 
 				bestwPos = bestWeightsRes.getWPos();
 				bestwNeg = bestWeightsRes.getWNeg();
-				
+
 				finewPosMin = bestwPos * 0.5;
 				finewPosMax = bestwPos * 2.0;
 				finewNegMin = bestwNeg * 0.5;
@@ -222,7 +245,7 @@ public class TuneModelLibSvm {
 						scoreboardGammaCTuning, wikiApi).run();
 
 				ModelConfigurationResult bestCGammaResult = ModelConfigurationResult.findBest(scoreboardGammaCTuning, optProfile,
-				        optProfileThreshold);
+						optProfileThreshold);
 
 				bestC = bestCGammaResult.getC();
 				bestGamma = bestCGammaResult.getGamma();
@@ -333,9 +356,9 @@ public class TuneModelLibSvm {
 				new AblationFeatureSelector<Annotation, HashSet<Annotation>>(pt, optProfile, optProfileThreshold, scoreboardFtrSelection).run();
 
 				ModelConfigurationResult bestFtrResult = ModelConfigurationResult.findBest(scoreboardFtrSelection, optProfile,
-				        optProfileThreshold);
+						optProfileThreshold);
 				featuresToInclude = bestFtrResult.getFeatures();
-				
+
 				globalScoreboard.addAll(scoreboardFtrSelection);
 				System.err.printf("Done feature selection (iteration %d).%n", iteration);
 			}
