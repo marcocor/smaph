@@ -32,7 +32,6 @@ import it.unipi.di.acube.smaph.WATRelatednessComputer;
 import it.unipi.di.acube.smaph.learn.GenerateTrainingAndTest.OptDataset;
 import it.unipi.di.acube.smaph.learn.ParameterTester.ParameterTesterAR;
 import it.unipi.di.acube.smaph.learn.ParameterTester.ParameterTesterEF;
-import it.unipi.di.acube.smaph.learn.featurePacks.AdvancedAnnotationFeaturePack;
 import it.unipi.di.acube.smaph.learn.featurePacks.EntityFeaturePack;
 
 import java.io.Serializable;
@@ -44,6 +43,7 @@ import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.GnuParser;
 import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
+import org.apache.commons.lang3.ArrayUtils;
 
 public class TuneModelLibSvm {
 	private static final int THREADS_NUM = 4;
@@ -74,11 +74,12 @@ public class TuneModelLibSvm {
 		CommandLineParser parser = new GnuParser();
 		Options options = new Options();
 
-		options.addOption(OptionBuilder.withLongOpt("opt-annotation-regressor").withArgName("OPT_ANN_REG").withDescription("Optimize single-annotation regressor.").create("a"));
-		options.addOption(OptionBuilder.withLongOpt("opt-entity-filter").withArgName("OPT_ENTITY_F").withDescription("Optimize single-entity filter.").create("e"));
+		options.addOption(OptionBuilder.withLongOpt("opt-annotation-regressor").withDescription("Optimize single-annotation regressor.").create("a"));
+		options.addOption(OptionBuilder.withLongOpt("opt-entity-filter").withDescription("Optimize single-entity filter.").create("e"));
+		options.addOption(OptionBuilder.withLongOpt("ftr-sel-method").hasArg().withArgName("FTR_SEL_METHOD").withDescription("Feature selection method. Can be either `ablation' (default), `oneshot' or `increment'").create("m"));
+		options.addOption(OptionBuilder.withLongOpt("restrict-ftr-set").hasArgs().withArgName("INIT_FTR_SET").withDescription("Feature restriction set (initial features for `ablation' and `oneshot' methods, pool of selectable features for `increment'), e.g. `1,3,6,7,8'. Multiple sets can be defined (separated by a space). Defaults to all features.").create("f"));
 
 		CommandLine line = parser.parse(options, args);
-
 
 		Locale.setDefault(Locale.US);
 		SmaphConfig.setConfigFile("smaph-config.xml");
@@ -100,16 +101,33 @@ public class TuneModelLibSvm {
 
 		double maxAnchorSegmentED = 0.7;
 		
+		String ftrSelMethod = line.getOptionValue("ftr-sel-method", "ablation");
+		if (!ftrSelMethod.equals("ablation") && !ftrSelMethod.equals("increment") && !ftrSelMethod.equals("oneshot"))
+			throw new IllegalArgumentException("ftr-sel-method must be either `ablation', `oneshot' or `increment'.");
+
+		int[][] ftrToInclude = null;
+		if (line.hasOption("restrict-ftr-set")){
+			String[] initFtrs = line.getOptionValues("restrict-ftr-set");
+			ftrToInclude = new int[initFtrs.length][];
+			for (int i = 0; i < initFtrs.length; i++) {
+				String[] tokens = initFtrs[i].split(",");
+				ftrToInclude[i] = new int[tokens.length];
+				for (int j=0; j<tokens.length; j++)
+					ftrToInclude[i][j] = Integer.parseInt(tokens[j]);
+				Arrays.sort(ftrToInclude[i]);
+			}
+		}
+		
 		List<Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult>> modelAndStatsList = new Vector<>();
 		if (line.hasOption("opt-entity-filter")){
 			Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult> modelAndStats = trainIterativeEF(bingAnnotator, opt,
-					wikiToFreebase, freebApi, maxAnchorSegmentED, OptimizaionProfiles.MAXIMIZE_MACRO_F1, -1.0, wikiApi);
+					wikiToFreebase, freebApi, maxAnchorSegmentED, OptimizaionProfiles.MAXIMIZE_MACRO_F1, -1.0, ftrSelMethod, ftrToInclude, wikiApi);
 			modelAndStatsList.add(modelAndStats);
 			System.gc();
 		}
 		if (line.hasOption("opt-annotation-regressor")){
 			Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult> modelAndStats = trainIterativeAR(bingAnnotator, opt,
-					wikiToFreebase, freebApi, maxAnchorSegmentED, OptimizaionProfiles.MAXIMIZE_MACRO_F1, -1.0, wikiApi);
+					wikiToFreebase, freebApi, maxAnchorSegmentED, OptimizaionProfiles.MAXIMIZE_MACRO_F1, -1.0, ftrSelMethod, ftrToInclude, wikiApi);
 			modelAndStatsList.add(modelAndStats);
 			System.gc();
 		}
@@ -130,7 +148,7 @@ public class TuneModelLibSvm {
 
 	private static Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult> trainIterativeEF(
 			SmaphAnnotator annotator, OptDataset optDs, WikipediaToFreebase wikiToFreebase, FreebaseApi freebApi, double maxAnchorSegmentED,
-			OptimizaionProfiles optProfile, double optProfileThreshold,
+			OptimizaionProfiles optProfile, double optProfileThreshold, String ftrSelMethod, int[][] restrictFeatures,
 			WikipediaApiInterface wikiApi) throws Exception {
 
 		Vector<ModelConfigurationResult> globalScoreboard = new Vector<>();
@@ -155,121 +173,121 @@ public class TuneModelLibSvm {
 		ExampleGatherer<Tag, HashSet<Tag>> trainGatherer = new ExampleGatherer<Tag, HashSet<Tag>>();
 		ExampleGatherer<Tag, HashSet<Tag>> develGatherer = new ExampleGatherer<Tag, HashSet<Tag>>();
 
-		GenerateTrainingAndTest.gatherExamplesTrainingAndDevel(
-				annotator, trainGatherer,
-				develGatherer, null, null, null, null, null, null, wikiApi, wikiToFreebase, freebApi, optDs, maxAnchorSegmentED);
+		GenerateTrainingAndTest.gatherExamplesTrainingAndDevel(annotator, trainGatherer, develGatherer, null, null, null, null,
+		        null, null, wikiApi, wikiToFreebase, freebApi, optDs, maxAnchorSegmentED);
 
-		int[] featuresToInclude = SmaphUtils.getAllFtrVect(new EntityFeaturePack().getFeatureCount());
+		if (restrictFeatures == null)
+			restrictFeatures = new int[][] { SmaphUtils.getAllFtrVect(new EntityFeaturePack().getFeatureCount()) };
 
-		// broad tune weights (all ftr)
-		{
-			new WeightSelector(
-					broadwPosMin, broadwPosMax, broadkPos, broadwNegMin,
-					broadwNegMax, 1.0, bestGamma, bestC, broadSteps,
-					featuresToInclude, trainGatherer, develGatherer,
-					globalScoreboard, wikiApi).run();
-			System.err.println("Done broad weighting.");
+		for (int[] restrictFeaturesI : restrictFeatures) {
 
-			ModelConfigurationResult bestWeights = ModelConfigurationResult
-					.findBest(globalScoreboard, optProfile,
+			// broad tune weights (all ftr)
+			{
+				new WeightSelector(broadwPosMin, broadwPosMax, broadkPos, broadwNegMin, broadwNegMax, 1.0, bestGamma, bestC,
+				        broadSteps, restrictFeaturesI, trainGatherer, develGatherer, globalScoreboard, wikiApi).run();
+				System.err.println("Done broad weighting.");
+
+				ModelConfigurationResult bestWeights = ModelConfigurationResult
+						.findBest(globalScoreboard, optProfile,
+								optProfileThreshold);
+
+				bestwPos = bestWeights.getWPos();
+				bestwNeg = bestWeights.getWNeg();
+			}
+			int bestIterPos = paramToIter(bestwPos, broadwPosMax,
+					broadwPosMin, broadkPos, broadSteps);
+			double finewPosMin = computeExpParameter(broadwPosMax,
+					broadwPosMin, broadkPos, bestIterPos - 1, broadSteps);
+			double finewPosMax = computeExpParameter(broadwPosMax,
+					broadwPosMin, broadkPos, bestIterPos + 1, broadSteps);
+			double finewNegMin = 0.5;
+			double finewNegMax = 2.0;
+
+			ModelConfigurationResult bestResult = ModelConfigurationResult
+					.findBest(globalScoreboard, optProfile, optProfileThreshold);
+
+			for (int iteration = 0; iteration < iterations; iteration++) {
+				// Do feature selection
+				int[] bestFeatures = null;
+				ModelConfigurationResult bestFtr = bestResult;
+				if (!ftrSelMethod.equals("oneshot")) {
+					Vector<ModelConfigurationResult> scoreboardFtrSelection = new Vector<>();
+
+					ParameterTesterEF pt = new ParameterTesterEF(bestwPos, bestwNeg, bestFeatures, trainGatherer, develGatherer, bestGamma, bestC, wikiApi);
+
+					if (ftrSelMethod.equals("ablation"))
+						new AblationFeatureSelector<Tag, HashSet<Tag>>(pt, optProfile, optProfileThreshold, scoreboardFtrSelection).run();
+					else if (ftrSelMethod.equals("increment"))
+						new IncrementalFeatureSelector<Tag, HashSet<Tag>>(pt, restrictFeaturesI, restrictFeaturesI.length == 0,  optProfile, optProfileThreshold, scoreboardFtrSelection).run();
+
+					bestFtr = ModelConfigurationResult
+							.findBest(scoreboardFtrSelection, optProfile,
+									optProfileThreshold);
+					globalScoreboard.addAll(scoreboardFtrSelection);
+					System.err.printf("Done feature selection (iteration %d).%n",
+							iteration);
+				}
+				bestFeatures = bestFtr.getFeatures();
+
+				// Fine-tune weights
+				{
+					Vector<ModelConfigurationResult> scoreboardWeightsTuning = new Vector<>();
+					new WeightSelector(finewPosMin, finewPosMax, -1,
+							finewNegMin, finewNegMax, -1, bestGamma, bestC, fineSteps,
+							bestFeatures, trainGatherer,
+							develGatherer, scoreboardWeightsTuning, wikiApi).run();
+
+					ModelConfigurationResult bestWeightsRes = ModelConfigurationResult
+							.findBest(scoreboardWeightsTuning, optProfile,
+									optProfileThreshold);
+
+					bestwPos = bestWeightsRes.getWPos();
+					bestwNeg = bestWeightsRes.getWNeg();
+
+					finewPosMin = bestwPos * 0.5;
+					finewPosMax = bestwPos * 2.0;
+					finewNegMin = bestwNeg * 0.5;
+					finewNegMax = bestwNeg * 2.0;
+
+					globalScoreboard.addAll(scoreboardWeightsTuning);
+					System.err.printf("Done weights tuning (iteration %d).%n",
+							iteration);
+				}
+				// Fine-tune C and Gamma
+				{
+					Vector<ModelConfigurationResult> scoreboardGammaCTuning = new Vector<>();
+					ParameterTesterEF pt = new ParameterTesterEF(bestwPos, bestwNeg, restrictFeaturesI, trainGatherer, develGatherer, bestGamma, bestC, wikiApi);
+					new GammaCSelector<Tag, HashSet<Tag>>(fineCMin, fineCMax, bestC, (fineCMax-fineCMin)/fineStepsCGamma/10.0,
+							fineGammaMin, fineGammaMax, bestGamma, (fineGammaMax-fineGammaMin)/fineStepsCGamma/10.0, fineStepsCGamma, pt, 
+							scoreboardGammaCTuning, wikiApi).run();
+
+					ModelConfigurationResult bestCGammaResult = ModelConfigurationResult.findBest(scoreboardGammaCTuning, optProfile,
 							optProfileThreshold);
 
-			bestwPos = bestWeights.getWPos();
-			bestwNeg = bestWeights.getWNeg();
-		}
-		int bestIterPos = paramToIter(bestwPos, broadwPosMax,
-				broadwPosMin, broadkPos, broadSteps);
-		double finewPosMin = computeExpParameter(broadwPosMax,
-				broadwPosMin, broadkPos, bestIterPos - 1, broadSteps);
-		double finewPosMax = computeExpParameter(broadwPosMax,
-				broadwPosMin, broadkPos, bestIterPos + 1, broadSteps);
-		double finewNegMin = 0.5;
-		double finewNegMax = 2.0;
+					bestC = bestCGammaResult.getC();
+					bestGamma = bestCGammaResult.getGamma();
 
-		ModelConfigurationResult bestResult = ModelConfigurationResult
-				.findBest(globalScoreboard, optProfile, optProfileThreshold);
+					fineCMin = bestC * 0.5;
+					fineCMax = bestC * 2.0;
+					fineGammaMin = bestGamma * 0.5;
+					fineGammaMax = bestGamma * 2.0;
 
-		for (int iteration = 0; iteration < iterations; iteration++) {
-			// Do feature selection
-			ModelConfigurationResult bestFtr;
-			{
-				Vector<ModelConfigurationResult> scoreboardFtrSelection = new Vector<>();
+					globalScoreboard.addAll(scoreboardGammaCTuning);
+					System.err.printf("Done weights tuning (iteration %d).%n",
+							iteration);
+				}
 
-				ParameterTesterEF pt = new ParameterTesterEF(bestwPos, bestwNeg, featuresToInclude, trainGatherer, develGatherer, bestGamma, bestC, wikiApi);
-				new AblationFeatureSelector<Tag, HashSet<Tag>>(pt, optProfile, optProfileThreshold, scoreboardFtrSelection).run();
-
-				/*				new IncrementalFeatureSelector(bestwPos, bestwNeg, bestGamma,
-						bestC, trainGatherer, develGatherer, optProfile,
-						optProfileThreshold, scoreboardFtrSelection, wikiApi)
-						.run();
-				 */
-				bestFtr = ModelConfigurationResult
-						.findBest(scoreboardFtrSelection, optProfile,
-								optProfileThreshold);
-				globalScoreboard.addAll(scoreboardFtrSelection);
-				System.err.printf("Done feature selection (iteration %d).%n",
-						iteration);
+				ModelConfigurationResult newBest = ModelConfigurationResult
+						.findBest(globalScoreboard, optProfile, optProfileThreshold);
+				if (bestResult != null
+						&& newBest.equalResult(bestResult, optProfile,
+								optProfileThreshold)) {
+					System.err.printf("Not improving, stopping on iteration %d.%n",
+							iteration);
+					break;
+				}
+				bestResult = newBest;
 			}
-			int[] bestFeatures = bestFtr.getFeatures();
-
-			// Fine-tune weights
-			{
-				Vector<ModelConfigurationResult> scoreboardWeightsTuning = new Vector<>();
-				new WeightSelector(finewPosMin, finewPosMax, -1,
-						finewNegMin, finewNegMax, -1, bestGamma, bestC, fineSteps,
-						bestFeatures, trainGatherer,
-						develGatherer, scoreboardWeightsTuning, wikiApi).run();
-
-				ModelConfigurationResult bestWeightsRes = ModelConfigurationResult
-						.findBest(scoreboardWeightsTuning, optProfile,
-								optProfileThreshold);
-
-				bestwPos = bestWeightsRes.getWPos();
-				bestwNeg = bestWeightsRes.getWNeg();
-
-				finewPosMin = bestwPos * 0.5;
-				finewPosMax = bestwPos * 2.0;
-				finewNegMin = bestwNeg * 0.5;
-				finewNegMax = bestwNeg * 2.0;
-
-				globalScoreboard.addAll(scoreboardWeightsTuning);
-				System.err.printf("Done weights tuning (iteration %d).%n",
-						iteration);
-			}
-			// Fine-tune C and Gamma
-			{
-				Vector<ModelConfigurationResult> scoreboardGammaCTuning = new Vector<>();
-				ParameterTesterEF pt = new ParameterTesterEF(bestwPos, bestwNeg, featuresToInclude, trainGatherer, develGatherer, bestGamma, bestC, wikiApi);
-				new GammaCSelector<Tag, HashSet<Tag>>(fineCMin, fineCMax, bestC, (fineCMax-fineCMin)/fineStepsCGamma/10.0,
-						fineGammaMin, fineGammaMax, bestGamma, (fineGammaMax-fineGammaMin)/fineStepsCGamma/10.0, fineStepsCGamma, pt, 
-						scoreboardGammaCTuning, wikiApi).run();
-
-				ModelConfigurationResult bestCGammaResult = ModelConfigurationResult.findBest(scoreboardGammaCTuning, optProfile,
-						optProfileThreshold);
-
-				bestC = bestCGammaResult.getC();
-				bestGamma = bestCGammaResult.getGamma();
-
-				fineCMin = bestC * 0.5;
-				fineCMax = bestC * 2.0;
-				fineGammaMin = bestGamma * 0.5;
-				fineGammaMax = bestGamma * 2.0;
-
-				globalScoreboard.addAll(scoreboardGammaCTuning);
-				System.err.printf("Done weights tuning (iteration %d).%n",
-						iteration);
-			}
-
-			ModelConfigurationResult newBest = ModelConfigurationResult
-					.findBest(globalScoreboard, optProfile, optProfileThreshold);
-			if (bestResult != null
-					&& newBest.equalResult(bestResult, optProfile,
-							optProfileThreshold)) {
-				System.err.printf("Not improving, stopping on iteration %d.%n",
-						iteration);
-				break;
-			}
-			bestResult = newBest;
 		}
 
 		return new Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult>(
@@ -279,17 +297,13 @@ public class TuneModelLibSvm {
 
 	private static Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult> trainIterativeAR(
 			SmaphAnnotator annotator, OptDataset optDs, WikipediaToFreebase wikiToFreebase, FreebaseApi freebApi, double maxAnchorSegmentED,
-			OptimizaionProfiles optProfile, double optProfileThreshold,
+			OptimizaionProfiles optProfile, double optProfileThreshold, String ftrSelMethod, int[][] restrictFeatures,
 			WikipediaApiInterface wikiApi) throws Exception {
 		Vector<ModelConfigurationResult> globalScoreboard = new Vector<>();
 		int stepsCGamma = 6;
+		int fineStepsCGamma = 6;
 		int iterations = 5;
-		double bestGamma = 1.0 / new AdvancedAnnotationFeaturePack().getFeatureCount();
-		double bestC = 1;
-		double cMin = bestC * 0.7;
-		double cMax = bestC * 1.8;
-		double gammaMin = bestGamma * 0.7;
-		double gammaMax = bestGamma * 1.8;
+		int fineTuneIterations = 3;
 		int thrSteps = 30;
 
 		ExampleGatherer<Annotation, HashSet<Annotation>> trainGatherer = new ExampleGatherer<>();
@@ -299,86 +313,100 @@ public class TuneModelLibSvm {
 				annotator, null, null, null, null, trainGatherer,
 				develGatherer, null, null, wikiApi, wikiToFreebase, freebApi, optDs, maxAnchorSegmentED);
 
-		int[] featuresToInclude = SmaphUtils.getAllFtrVect(new AdvancedAnnotationFeaturePack().getFeatureCount());
+		if (restrictFeatures == null)
+			if (ftrSelMethod.equals("oneshot") || ftrSelMethod.equals("ablation"))
+				restrictFeatures = new int[][] { SmaphUtils.getAllFtrVect(new EntityFeaturePack().getFeatureCount()) };
+			else if (ftrSelMethod.equals("incremental"))
+				restrictFeatures = new int[][] {};
 
-		ModelConfigurationResult bestResult = null;
+		
+		for (int[] restrictedFeaturesI: restrictFeatures){
+			double bestC = 1;
+			double bestGamma = restrictedFeaturesI.length > 0 ? 1.0 / restrictedFeaturesI.length : 1.0;
+			ModelConfigurationResult bestResult = null;
 
-		for (int iteration = 0; iteration < iterations; iteration++) {
-			// Broad-tune C and Gamma
-			{
-				Vector<ModelConfigurationResult> scoreboardGammaCTuning = new Vector<>();
-				ParameterTesterAR pt = new ParameterTesterAR(featuresToInclude, trainGatherer, develGatherer, bestGamma, bestC, optProfile, optProfileThreshold, thrSteps, wikiApi);
+			for (int iteration = 0; iteration < iterations; iteration++) {
+				// Broad-tune C and Gamma
+				{
+					double cMin = bestC * 0.7;
+					double cMax = bestC * 1.8;
+					double gammaMin = bestGamma * 0.7;
+					double gammaMax = bestGamma * 1.8;
 
-				new GammaCSelector<Annotation, HashSet<Annotation>>(cMin, cMax, bestC, (cMax-cMin)/stepsCGamma/10.0, gammaMin,
-						gammaMax, bestGamma, (gammaMax-gammaMin)/stepsCGamma/10.0, stepsCGamma, pt, scoreboardGammaCTuning, wikiApi).run();
-				ModelConfigurationResult bestCGammaResult = ModelConfigurationResult.findBest(scoreboardGammaCTuning, optProfile,
-						optProfileThreshold);
+					Vector<ModelConfigurationResult> scoreboardGammaCTuning = new Vector<>();
+					ParameterTesterAR pt = new ParameterTesterAR(restrictedFeaturesI, trainGatherer, develGatherer, bestGamma, bestC, optProfile, optProfileThreshold, thrSteps, wikiApi);
 
-				bestC = bestCGammaResult.getC();
-				bestGamma = bestCGammaResult.getGamma();
+					new GammaCSelector<Annotation, HashSet<Annotation>>(cMin, cMax, bestC, (cMax-cMin)/stepsCGamma/10.0, gammaMin,
+							gammaMax, bestGamma, (gammaMax-gammaMin)/stepsCGamma/10.0, stepsCGamma, pt, scoreboardGammaCTuning, wikiApi).run();
+					ModelConfigurationResult bestCGammaResult = ModelConfigurationResult.findBest(scoreboardGammaCTuning, optProfile,
+							optProfileThreshold);
 
-				globalScoreboard.addAll(scoreboardGammaCTuning);
-				System.err.printf("Done gamma-C tuning (iteration %d).%n", iteration);
+					bestC = bestCGammaResult.getC();
+					bestGamma = bestCGammaResult.getGamma();
+
+					globalScoreboard.addAll(scoreboardGammaCTuning);
+					System.err.printf("Done gamma-C tuning (iteration %d).%n", iteration);
+				}
+
+				// Fine-tune C and Gamma
+				for (int i = 0; i < fineTuneIterations; i++) {
+					double fineCMin = bestC * 0.85;
+					double fineGammaMin = bestGamma * 0.85;
+					double fineCMax = bestC * 1.20;
+					double fineGammaMax = bestGamma * 1.20;
+					Vector<ModelConfigurationResult> scoreboardGammaCTuning = new Vector<>();
+					ParameterTesterAR pt = new ParameterTesterAR(restrictedFeaturesI, trainGatherer, develGatherer, bestGamma, bestC, optProfile, optProfileThreshold, thrSteps, wikiApi);
+
+					new GammaCSelector<Annotation, HashSet<Annotation>>(fineCMin, fineCMax, bestC, (fineCMax-fineCMin)/fineStepsCGamma/5.0, fineGammaMin,
+							fineGammaMax, bestGamma, (fineGammaMax-fineGammaMin)/fineStepsCGamma/5.0, fineStepsCGamma, pt, scoreboardGammaCTuning, wikiApi).run();
+					ModelConfigurationResult bestCGammaResult = ModelConfigurationResult.findBest(scoreboardGammaCTuning, optProfile,
+							optProfileThreshold);
+
+					bestC = bestCGammaResult.getC();
+					bestGamma = bestCGammaResult.getGamma();
+
+					globalScoreboard.addAll(scoreboardGammaCTuning);
+					System.err.printf("Done fine gamma-C tuning (iteration %d).%n", iteration);
+				}
+
+				// Do feature selection
+				if (!ftrSelMethod.equals("oneshot")) {
+					Vector<ModelConfigurationResult> scoreboardFtrSelection = new Vector<>();
+
+					ParameterTesterAR pt = new ParameterTesterAR(restrictedFeaturesI, trainGatherer, develGatherer, bestGamma, bestC, optProfile, optProfileThreshold, thrSteps, wikiApi);
+
+					if (ftrSelMethod.equals("ablation"))
+						new AblationFeatureSelector<Annotation, HashSet<Annotation>>(pt, optProfile, optProfileThreshold,
+						        scoreboardFtrSelection).run();
+					else if (ftrSelMethod.equals("increment"))
+						new IncrementalFeatureSelector<Annotation, HashSet<Annotation>>(pt, restrictedFeaturesI,
+						        restrictedFeaturesI.length == 0, optProfile, optProfileThreshold, scoreboardFtrSelection).run();
+
+					ModelConfigurationResult bestFtrResult = ModelConfigurationResult.findBest(scoreboardFtrSelection, optProfile,
+							optProfileThreshold);
+					restrictedFeaturesI = bestFtrResult.getFeatures();
+
+					globalScoreboard.addAll(scoreboardFtrSelection);
+					System.err.printf("Done feature selection (iteration %d).%n", iteration);
+				}
+
+				//Fine-tune threshold
+				{
+					int finalThrSteps = 100;
+					globalScoreboard.add(new ParameterTesterAR(restrictedFeaturesI, trainGatherer, develGatherer, bestGamma, bestC, optProfile, optProfileThreshold, finalThrSteps, wikiApi).call());
+					System.err.printf("Done fine threshold selection (iteration %d).%n", iteration);
+				}
+
+				ModelConfigurationResult newBest = ModelConfigurationResult
+						.findBest(globalScoreboard, optProfile, optProfileThreshold);
+				if (bestResult != null
+						&& newBest.equalResult(bestResult, optProfile,
+								optProfileThreshold)) {
+					System.err.printf("Not improving, stopping on iteration %d.%n", iteration);
+					break;
+				}
+				bestResult = newBest;
 			}
-
-			// Fine-tune C and Gamma
-			{
-				double fineCMin = bestC * 0.85;
-				double fineGammaMin = bestGamma * 0.85;
-				double fineCMax = bestC * 1.20;
-				double fineGammaMax = bestGamma * 1.20;
-				int fineStepsCGamma = 10;
-				Vector<ModelConfigurationResult> scoreboardGammaCTuning = new Vector<>();
-				ParameterTesterAR pt = new ParameterTesterAR(featuresToInclude, trainGatherer, develGatherer, bestGamma, bestC, optProfile, optProfileThreshold, thrSteps, wikiApi);
-
-				new GammaCSelector<Annotation, HashSet<Annotation>>(fineCMin, fineCMax, bestC, (fineCMax-fineCMin)/fineStepsCGamma/5.0, fineGammaMin,
-						fineGammaMax, bestGamma, (fineGammaMax-fineGammaMin)/fineStepsCGamma/5.0, fineStepsCGamma, pt, scoreboardGammaCTuning, wikiApi).run();
-				ModelConfigurationResult bestCGammaResult = ModelConfigurationResult.findBest(scoreboardGammaCTuning, optProfile,
-						optProfileThreshold);
-
-				bestC = bestCGammaResult.getC();
-				bestGamma = bestCGammaResult.getGamma();
-
-				cMin = bestC * 0.7;
-				cMax = bestC * 1.5;
-				gammaMin = bestGamma * 0.7;
-				gammaMax = bestGamma * 1.5;
-
-				globalScoreboard.addAll(scoreboardGammaCTuning);
-				System.err.printf("Done fine gamma-C tuning (iteration %d).%n", iteration);
-			}
-
-			// Do feature selection
-			{
-				Vector<ModelConfigurationResult> scoreboardFtrSelection = new Vector<>();
-
-				ParameterTesterAR pt = new ParameterTesterAR(featuresToInclude, trainGatherer, develGatherer, bestGamma, bestC, optProfile, optProfileThreshold, thrSteps, wikiApi);
-				new AblationFeatureSelector<Annotation, HashSet<Annotation>>(pt, optProfile, optProfileThreshold, scoreboardFtrSelection).run();
-
-				ModelConfigurationResult bestFtrResult = ModelConfigurationResult.findBest(scoreboardFtrSelection, optProfile,
-						optProfileThreshold);
-				featuresToInclude = bestFtrResult.getFeatures();
-
-				globalScoreboard.addAll(scoreboardFtrSelection);
-				System.err.printf("Done feature selection (iteration %d).%n", iteration);
-			}
-
-			//Fine-tune threshold
-			{
-				int finalThrSteps = 100;
-				globalScoreboard.add(new ParameterTesterAR(featuresToInclude, trainGatherer, develGatherer, bestGamma, bestC, optProfile, optProfileThreshold, finalThrSteps, wikiApi).call());
-				System.err.printf("Done fine threshold selection (iteration %d).%n", iteration);
-			}
-
-			ModelConfigurationResult newBest = ModelConfigurationResult
-					.findBest(globalScoreboard, optProfile, optProfileThreshold);
-			if (bestResult != null
-					&& newBest.equalResult(bestResult, optProfile,
-							optProfileThreshold)) {
-				System.err.printf("Not improving, stopping on iteration %d.%n", iteration);
-				break;
-			}
-			bestResult = newBest;
 		}
 		return new Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult>(
 				globalScoreboard, ModelConfigurationResult.findBest(
@@ -425,33 +453,21 @@ public class TuneModelLibSvm {
 					.newFixedThreadPool(THREADS_NUM);
 			List<Future<ModelConfigurationResult>> futures = new Vector<>();
 
-			double c, gamma;
 			for (int cI = 0; cI<steps; cI++)
 				for (int gammaI = 0; gammaI<steps ; gammaI++){
-					c = TuneModelLibSvm.computeExpParameter(cMax, cMin, kappaC, cI,
-							steps);
-					gamma = TuneModelLibSvm.computeExpParameter(gammaMax, gammaMin,
-							kappaGamma, gammaI, steps);
-					futures.add(execServ.submit(
-							pt.cloneWithGammaC(gamma,c)));
+					double c = TuneModelLibSvm.computeExpParameter(cMax, cMin, kappaC, cI, steps);
+					double gamma = TuneModelLibSvm.computeExpParameter(gammaMax, gammaMin, kappaGamma, gammaI, steps);
+					futures.add(execServ.submit(pt.cloneWithGammaC(gamma, c)));
 				}
-			if (origGamma != -1)
-				for (int cI = 0; cI<steps; cI++){
-					c = TuneModelLibSvm.computeExpParameter(cMax, cMin, kappaC, cI,
-							steps);
-					futures.add(execServ.submit(
-							pt.cloneWithGammaC(origGamma,c)));
-				}
-			if (origC != -1)
-				for (int gammaI = 0; gammaI<steps ; gammaI++){
-					gamma = TuneModelLibSvm.computeExpParameter(gammaMax, gammaMin,
-							kappaGamma, gammaI, steps);
-					futures.add(execServ.submit(
-							pt.cloneWithGammaC(gamma,origC)));
-				}
-			if (origGamma != -1 && origC != -1)
-				futures.add(execServ.submit(
-						pt.cloneWithGammaC(origGamma,origC)));
+			for (int cI = 0; cI < steps; cI++) {
+				double c = TuneModelLibSvm.computeExpParameter(cMax, cMin, kappaC, cI, steps);
+				futures.add(execServ.submit(pt.cloneWithGammaC(origGamma, c)));
+			}
+			for (int gammaI = 0; gammaI < steps; gammaI++) {
+				double gamma = TuneModelLibSvm.computeExpParameter(gammaMax, gammaMin, kappaGamma, gammaI, steps);
+				futures.add(execServ.submit(pt.cloneWithGammaC(gamma, origC)));
+			}
+			futures.add(execServ.submit(pt.cloneWithGammaC(origGamma, origC)));
 			for (Future<ModelConfigurationResult> future : futures)
 				try {
 					ModelConfigurationResult res = future.get();
@@ -613,50 +629,55 @@ public class TuneModelLibSvm {
 
 	static class IncrementalFeatureSelector<E extends Serializable, G extends Serializable> implements Runnable {
 		private double optProfileThreshold;
-		private ExampleGatherer<E, G> testGatherer;
 		private OptimizaionProfiles optProfile;
 		Vector<ModelConfigurationResult> scoreboard;
 		private ParameterTester<E, G> pt;
+		private int[] restrictFeatures;
+		private boolean initialize;
 
-		public IncrementalFeatureSelector(ParameterTester<E,G> pt, ExampleGatherer<E, G>testGatherer, Vector<ModelConfigurationResult> scoreboard, OptimizaionProfiles optProfile, double optProfileThreshold) {
+		public IncrementalFeatureSelector(ParameterTester<E, G> pt, int[] restrictFeatures, boolean initialize, OptimizaionProfiles optProfile, double optProfileThreshold,
+		        Vector<ModelConfigurationResult> scoreboard) {
 			this.pt = pt;
-			this.testGatherer = testGatherer;
 			this.scoreboard = scoreboard;
 			this.optProfile = optProfile;
 			this.optProfileThreshold = optProfileThreshold;
+			this.restrictFeatures = restrictFeatures;
+			this.initialize = initialize;
 		}
 
 		@Override
 		public void run() {
+			ModelConfigurationResult bestBase = null;
+			Set<Integer> selectedFtrs = null;
+			
+			if (!initialize){
+				try {
+					bestBase = pt.call();
+				} catch (Exception e1) {
+					e1.printStackTrace();
+					throw new RuntimeException(e1);
+				}
+				selectedFtrs = new HashSet<Integer>(Arrays.asList(ArrayUtils.toObject(bestBase.getFeatures())));
+			}
 
 			HashSet<Integer> ftrToTry = new HashSet<>();
-			for (int f : SmaphUtils.getAllFtrVect(testGatherer.getFtrCount()))
-				ftrToTry.add(f);
+			for (Integer f : ArrayUtils.toObject(restrictFeatures))
+				if (selectedFtrs == null || !selectedFtrs.contains(f))
+					ftrToTry.add(f);
 
-			ModelConfigurationResult bestBase = null;
 			while (!ftrToTry.isEmpty()) {
 				ModelConfigurationResult bestIter = bestBase;
-				ExecutorService execServ = Executors
-						.newFixedThreadPool(THREADS_NUM);
+				ExecutorService execServ = Executors.newFixedThreadPool(THREADS_NUM);
 				List<Future<ModelConfigurationResult>> futures = new Vector<>();
 				HashMap<Future<ModelConfigurationResult>, Integer> futureToFtrId = new HashMap<>();
 
-				for (int testFtrId : ftrToTry) {
-					int[] pickedFtrsIteration;
-					if (bestBase == null)
-						pickedFtrsIteration = new int[] { testFtrId };
-					else {
-						pickedFtrsIteration = new int[bestBase.getFeatures().length + 1];
-						for (int i = 0; i < bestBase.getFeatures().length; i++)
-							pickedFtrsIteration[i] = bestBase.getFeatures()[i];
-						pickedFtrsIteration[pickedFtrsIteration.length - 1] = testFtrId;
-						Arrays.sort(pickedFtrsIteration);
-
-					}
+				for (int testFtrId : SmaphUtils.sorted(ftrToTry)) {
+					int[] pickedFtrsIteration = SmaphUtils
+					        .addFtrVect(bestBase == null ? null : bestBase.getFeatures(), testFtrId);
 
 					try {
 						Future<ModelConfigurationResult> future = execServ
-								.submit(pt);
+								.submit(pt.cloneWithFeatures(pickedFtrsIteration));
 						futures.add(future);
 						futureToFtrId.put(future, testFtrId);
 
