@@ -16,6 +16,7 @@
 
 package it.unipi.di.acube.smaph.learn;
 
+import it.unipi.di.acube.batframework.metrics.MetricsResultSet;
 import it.unipi.di.acube.smaph.learn.TuneModelLibSvm.OptimizaionProfiles;
 
 import java.io.Serializable;
@@ -50,6 +51,26 @@ public class ModelConfigurationResult implements Serializable {
 		this.fnRate = (float) fn / (float) (fn + tp);
 		this.macroRec = macroRec;
 		this.macroPrec = macroPrec;
+		this.c = c;
+		this.gamma = gamma;
+	}
+
+	public ModelConfigurationResult(int[] pickedFtrsI, double wPos, double wNeg, double gamma, double c, double thr,
+	        MetricsResultSet metrics, int examplesCount) {
+		this.tp = metrics.getGlobalTp();
+		this.fp = metrics.getGlobalFp();
+		this.fn = metrics.getGlobalFn();
+		this.totalInstances = examplesCount;
+		this.tn = totalInstances - tp - fp - fn;
+		this.microf1 = metrics.getMicroF1();
+		this.macrof1 = metrics.getMacroF1();
+		this.macroRec = metrics.getMacroRecall();
+		this.macroPrec = metrics.getMacroPrecision();
+		this.pickedFtrs = pickedFtrsI.clone();
+		this.wPos = wPos;
+		this.wNeg = wNeg;
+		this.thr = thr;
+		this.fnRate = (float) fn / (float) (fn + tp);
 		this.c = c;
 		this.gamma = gamma;
 	}
@@ -167,6 +188,10 @@ public class ModelConfigurationResult implements Serializable {
 
 	public Double getGamma() {
 	    return this.gamma;
-    }
+	}
+
+	public double getThreshold() {
+		return this.thr;
+	}
 
 }

@@ -89,7 +89,14 @@ public abstract class ParameterTester<E, G> implements Callable<ModelConfigurati
 			System.exit(1);
 		}
 
-		return svm.svm_train(trainProblem, param);
+		svm_model m = svm.svm_train(trainProblem, param);
+		/*try {
+	        svm.svm_save_model(String.format("/tmp/model.%f.%f", param.gamma, param.C), m);
+        } catch (IOException e) {
+	        // TODO Auto-generated catch block
+	        e.printStackTrace();
+        }*/
+		return m;
 	}
 
 	public static MetricsResultSet testEntityFilter(EntityFilter model, ExampleGatherer<Tag, HashSet<Tag>> testGatherer, int[] features, FeatureNormalizer scaleFn, SolutionComputer<Tag, HashSet<Tag>> sc){
@@ -221,26 +228,33 @@ public abstract class ParameterTester<E, G> implements Callable<ModelConfigurati
 			double thrMax = positiveScores.get((int) (positiveScores.size() * 0.95));
 
 			List<ModelConfigurationResult> configurations = new Vector<>();
+			scanThresholdRange(thrSteps, thrMin, thrMax, configurations, candidateAndPreds, golds);
+			
+			double bestThr = ModelConfigurationResult.findBest(configurations, optProfile, optProfileThr).getThreshold();
+			double stepSize = (thrMax - thrMin) / thrSteps;
+			thrMin = bestThr - 2.0 * stepSize;
+			thrMax = bestThr + 2.0 * stepSize;
+			
+			scanThresholdRange(thrSteps, thrMin, thrMax, configurations, candidateAndPreds, golds);
+
+			ModelConfigurationResult bestMcr = ModelConfigurationResult.findBest(configurations, optProfile, optProfileThr);
+
+			System.err.printf("Best threshold: %s.%n", bestMcr.getReadable());
+
+			return bestMcr;
+		}
+		
+		public void scanThresholdRange(int thrSteps, double thrMin, double thrMax, List<ModelConfigurationResult> configurations,
+		        List<List<Pair<Annotation, Double>>> candidateAndPreds, List<HashSet<Annotation>> golds) throws IOException {
 			for (int i = 0; i < thrSteps; i++) {
 				double thr = thrMin + i * (thrMax - thrMin) / thrSteps;
 				MetricsResultSet metrics = new SolutionComputer.AnnotationSetSolutionComputer(wikiApi, thr).getResults(candidateAndPreds, golds);
-				int tp = metrics.getGlobalTp();
-				int fp = metrics.getGlobalFp();
-				int fn = metrics.getGlobalFn();
-				float microF1 = metrics.getMicroF1();
-				float macroF1 = metrics.getMacroF1();
-				float macroRec = metrics.getMacroRecall();
-				float macroPrec = metrics.getMacroPrecision();
 
-				configurations.add(new ModelConfigurationResult(
-						features, -1, -1, gamma, C, thr, tp, fp, fn,
-						testGatherer.getExamplesCount() - tp - fp - fn, microF1,
-						macroF1, macroRec, macroPrec));
+				ModelConfigurationResult mcr = new ModelConfigurationResult(features, -1, -1, gamma, C, thr, metrics,
+				        testGatherer.getExamplesCount());
+				configurations.add(mcr);
 			}
 
-			ModelConfigurationResult mcr = ModelConfigurationResult.findBest(configurations, optProfile, optProfileThr);
-
-			return mcr;
 		}
 
 		@Override
@@ -294,18 +308,11 @@ public abstract class ParameterTester<E, G> implements Callable<ModelConfigurati
 
 			MetricsResultSet metrics = testEntityFilter(ef, testGatherer, this.features, scaleFn, new SolutionComputer.TagSetSolutionComputer(wikiApi));
 
-			int tp = metrics.getGlobalTp();
-			int fp = metrics.getGlobalFp();
-			int fn = metrics.getGlobalFn();
-			float microF1 = metrics.getMicroF1();
-			float macroF1 = metrics.getMacroF1();
-			float macroRec = metrics.getMacroRecall();
-			float macroPrec = metrics.getMacroPrecision();
-
 			ModelConfigurationResult mcr = new ModelConfigurationResult(
-					features, wPos, wNeg, gamma, C, -1, tp, fp, fn,
-					testGatherer.getExamplesCount() - tp - fp - fn, microF1,
-					macroF1, macroRec, macroPrec);
+					features, wPos, wNeg, gamma, C, -1, metrics,
+					testGatherer.getExamplesCount());
+
+			System.err.printf("Found: %s.%n", mcr.getReadable());
 
 			return mcr;
 		}
