@@ -60,6 +60,10 @@ public class AdvancedAnnotationFeaturePack extends FeaturePack<Annotation> {
 		features.put("edit_distance_anchor_segment_sqrt_comm", edAnchorsWeightSqrtComm(mention, anchorAndOccurrencies, a.getConcept()));
 		features.put("min_edit_distance_anchor_segment_sqrt_comm", minEdAnchorsWeightSqrtComm(mention, anchorAndOccurrencies, a.getConcept()));
 		features.put("min_edit_distance_anchor_segment_vv_sqrt_comm", minEdAnchorsWeightSqrtVVComm(mention, anchorAndOccurrencies, a.getConcept()));
+		features.put("min_edit_distance_anchor_segment_sqrt_geometric_0.20", minEdAnchorsWeightSqrtGeom(mention, anchorAndOccurrencies, 0.20));
+		features.put("min_edit_distance_anchor_segment_sqrt_geometric_0.10", minEdAnchorsWeightSqrtGeom(mention, anchorAndOccurrencies, 0.10));
+		features.put("min_edit_distance_anchor_segment_sqrt_geometric_0.05", minEdAnchorsWeightSqrtGeom(mention, anchorAndOccurrencies, 0.05));
+		features.put("min_edit_distance_anchor_segment_sqrt_geometric_0.02", minEdAnchorsWeightSqrtGeom(mention, anchorAndOccurrencies, 0.02));
 		features.put("min_edit_distance_title", minEdTitle(mention, title));
 		features.put("edit_distance_title", (double) SmaphUtils.getNormEditDistanceLC(title, mention));
 		if (bolds != null)
@@ -149,7 +153,19 @@ public class AdvancedAnnotationFeaturePack extends FeaturePack<Annotation> {
 			num += Math.sqrt(EntityToAnchors.e2a().getCommonness(p.first, entity, p.second))*(SmaphUtils.getMinEditDist(p.first, segmentStr.toLowerCase() + SmaphUtils.getMinEditDist(segmentStr.toLowerCase(), p.first)));
 			denom += Math.sqrt(EntityToAnchors.e2a().getCommonness(p.first, entity, p.second));
 		}
-		return num/denom;
+		return num / denom;
+	}
+
+	private static double minEdAnchorsWeightSqrtGeom(String segmentStr, List<Pair<String, Integer>> anchorAndOccurrencies, double smooth) {
+		double values[] = new double[anchorAndOccurrencies.size()];
+		double weights[] = new double[anchorAndOccurrencies.size()];
+
+		for (int i = 0; i < anchorAndOccurrencies.size(); i++) {
+			Pair<String, Integer> p = anchorAndOccurrencies.get(i);
+			values[i] = smooth + SmaphUtils.getMinEditDist(segmentStr.toLowerCase(), p.first);
+			weights[i] = Math.sqrt(p.second);
+		}
+		return SmaphUtils.weightedGeometricAverage(values, weights);
 	}
 
 	@Override
@@ -161,12 +177,16 @@ public class AdvancedAnnotationFeaturePack extends FeaturePack<Annotation> {
 		if (ftrNames == null) {
 			Vector<String> v = new Vector<String>();
 			v.addAll(Arrays.asList(EntityFeaturePack.ftrNames));
-			v.add("edit_distance_anchor_segment_sqrt");
+			v.add("edit_distance_anchor_segment_sqrt"); //41
 			v.add("min_edit_distance_anchor_segment_sqrt");
 			v.add("min_edit_distance_anchor_segment_vv_sqrt");
 			v.add("edit_distance_anchor_segment_sqrt_comm");
 			v.add("min_edit_distance_anchor_segment_sqrt_comm");
 			v.add("min_edit_distance_anchor_segment_vv_sqrt_comm");
+			v.add("min_edit_distance_anchor_segment_sqrt_geometric_0.20");
+			v.add("min_edit_distance_anchor_segment_sqrt_geometric_0.10");
+			v.add("min_edit_distance_anchor_segment_sqrt_geometric_0.05");
+			v.add("min_edit_distance_anchor_segment_sqrt_geometric_0.02"); //50
 			v.add("min_edit_distance_title");
 			v.add("min_edit_distance_bolds");
 			v.add("commonness");

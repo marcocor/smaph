@@ -130,6 +130,21 @@ public class SmaphUtils {
 		return getNormEditDistance(tokenB, tokenQ);
 	}
 
+	public static double weightedGeometricAverage(double[] vals, double[] weights) {
+		if (vals.length != weights.length)
+			throw new IllegalArgumentException();
+
+		double num = 0;
+		double denum = 0;
+
+		for (int i = 0; i < vals.length; i++) {
+			num += Math.log(vals[i]) * weights[i];
+			denum += weights[i];
+		}
+
+		return Math.exp(num / denum);
+	}
+	
 	/**
 	 * @param title
 	 *            the title of a Wikipedia page.
@@ -171,6 +186,25 @@ public class SmaphUtils {
 	 */
 	public static int[] getAllFtrVect(int ftrCount) {
 		return getAllFtrVect(ftrCount, new int[0]);
+	}
+
+	/**
+	 * @param base
+	 * @param ftrId
+	 * @return a new feature vector
+	 */
+	public static int[] addFtrVect(int[] base, int ftrId) {
+		if (base == null)
+			return new int[] { ftrId };
+		else {
+			if (ArrayUtils.contains(base, ftrId))
+				throw new IllegalArgumentException("Trying to add a feature to a vector that already contains it.");
+			int[] newVect = new int[base.length + 1];
+			System.arraycopy(base, 0, newVect, 0, base.length);
+			newVect[newVect.length - 1] = ftrId;
+			Arrays.sort(newVect);
+			return newVect;
+		}
 	}
 
 	/**
