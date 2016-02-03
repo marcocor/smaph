@@ -191,7 +191,7 @@ public class SmaphUtils {
 	/**
 	 * @param base
 	 * @param ftrId
-	 * @return a new feature vector
+	 * @return a new feature vector composed by base with the addition of ftrId.
 	 */
 	public static int[] addFtrVect(int[] base, int ftrId) {
 		if (base == null)
@@ -206,6 +206,25 @@ public class SmaphUtils {
 			return newVect;
 		}
 	}
+	
+	/**
+	 * @param features
+	 * @param ftrToRemove
+	 * @return a new feature vector composed by base without ftrId.
+	 */
+	public static int[] removeFtrVect(int[] features, int ftrToRemove) {
+		int[] newFtrVect = new int[features.length -1];
+		int j=0;
+		for (int i=0; i<features.length; i++)
+			if (features[i] == ftrToRemove)
+				continue;
+			else
+				newFtrVect[j++] = features[i];
+		if (j != newFtrVect.length)
+			throw new IllegalArgumentException("Feature "+ ftrToRemove+" is not present and cannot be removed.");
+		Arrays.sort(newFtrVect);
+		return newFtrVect;
+    }
 
 	/**
 	 * Turns a list of pairs <b,r>, where b is a bold and r is the position in
@@ -757,5 +776,4 @@ public class SmaphUtils {
 		populateBindingsRec(chosenCandidates, candidates, bindings, maxBindings);
 		return bindings;
 	}
-
 }
