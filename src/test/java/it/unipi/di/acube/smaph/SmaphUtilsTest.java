@@ -528,4 +528,19 @@ public class SmaphUtilsTest {
 				SmaphUtils.findSegmentsStrings("  ;;;aaa bbb   ,., ccc"));
 	}
 
+	@Test
+	public void testAddFtrVect() throws Exception {
+		assertArrayEquals(new int[]{5}, SmaphUtils.addFtrVect(null, 5));
+		assertArrayEquals(new int[]{5}, SmaphUtils.addFtrVect(new int[]{}, 5));
+		assertArrayEquals(new int[]{1,2,3,5}, SmaphUtils.addFtrVect(new int[]{1,2,3}, 5));
+		assertArrayEquals(new int[]{1,2,3,5}, SmaphUtils.addFtrVect(new int[]{3,1,2}, 5));
+	}
+
+	@Test
+	public void testRemoveFtrVect() throws Exception {
+		assertArrayEquals(new int[]{}, SmaphUtils.removeFtrVect(new int[]{5}, 5));
+		assertArrayEquals(new int[]{1,2}, SmaphUtils.removeFtrVect(new int[]{1,2,3}, 3));
+		assertArrayEquals(new int[]{2,3}, SmaphUtils.removeFtrVect(new int[]{3,1,2}, 1));
+	}
+
 }
