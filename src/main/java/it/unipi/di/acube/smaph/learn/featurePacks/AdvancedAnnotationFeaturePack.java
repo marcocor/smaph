@@ -121,7 +121,7 @@ public class AdvancedAnnotationFeaturePack extends FeaturePack<Annotation> {
 		double num = 0;
 		double denom = 0;
 		for (Pair<String, Integer> p: anchorAndOccurrencies){
-			num += Math.sqrt(p.second)*(SmaphUtils.getMinEditDist(p.first, segmentStr.toLowerCase() + SmaphUtils.getMinEditDist(segmentStr.toLowerCase(), p.first)));
+			num += Math.sqrt(p.second)*(SmaphUtils.getMinEditDist(p.first, segmentStr.toLowerCase()) + SmaphUtils.getMinEditDist(segmentStr.toLowerCase(), p.first));
 			denom += Math.sqrt(p.second);
 		}
 		return num/denom;
@@ -150,7 +150,7 @@ public class AdvancedAnnotationFeaturePack extends FeaturePack<Annotation> {
 		double num = 0;
 		double denom = 0;
 		for (Pair<String, Integer> p: anchorAndOccurrencies){
-			num += Math.sqrt(EntityToAnchors.e2a().getCommonness(p.first, entity, p.second))*(SmaphUtils.getMinEditDist(p.first, segmentStr.toLowerCase() + SmaphUtils.getMinEditDist(segmentStr.toLowerCase(), p.first)));
+			num += Math.sqrt(EntityToAnchors.e2a().getCommonness(p.first, entity, p.second))*(SmaphUtils.getMinEditDist(p.first, segmentStr.toLowerCase()) + SmaphUtils.getMinEditDist(segmentStr.toLowerCase(), p.first));
 			denom += Math.sqrt(EntityToAnchors.e2a().getCommonness(p.first, entity, p.second));
 		}
 		return num / denom;
