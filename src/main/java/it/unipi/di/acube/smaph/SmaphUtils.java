@@ -144,7 +144,7 @@ public class SmaphUtils {
 
 		return Math.exp(num / denum);
 	}
-	
+
 	/**
 	 * @param title
 	 *            the title of a Wikipedia page.
@@ -159,7 +159,7 @@ public class SmaphUtils {
 				|| title.startsWith("Wikipedia_talk:")
 				|| title.startsWith("File:") || title.startsWith("User:")
 				|| title.startsWith("Category:") || title.startsWith("List") || title
-					.contains("(disambiguation)"));
+				.contains("(disambiguation)"));
 	}
 
 	/**
@@ -206,7 +206,7 @@ public class SmaphUtils {
 			return newVect;
 		}
 	}
-	
+
 	/**
 	 * @param features
 	 * @param ftrToRemove
@@ -224,7 +224,22 @@ public class SmaphUtils {
 			throw new IllegalArgumentException("Feature "+ ftrToRemove+" is not present and cannot be removed.");
 		Arrays.sort(newFtrVect);
 		return newFtrVect;
-    }
+	}
+
+	/**
+	 * @param ftrVectorStr a list of comma-separated integers (e.g. 1,5,6,7)
+	 * @return a feature vector with features provided as input.
+	 */
+	public static int[] strToFeatureVector(String ftrVectorStr) {
+		if (ftrVectorStr.isEmpty())
+			return new int[] {};
+		String[] tokens = ftrVectorStr.split(",");
+		int[] ftrVect = new int[tokens.length];
+		for (int j = 0; j < tokens.length; j++)
+			ftrVect[j] = Integer.parseInt(tokens[j]);
+		Arrays.sort(ftrVect);
+		return ftrVect;
+	}
 
 	/**
 	 * Turns a list of pairs <b,r>, where b is a bold and r is the position in
@@ -391,7 +406,7 @@ public class SmaphUtils {
 				}
 			}
 		}
-	return segments;
+		return segments;
 	}
 
 	public static List<Pair<Integer, Integer>> findSegments(String text) {
@@ -402,7 +417,7 @@ public class SmaphUtils {
 				segments.add(new Pair<Integer, Integer>(tokens.get(i).first, tokens.get(i+n-1).second));
 		return segments;
 	}
-		
+
 	private static void addBIOToken(int n, char token, String sequence,
 			List<String> sequences, int limit) {
 		if (limit >= 0 && sequences.size() >= limit)
@@ -438,7 +453,7 @@ public class SmaphUtils {
 				Pair<Integer, Integer> token = qTokens.get(i);
 				if (start >= 0
 						&& (bioSequence.charAt(i) == 'B' || bioSequence
-								.charAt(i) == 'O')) {
+						.charAt(i) == 'O')) {
 					segmentation.add(new Pair<Integer, Integer>(start, end));
 					start = -1;
 				}
@@ -455,7 +470,7 @@ public class SmaphUtils {
 		}
 		return segmentations;
 	}
-	
+
 	public static HashMap<Tag, String[]> getEntitiesToBoldsList(
 			HashMap<Tag, List<String>> tagToBoldsS6, Set<Tag> entityToKeep) {
 		HashMap<Tag, String[]> res = new HashMap<>();
@@ -530,8 +545,8 @@ public class SmaphUtils {
 				return true;
 		return false;
 	}
-	
-	
+
+
 	/**
 	 * @param bolds
 	 *            a list of bolds
@@ -552,7 +567,7 @@ public class SmaphUtils {
 				boldCount++;
 			else {
 				if (isSubToken(tokensB, tokensBold))
-				fragmentsCount ++;
+					fragmentsCount ++;
 				/*if (tokensB.size() < tokensBold.size()) {
 					boolean found = false;
 					for (String tokenB : tokensB)
@@ -570,7 +585,7 @@ public class SmaphUtils {
 			return 0.0;
 		return (double) boldCount / (double) (Math.pow(fragmentsCount, 1.4) + boldCount);
 	}
-	
+
 	/**
 	 * @param bolds
 	 *            a list of bolds
@@ -617,13 +632,13 @@ public class SmaphUtils {
 			res.add(boldAndRank.first.toLowerCase());
 		return res;
 	}
-	
 
-	
+
+
 	public static Triple<Double, Double, Double> getMinMaxAvg(List<Double> values) {
 		if (values.isEmpty())
 			return new ImmutableTriple<Double, Double, Double>(0.0, 0.0, 0.0);
-		
+
 		double minVal = Double.POSITIVE_INFINITY;
 		double maxVal = Double.NEGATIVE_INFINITY;
 		double avgVal = 0.0;
@@ -668,7 +683,7 @@ public class SmaphUtils {
 		}
 		return res;
 	}
-	
+
 	public static <T> List<T> sorted(Collection<T> c, Comparator<T> comp) {
 		List<T> list = new ArrayList<T>(c);
 		Collections.sort(list, comp);
@@ -731,11 +746,11 @@ public class SmaphUtils {
 		for (int pos : positions)
 			avg += (float)pos/(float)resultsCount;
 		avg += resultsCount - positions.size();
-		
+
 		avg /= resultsCount;
 		return avg;
 	}
-	
+
 	public static double getFrequency(int occurrences, int resultsCount) {
 		return (float) occurrences / (float) resultsCount;
 	}
@@ -750,7 +765,7 @@ public class SmaphUtils {
 	}
 
 	private static void populateBindingsRec(List<Tag> chosenCandidates, List<List<Tag>> candidates, List<List<Tag>> bindings,
-	        int maxBindings) {
+			int maxBindings) {
 		if (maxBindings > 0 && bindings.size() >= maxBindings)
 			return;
 		if (chosenCandidates.size() == candidates.size()) {
