@@ -78,7 +78,8 @@ public class TuneModelLibSvm {
 		options.addOption(OptionBuilder.withLongOpt("opt-annotation-regressor").withDescription("Optimize single-annotation regressor.").create("a"));
 		options.addOption(OptionBuilder.withLongOpt("opt-entity-filter").withDescription("Optimize single-entity filter.").create("e"));
 		options.addOption(OptionBuilder.withLongOpt("ftr-sel-method").hasArg().withArgName("FTR_SEL_METHOD").withDescription("Feature selection method. Can be either `ablation' (default), `oneshot' or `increment'").create("m"));
-		options.addOption(OptionBuilder.withLongOpt("restrict-ftr-set").hasArgs().withArgName("INIT_FTR_SET").withDescription("Feature restriction set (initial features for `ablation' and `oneshot' methods, pool of selectable features for `increment'), e.g. `1,3,6,7,8'. Multiple sets can be defined (separated by a space). Defaults to all features.").create("f"));
+		options.addOption(OptionBuilder.withLongOpt("restrict-ftr-set").hasArgs().withArgName("RESTRICT_FTR_SET").withDescription("Feature restriction set (initial features for `ablation' and `oneshot' methods, pool of selectable features for `increment'), e.g. `1,3,6,7,8'. Multiple sets can be defined (separated by a space). Defaults to all features.").create("f"));
+		options.addOption(OptionBuilder.withLongOpt("initial-ftr-set").hasArgs().withArgName("INIT_FTR_SET").withDescription("Initial feature set. Considered for `increment' method only. Defaults to no features.").create("i"));
 		options.addOption(OptionBuilder.withLongOpt("threads").hasArg().withArgName("N_THREADS").withDescription("Number of threads to launch. Default: number of cores.").create("t"));
 
 		CommandLine line = parser.parse(options, args);
@@ -114,19 +115,16 @@ public class TuneModelLibSvm {
 		if (line.hasOption("restrict-ftr-set")){
 			String[] initFtrs = line.getOptionValues("restrict-ftr-set");
 			ftrRestriction = new int[initFtrs.length][];
-			for (int i = 0; i < initFtrs.length; i++) {
-				String[] tokens = initFtrs[i].split(",");
-				ftrRestriction[i] = new int[tokens.length];
-				for (int j=0; j<tokens.length; j++)
-					ftrRestriction[i][j] = Integer.parseInt(tokens[j]);
-				Arrays.sort(ftrRestriction[i]);
-			}
+			for (int i = 0; i < initFtrs.length; i++)
+				ftrRestriction[i] = SmaphUtils.strToFeatureVector(initFtrs[i]);
 		}
+		
+		int[] initialFtrSet = line.hasOption("initial-ftr-set") ? SmaphUtils.strToFeatureVector(line.getOptionValue("initial-ftr-set")) : null;
 
 		if (line.hasOption("opt-entity-filter")) {
 			Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult> modelAndStats = trainIterativeEF(bingAnnotator,
 					opt, wikiToFreebase, freebApi, maxAnchorSegmentED, OptimizaionProfiles.MAXIMIZE_MACRO_F1, -1.0,
-					ftrSelMethod, ftrRestriction, wikiApi);
+					ftrSelMethod, ftrRestriction, initialFtrSet, wikiApi);
 			System.gc();
 			for (ModelConfigurationResult res : modelAndStats.first)
 				System.out.println(res.getReadable());
@@ -136,7 +134,7 @@ public class TuneModelLibSvm {
 		if (line.hasOption("opt-annotation-regressor")) {
 			Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult> modelAndStats = trainIterativeAR(bingAnnotator, opt,
 					wikiToFreebase, freebApi, maxAnchorSegmentED, OptimizaionProfiles.MAXIMIZE_MACRO_F1, -1.0, ftrSelMethod,
-					ftrRestriction, wikiApi);
+					ftrRestriction, initialFtrSet, wikiApi);
 			System.gc();
 			for (ModelConfigurationResult res : modelAndStats.first)
 				System.out.println(res.getReadable());
@@ -152,14 +150,14 @@ public class TuneModelLibSvm {
 
 	private static Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult> trainIterativeEF(
 			SmaphAnnotator annotator, OptDataset optDs, WikipediaToFreebase wikiToFreebase, FreebaseApi freebApi, double maxAnchorSegmentED,
-			OptimizaionProfiles optProfile, double optProfileThreshold, String ftrSelMethod, int[][] restrictFeatures,
+			OptimizaionProfiles optProfile, double optProfileThreshold, String ftrSelMethod, int[][] restrictFeatures, int[] initialFeatures,
 			WikipediaApiInterface wikiApi) throws Exception {
 
 		Vector<ModelConfigurationResult> globalScoreboard = new Vector<>();
 		int broadStepsWeight = 10;
 		int fineStepsWeight = 10;
 		int fineStepsCGamma = 10;
-		int iterations = 3;
+		int maxIterations = 10;
 
 		ExampleGatherer<Tag, HashSet<Tag>> trainGatherer = new ExampleGatherer<Tag, HashSet<Tag>>();
 		ExampleGatherer<Tag, HashSet<Tag>> develGatherer = new ExampleGatherer<Tag, HashSet<Tag>>();
@@ -179,7 +177,7 @@ public class TuneModelLibSvm {
 			double bestC = 1;
 			double bestwPos;
 			double bestwNeg;
-			int[] bestFeatures = ftrSelMethod.equals("increment") ? null : restrictFeaturesI;
+			int[] bestFeatures = ftrSelMethod.equals("increment") ? initialFeatures : restrictFeaturesI;
 			
 			double broadwPosMin = 0.1;
 			double broadwPosMax = 50.0;
@@ -193,8 +191,10 @@ public class TuneModelLibSvm {
 
 			// broad tune weights (all ftr)
 			{
+				int[] broadWeightFtrs = bestFeatures == null ? allFtrs : bestFeatures;
+
 				new WeightSelector(broadwPosMin, broadwPosMax, broadkPos, broadwNegMin, broadwNegMax, 1.0, bestGamma, bestC,
-						broadStepsWeight, allFtrs, trainGatherer, develGatherer, restrictedFeaturesScoreboard, wikiApi).run();
+						broadStepsWeight, broadWeightFtrs, trainGatherer, develGatherer, restrictedFeaturesScoreboard, wikiApi).run();
 				
 				ModelConfigurationResult bestWeights = ModelConfigurationResult
 						.findBest(restrictedFeaturesScoreboard, optProfile,
@@ -216,7 +216,7 @@ public class TuneModelLibSvm {
 			ModelConfigurationResult bestResult = ModelConfigurationResult
 					.findBest(restrictedFeaturesScoreboard, optProfile, optProfileThreshold);
 
-			for (int iteration = 0; iteration < iterations; iteration++) {
+			for (int iteration = 0; iteration < maxIterations; iteration++) {
 				// Do feature selection
 				if (!ftrSelMethod.equals("oneshot")) {
 					Vector<ModelConfigurationResult> scoreboardFtrSelection = new Vector<>();
@@ -301,12 +301,12 @@ public class TuneModelLibSvm {
 
 	private static Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult> trainIterativeAR(
 			SmaphAnnotator annotator, OptDataset optDs, WikipediaToFreebase wikiToFreebase, FreebaseApi freebApi, double maxAnchorSegmentED,
-			OptimizaionProfiles optProfile, double optProfileThreshold, String ftrSelMethod, int[][] restrictFeatures,
+			OptimizaionProfiles optProfile, double optProfileThreshold, String ftrSelMethod, int[][] restrictFeatures, int[] initFeatures,
 			WikipediaApiInterface wikiApi) throws Exception {
 		Vector<ModelConfigurationResult> globalScoreboard = new Vector<>();
 		int stepsCGamma = 6;
 		int fineStepsCGamma = 6;
-		int iterations = 5;
+		int maxIterations = 10;
 		int fineTuneIterations = 3;
 		int thrSteps = 30;
 
@@ -326,13 +326,13 @@ public class TuneModelLibSvm {
 			Vector<ModelConfigurationResult> restrictedFeaturesScoreboard = new Vector<>();
 			ModelConfigurationResult bestResult = null;
 
-			int[] bestFeatures = ftrSelMethod.equals("increment") ? null : restrictedFeaturesI;
+			int[] bestFeatures = ftrSelMethod.equals("increment") ? initFeatures : restrictedFeaturesI;
 			
 			double bestC = 1;
-			double bestGamma = 1.0 / allFtrs.length;
-			for (int iteration = 0; iteration < iterations; iteration++) {
-				int[] gammaCFeatures = ftrSelMethod.equals("increment")?  allFtrs : restrictedFeaturesI;
-				
+			double bestGamma = 1.0 / (bestFeatures == null ? allFtrs : bestFeatures).length;
+			for (int iteration = 0; iteration < maxIterations; iteration++) {
+				int[] gammaCFeatures = bestFeatures == null ? allFtrs : bestFeatures;
+
 				// Broad-tune C and Gamma
 				ModelConfigurationResult bestCGammaResult = null;
 				{
@@ -351,18 +351,18 @@ public class TuneModelLibSvm {
 
 					bestC = bestCGammaResult.getC();
 					bestGamma = bestCGammaResult.getGamma();
-
-					restrictedFeaturesScoreboard.addAll(scoreboardGammaCTuning);
+					if (!ftrSelMethod.equals("increment"))
+						restrictedFeaturesScoreboard.addAll(scoreboardGammaCTuning);
 					System.err.printf("Done broad gamma-C tuning (iteration %d) best gamma/C: %f/%f%n", iteration, bestGamma, bestC);
 				}
 
 				// Fine-tune C and Gamma
+				Vector<ModelConfigurationResult> scoreboardGammaCTuning = new Vector<>();
 				for (int i = 0; i < fineTuneIterations; i++) {
 					double fineCMin = bestC * 0.85;
 					double fineGammaMin = bestGamma * 0.85;
 					double fineCMax = bestC * 1.20;
 					double fineGammaMax = bestGamma * 1.20;
-					Vector<ModelConfigurationResult> scoreboardGammaCTuning = new Vector<>();
 					ParameterTesterAR pt = new ParameterTesterAR(gammaCFeatures, trainGatherer, develGatherer, bestGamma, bestC, optProfile, optProfileThreshold, thrSteps, wikiApi);
 
 					new GammaCSelector<Annotation, HashSet<Annotation>>(fineCMin, fineCMax, bestC, (fineCMax-fineCMin)/fineStepsCGamma/5.0, fineGammaMin,
@@ -375,7 +375,6 @@ public class TuneModelLibSvm {
 						bestC = bestCGammaResult.getC();
 						bestGamma = bestCGammaResult.getGamma();
 
-						restrictedFeaturesScoreboard.addAll(scoreboardGammaCTuning);
 						System.err.printf(
 						        "Done fine gamma-C tuning (outer iteration %d, inner iteration %d) best gamma/C: %f/%f%n",
 						        iteration, i, bestGamma, bestC);
@@ -386,6 +385,8 @@ public class TuneModelLibSvm {
 						break;
 					}
 				}
+				if (!ftrSelMethod.equals("increment"))
+					restrictedFeaturesScoreboard.addAll(scoreboardGammaCTuning);	
 
 				// Do feature selection
 				if (!ftrSelMethod.equals("oneshot")) {
