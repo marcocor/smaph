@@ -434,8 +434,6 @@ public class WATAnnotator implements Sa2WSystem, MentionSpotter,
 			parameters.put("spans", mentionsJson);
 		}
 		parameters.put("text", text);
-		System.out.println(getParameters);
-		System.out.println(parameters.toString());
 
 		String resultStr = null;
 		try {
@@ -454,7 +452,9 @@ public class WATAnnotator implements Sa2WSystem, MentionSpotter,
 				}
 				
 			}
-				
+
+			System.out.println("Querying " + wikiSenseApi.toString());
+
 			HttpURLConnection slConnection = (HttpURLConnection) wikiSenseApi
 					.openConnection();
 			slConnection.setReadTimeout(0);
