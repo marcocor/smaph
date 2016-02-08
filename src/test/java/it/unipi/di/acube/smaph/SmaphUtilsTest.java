@@ -543,4 +543,11 @@ public class SmaphUtilsTest {
 		assertArrayEquals(new int[]{2,3}, SmaphUtils.removeFtrVect(new int[]{3,1,2}, 1));
 	}
 
+	@Test
+	public void testStrToFeatureVector() throws Exception {
+		assertArrayEquals(new int[]{}, SmaphUtils.strToFeatureVector(""));
+		assertArrayEquals(new int[]{1,4,7}, SmaphUtils.strToFeatureVector("1,4,7"));
+		assertArrayEquals(new int[]{1,4,7}, SmaphUtils.strToFeatureVector("7,1,4"));
+	}
+
 }
