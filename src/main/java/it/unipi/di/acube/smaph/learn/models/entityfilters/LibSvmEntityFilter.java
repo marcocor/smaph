@@ -17,7 +17,6 @@
 package it.unipi.di.acube.smaph.learn.models.entityfilters;
 
 import it.unipi.di.acube.batframework.data.Tag;
-import it.unipi.di.acube.smaph.SmaphAnnotatorDebugger;
 import it.unipi.di.acube.smaph.learn.featurePacks.FeaturePack;
 import it.unipi.di.acube.smaph.learn.models.LibSvmModel;
 import it.unipi.di.acube.smaph.learn.normalizer.FeatureNormalizer;
@@ -43,12 +42,12 @@ public class LibSvmEntityFilter extends LibSvmModel<Tag> implements EntityFilter
 	@Override
 	public boolean filterEntity(FeaturePack<Tag> fp, FeatureNormalizer fn) {
 		boolean result = predict(fp, fn);
-		String ftrDesc = "";
+		/*String ftrDesc = "";
 		for (String key : fp.getFeatureNames())
 			if (fp.featureIsSet(key))
 				ftrDesc += String.format("%s:%.3f ", key, fp.getFeature(key));
 		SmaphAnnotatorDebugger.out.printf("EF: %s has been %s.%n", ftrDesc,
-				result ? "accepted" : "discarded");
+				result ? "accepted" : "discarded");*/
 		return result;
 	}
 
