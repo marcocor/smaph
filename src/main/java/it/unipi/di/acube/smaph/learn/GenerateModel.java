@@ -92,7 +92,7 @@ public class GenerateModel {
 		wikiToFreebase = new WikipediaToFreebase("mapdb");
 		EntityToVect.initialize();
 
-		//generateEFModel();
+		generateEFModel();
 		//generateCollectiveModel();
 		//generateStackedModel();
 		generateIndividualAdvancedAnnotationModel();
@@ -116,30 +116,31 @@ public class GenerateModel {
 					{ 3.8, 5.9 },
 			};
 			featuresSetsToTest = new int[][] {
-					//{ 1, 2, 3, 6, 7, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 33, 34, 35, 36, 37 },
-
 					{2,3,15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 33, 34, 35, 36, 37,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,64,65,66,67,68,69}
 			};
 		} else if (opt == OptDataset.SMAPH_DATASET) {
 			paramsToTest = new double[][] {
-					{0.01449, 1.0},
-					{0.02500, 1.0}
-
+					/*{0.16567, 0.1},
+					{0.02500, 1.0},*/
+					//{0.04210, 1.04000}
+					{0.04210, 1.00000}
 			};
 			weightsToTest = new double[][] {
-					{2.88435, 0.8},
+					/*{2.88435, 0.8},
 					{2.88435, 0.9},
 					{2.88435, 1.0},
 					{2.88435, 1.2},
 					{2.88435, 1.4},
 					{3.85075, 1.3},
 					{3.85075, 1.4},
-					{3.85075, 1.5},
+					{3.85075, 1.5},*/
+					//{4.23583, 1.54000},
+					{3.86853, 1.42175}
 			};
 			featuresSetsToTest = new int[][] {
-					SmaphUtils.getAllFtrVect(EntityFeaturePack.ftrNames.length),
-					{1,2,    6,7,8,9,10,11,12,13,14,15,16,17,18,20,21,22,23,24,25,26,27,28,29,   31,32,35,   37,38,39,40},
-					{1,2,3,4,6,7,8,     11,12,13,14,15,16,   18,20,21,22,23,24,25,26,27,28,29,30,31,32,35,36,37,38,39,40}
+					//SmaphUtils.getAllFtrVect(EntityFeaturePack.ftrNames.length),
+					//{1,2,3,6,7,8,10,11,12,13,15,16,18,20,21,22,23,24,25,27,28,29,30,31,34,35,36,37,38,39},
+					{1,2,3,4,6,7,8,11,12,14,16,18,20,23,24,27,29,30,31,32,35,36,38,39,40}
 			};
 
 		}
@@ -220,10 +221,11 @@ public class GenerateModel {
 	}
 
 	public static void generateIndividualAdvancedAnnotationModel() throws Exception {
-		int[][] featuresSetsToTest = new int[][] { SmaphUtils
-				.getAllFtrVect(new AdvancedAnnotationFeaturePack().getFeatureCount()),
-				new int[]{2,3,4,5,6,7,8,10,12,13,16,17,18,20,21,23,24,25,26,27,28,29,30,31,32,34,36,37,38,39,41,44,45,46,47,48,50,51,52,54,55},
-				new int[] {1,2,3,4,6,7,8,9,10,12,14,18,21,22,24,26,27,28,29,30,32,33,35,36,38,40,41,42,43,44,45,46,47,48,49,50,51,54,55},
+		int[][] featuresSetsToTest = new int[][] { 
+				//SmaphUtils.getAllFtrVect(new AdvancedAnnotationFeaturePack().getFeatureCount()),
+				//new int[]{2,3,4,5,6,7,8,10,12,13,16,17,18,20,21,23,24,25,26,27,28,29,30,31,32,34,36,37,38,39,41,44,45,46,47,48,50,51,52,54,55},
+				//new int[] {1,2,3,4,6,7,8,9,10,12,14,18,21,22,24,26,27,28,29,30,32,33,35,36,38,40,41,42,43,44,45,46,51,52,53,54,55,58,59},
+				new int[] {1,2,3,4,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,35,36,37,38,39,40,41,42,43,44,46,47,48,49,50,51,52,54,55,56,57,58,59,60,61,62,63,64,65,66},
 		};
 		OptDataset opt = OptDataset.SMAPH_DATASET;
 		double anchorMaxED = 0.7;
@@ -251,7 +253,7 @@ public class GenerateModel {
 		double bestMacroF1 = Double.NEGATIVE_INFINITY;
 		double bestThr = -1;
 		for (Triple<AnnotationRegressor, Double, int[]> t : annAndFeatures){
-			for (double thr = -0.78387; thr <= -0.68; thr += 0.02 /*double thr = 0.5; thr <= 1.4; thr += 0.1*/) {
+			for (double thr = -0.95590; thr < -0.7; thr += 0.05) {
 				System.out.println("Testing threshold "+thr);
 
 				MetricsResultSet metrics = ParameterTester
@@ -302,8 +304,10 @@ public class GenerateModel {
 			//develAdvancedAnnotationGatherer.dumpExamplesLibSvm("devel_adv_ann_scaled.dat", fNorm, ftrs);
 			double[][] paramsToTest = new double[][] {
 					//{0.02500, 1.0},
-					{0.01644, 0.90420},
-					{0.02280, 1.17972},
+					//{0.01644, 0.90420},
+					//{0.02280, 1.17972},
+					//{0.02420, 1.13552}
+					{0.01515, 1.07181},
 			};
 			for (double[] paramsToTestArray : paramsToTest) {
 				double gamma = paramsToTestArray[0];
