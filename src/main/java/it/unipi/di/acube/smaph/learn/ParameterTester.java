@@ -34,8 +34,7 @@ public abstract class ParameterTester<E, G> implements Callable<ModelConfigurati
 	public abstract ParameterTester<E, G> cloneWithWeights(double wPos, double wNeg);
 	public abstract ParameterTester<E, G> cloneWithGammaC(double gamma, double C);
 
-	public static svm_parameter getParametersEF(double wPos, double wNeg,
-			double gamma, double C) {
+	public static svm_parameter getParametersClassifier(double wPos, double wNeg, double gamma, double C) {
 		svm_parameter param = new svm_parameter();
 		param.svm_type = svm_parameter.C_SVC;
 		param.kernel_type = svm_parameter.RBF;
@@ -70,16 +69,31 @@ public abstract class ParameterTester<E, G> implements Callable<ModelConfigurati
 		param.shrinking = 1;
 		param.probability = 0;
 		param.nr_weight = 2;
-		param.weight_label = new int[] { };
-		param.weight = new double[] { };
-		return param;	}
-
-	public static svm_parameter getParametersEFRegressor(double gamma, double c) {
-
-		svm_parameter params = getParametersEF (-1, -1, gamma, c);
-		params.svm_type = svm_parameter.EPSILON_SVR;
-		return params;
+		param.weight_label = new int[] {};
+		param.weight = new double[] {};
+		return param;
 	}
+
+	public static svm_parameter getParametersRegressor(double gamma, double C) {
+		svm_parameter param = new svm_parameter();
+		param.svm_type = svm_parameter.EPSILON_SVR;
+		param.kernel_type = svm_parameter.RBF;
+		param.degree = 2;
+		param.gamma = gamma;
+		param.coef0 = 0;
+		param.nu = 0.5;
+		param.cache_size = 100;
+		param.C = C;
+		param.eps = 0.001;
+		param.p = 0.1;
+		param.shrinking = 1;
+		param.probability = 0;
+		param.nr_weight = 2;
+		param.weight_label = new int[] { 1, -1 };
+		param.weight = new double[] { -1, -1 };
+		return param;
+	}
+
 	public static svm_model trainModel(svm_parameter param, 
 			svm_problem trainProblem) {
 		String error_msg = svm.svm_check_parameter(trainProblem, param);
@@ -89,14 +103,7 @@ public abstract class ParameterTester<E, G> implements Callable<ModelConfigurati
 			System.exit(1);
 		}
 
-		svm_model m = svm.svm_train(trainProblem, param);
-		/*try {
-	        svm.svm_save_model(String.format("/tmp/model.%f.%f", param.gamma, param.C), m);
-        } catch (IOException e) {
-	        // TODO Auto-generated catch block
-	        e.printStackTrace();
-        }*/
-		return m;
+		return svm.svm_train(trainProblem, param);
 	}
 
 	public static MetricsResultSet testEntityFilter(EntityFilter model, ExampleGatherer<Tag, HashSet<Tag>> testGatherer, int[] features, FeatureNormalizer scaleFn, SolutionComputer<Tag, HashSet<Tag>> sc){
@@ -201,11 +208,10 @@ public abstract class ParameterTester<E, G> implements Callable<ModelConfigurati
 			ZScoreFeatureNormalizer scaleFn = new ZScoreFeatureNormalizer(trainGatherer);
 			svm_problem trainProblem = trainGatherer.generateLibSvmProblem(this.features, scaleFn);
 
-			svm_parameter param = getParametersEFRegressor(gamma, C);
+			svm_parameter param = getParametersRegressor(gamma, C);
 
 			svm_model model = trainModel(param, trainProblem);
 			LibSvmAnnotationRegressor ar = new LibSvmAnnotationRegressor(model);
-
 
 			List<HashSet<Annotation>> golds = new Vector<>();
 			List<List<Pair<Annotation, Double>>> candidateAndPreds = new Vector<>();
@@ -301,7 +307,7 @@ public abstract class ParameterTester<E, G> implements Callable<ModelConfigurati
 			ZScoreFeatureNormalizer scaleFn = new ZScoreFeatureNormalizer(trainGatherer);
 			svm_problem trainProblem = trainGatherer.generateLibSvmProblem(this.features, scaleFn);
 
-			svm_parameter param = getParametersEF(wPos, wNeg, gamma, C);
+			svm_parameter param = getParametersClassifier(wPos, wNeg, gamma, C);
 
 			svm_model model = trainModel(param, trainProblem);
 			EntityFilter ef = new LibSvmEntityFilter(model);
