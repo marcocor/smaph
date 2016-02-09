@@ -26,7 +26,7 @@ public class ModelConfigurationResult implements Serializable {
 	private static final long serialVersionUID = 1L;
 	private int[] pickedFtrs;
 	private double wPos, wNeg, gamma, c, thr;
-	
+
 	private int totalInstances;
 	private int tp;
 	private int fp;
@@ -56,7 +56,7 @@ public class ModelConfigurationResult implements Serializable {
 	}
 
 	public ModelConfigurationResult(int[] pickedFtrsI, double wPos, double wNeg, double gamma, double c, double thr,
-	        MetricsResultSet metrics, int examplesCount) {
+			MetricsResultSet metrics, int examplesCount) {
 		this.tp = metrics.getGlobalTp();
 		this.fp = metrics.getGlobalFp();
 		this.fn = metrics.getGlobalFn();
@@ -107,7 +107,7 @@ public class ModelConfigurationResult implements Serializable {
 	public float getMicroF1() {
 		return this.microf1;
 	}
-	
+
 	public float getMacroF1() {
 		return this.macrof1;
 	}
@@ -115,54 +115,6 @@ public class ModelConfigurationResult implements Serializable {
 	public double getFNrate() {
 		return this.fnRate;
 	}
-
-	public boolean worseThan(ModelConfigurationResult other,
-			OptimizaionProfiles optProfile, double optProfileThreshold) {
-		boolean betterResult = false;
-		if (other == null)
-			return true;
-
-		if (optProfile == OptimizaionProfiles.MAXIMIZE_TN)
-			betterResult = other.getFNrate() < optProfileThreshold
-					&& other.getTN() > this.getTN();
-		else if (optProfile == OptimizaionProfiles.MAXIMIZE_MICRO_F1)
-			betterResult = other.getMicroF1() > this.getMicroF1();
-		else if (optProfile == OptimizaionProfiles.MAXIMIZE_MACRO_F1)
-			betterResult = other.getMacroF1() > this.getMacroF1();
-
-		return betterResult;
-	}
-
-	public boolean equalResult(ModelConfigurationResult other,
-			OptimizaionProfiles optProfile, double optProfileThreshold) {
-		boolean equalResult = false;
-		if (other == null)
-			return true;
-
-		if (optProfile == OptimizaionProfiles.MAXIMIZE_TN)
-			equalResult = other.getFNrate() < optProfileThreshold
-					&& other.getTN() == this.getTN();
-		else if (optProfile == OptimizaionProfiles.MAXIMIZE_MICRO_F1)
-			equalResult = other.getMicroF1() == this.getMicroF1();
-		else if (optProfile == OptimizaionProfiles.MAXIMIZE_MACRO_F1)
-			equalResult = other.getMacroF1() == this.getMacroF1();
-
-		return equalResult;
-	}
-
-	public static ModelConfigurationResult findBest(
-			List<ModelConfigurationResult> configurations,
-			OptimizaionProfiles optProfile, double optProfileThreshold) {
-		ModelConfigurationResult best = null;
-		for (ModelConfigurationResult conf : configurations)
-			if (best == null
-					|| best.worseThan(conf, optProfile, optProfileThreshold)
-					|| (best.equalResult(conf, optProfile, optProfileThreshold) && best
-							.getFeatures().length > conf.getFeatures().length))
-				best = conf;
-		return best;
-	}
-
 	public float getMacroPrecision() {
 		return this.macroPrec;
 	}
@@ -183,15 +135,61 @@ public class ModelConfigurationResult implements Serializable {
 	}
 
 	public Double getC() {
-	    return this.c;
-    }
+		return this.c;
+	}
 
 	public Double getGamma() {
-	    return this.gamma;
+		return this.gamma;
 	}
 
 	public double getThreshold() {
 		return this.thr;
 	}
 
+	public boolean worseThan(ModelConfigurationResult other,
+			OptimizaionProfiles optProfile, double optProfileThreshold) {
+		boolean betterResult = false;
+		if (other == null)
+			return true;
+
+		if (optProfile == OptimizaionProfiles.MAXIMIZE_TN)
+			betterResult = (other.getFNrate() < optProfileThreshold
+					&& other.getTN() > this.getTN());
+		else if (optProfile == OptimizaionProfiles.MAXIMIZE_MICRO_F1)
+			betterResult = (other.getMicroF1() > this.getMicroF1());
+		else if (optProfile == OptimizaionProfiles.MAXIMIZE_MACRO_F1)
+			betterResult = (other.getMacroF1() > this.getMacroF1());
+
+		return betterResult;
+	}
+
+	public boolean equalResult(ModelConfigurationResult other,
+			OptimizaionProfiles optProfile, double optProfileThreshold) {
+		boolean equalResult = false;
+		if (other == null)
+			return true;
+
+		if (optProfile == OptimizaionProfiles.MAXIMIZE_TN)
+			equalResult = other.getFNrate() < optProfileThreshold
+			&& other.getTN() == this.getTN();
+		else if (optProfile == OptimizaionProfiles.MAXIMIZE_MICRO_F1)
+			equalResult = other.getMicroF1() == this.getMicroF1();
+		else if (optProfile == OptimizaionProfiles.MAXIMIZE_MACRO_F1)
+			equalResult = other.getMacroF1() == this.getMacroF1();
+
+		return equalResult;
+	}
+
+	public static ModelConfigurationResult findBest(
+			List<ModelConfigurationResult> configurations,
+			OptimizaionProfiles optProfile, double optProfileThreshold) {
+		ModelConfigurationResult best = null;
+		for (ModelConfigurationResult conf : configurations)
+			if (best == null
+			|| best.worseThan(conf, optProfile, optProfileThreshold)
+			|| (best.equalResult(conf, optProfile, optProfileThreshold) && best
+					.getFeatures().length > conf.getFeatures().length))
+				best = conf;
+		return best;
+	}
 }
