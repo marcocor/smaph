@@ -392,21 +392,7 @@ public class Annotator {
 		} else if (runId.equals("void")){
 			System.out.println("Processing query: " + query);
 			return new Vector<>();
-		}
-		else if (runId.startsWith("experimental")){
-			String AFmodel = "/tmp/train_ann.dat.model";
-			String AFrange = "models/model_1-43_AF_0.060_0.02325581_5.00000000_ANW.range";
-
-			SmaphAnnotator smaph = null;
-			try {
-				smaph = GenerateTrainingAndTest.getDefaultBingAnnotatorIndividualLBLiblinear(wikiApi, bingKey, AFmodel, AFrange, -0.65);
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-			List<Annotation> res = annotatePure(query, textID, smaph);
-
-			return res;
-		} else if (runId.startsWith("collective")) {
+		}else if (runId.startsWith("collective")) {
 			if (collective == null) {
 				SmaphConfig.setConfigFile("smaph-config.xml");
 				String bingKey = SmaphConfig.getDefaultBingKey();
