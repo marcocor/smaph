@@ -19,20 +19,51 @@ package it.unipi.di.acube.smaph.learn.models.linkback.annotationRegressor;
 import it.unipi.di.acube.batframework.data.Annotation;
 import it.unipi.di.acube.smaph.learn.models.LibSvmModel;
 
-import java.io.IOException;
+import java.io.*;
 
 import libsvm.svm_model;
 
 /**
  * An SVM-based annotation regressor.
  */
-public class LibSvmAnnotationRegressor extends LibSvmModel<Annotation> implements AnnotationRegressor {
+public class LibSvmAnnotationRegressor extends LibSvmModel<Annotation> implements AnnotationRegressor, Serializable {
+    private static final long serialVersionUID = 1L;
+	double threshold;
 	
-	public LibSvmAnnotationRegressor(String modelFile) throws IOException {
+	public static LibSvmAnnotationRegressor fromFile(String file) {
+		LibSvmAnnotationRegressor obj;
+		try {
+			ObjectInputStream in = new ObjectInputStream(new FileInputStream(file));
+			obj = (LibSvmAnnotationRegressor) in.readObject();
+			in.close();
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+		return obj;
+	}
+	
+	public void toFile(String filename){
+        try {
+			ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(filename));
+			out.writeObject(this);
+			out.close();
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
+	
+	public LibSvmAnnotationRegressor(String modelFile, double threshold) throws IOException {
 		super(modelFile);
+		this.threshold = threshold;
 	}
 
-	public LibSvmAnnotationRegressor(svm_model model) {
+	public LibSvmAnnotationRegressor(svm_model model, double threshold) {
 		super(model);
+		this.threshold = threshold;
+	}
+
+	@Override
+	public double threshold() {
+		return threshold;
 	}
 }

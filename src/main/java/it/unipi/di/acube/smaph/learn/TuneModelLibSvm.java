@@ -34,6 +34,9 @@ import it.unipi.di.acube.smaph.learn.ParameterTester.ParameterTesterAR;
 import it.unipi.di.acube.smaph.learn.ParameterTester.ParameterTesterEF;
 import it.unipi.di.acube.smaph.learn.featurePacks.AdvancedAnnotationFeaturePack;
 import it.unipi.di.acube.smaph.learn.featurePacks.EntityFeaturePack;
+import it.unipi.di.acube.smaph.learn.models.entityfilters.LibSvmEntityFilter;
+import it.unipi.di.acube.smaph.learn.models.linkback.annotationRegressor.LibSvmAnnotationRegressor;
+import it.unipi.di.acube.smaph.learn.normalizer.ZScoreFeatureNormalizer;
 
 import java.io.Serializable;
 import java.util.*;
@@ -284,9 +287,15 @@ public class TuneModelLibSvm {
 			globalScoreboard.addAll(restrictedFeaturesScoreboard);
 		}
 
-		return new Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult>(
-				globalScoreboard, ModelConfigurationResult.findBest(
-						globalScoreboard, optProfile, optProfileThreshold));
+		ModelConfigurationResult globalBest = ModelConfigurationResult
+		        .findBest(globalScoreboard, optProfile, optProfileThreshold);
+		
+		ZScoreFeatureNormalizer scaleFn = new ZScoreFeatureNormalizer(trainGatherer);
+		LibSvmEntityFilter bestEf = ParameterTesterEF.getFilter(trainGatherer, scaleFn, globalBest.getFeatures(), globalBest.getWPos(), globalBest.getWNeg(), globalBest.getGamma(), globalBest.getC());
+		scaleFn.dump("models/best_ef.zscore");
+		bestEf.toFile("models/best_ef.model");
+		
+		return new Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult>(globalScoreboard, globalBest);
 	}
 
 	private static Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult> trainIterativeAR(
@@ -418,9 +427,17 @@ public class TuneModelLibSvm {
 			globalScoreboard.addAll(restrictedFeaturesScoreboard);
 			System.err.printf("Best result for restricted features iteration: %s%n", bestResult.getReadable());
 		}
+		
+		ModelConfigurationResult globalBest = ModelConfigurationResult.findBest(
+						globalScoreboard, optProfile, optProfileThreshold);
+		
+		ZScoreFeatureNormalizer scaleFn = new ZScoreFeatureNormalizer(trainGatherer);
+		LibSvmAnnotationRegressor bestAR = ParameterTesterAR.getRegressor(trainGatherer, scaleFn, globalBest.getFeatures(), globalBest.getGamma(), globalBest.getC(), globalBest.getThreshold());
+		scaleFn.dump("models/best_ar.zscore");
+		bestAR.toFile("models/best_ar.model");
+		
 		return new Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult>(
-				globalScoreboard, ModelConfigurationResult.findBest(
-						globalScoreboard, optProfile, optProfileThreshold));
+				globalScoreboard, globalBest);
 	}
 
 	static class GammaCSelector <E extends Serializable, G extends Serializable> implements Runnable {

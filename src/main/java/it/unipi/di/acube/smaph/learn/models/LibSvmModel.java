@@ -20,6 +20,7 @@ import it.unipi.di.acube.smaph.learn.featurePacks.FeaturePack;
 import it.unipi.di.acube.smaph.learn.normalizer.FeatureNormalizer;
 
 import java.io.IOException;
+import java.io.Serializable;
 
 import libsvm.svm;
 import libsvm.svm_model;
@@ -31,7 +32,8 @@ import libsvm.svm_node;
  * @author Marco Cornolti
  *
  */
-public abstract class LibSvmModel <T> {
+public abstract class LibSvmModel <T> implements Serializable {
+	private static final long serialVersionUID = 1L;
 	private svm_model model;
 	String modelFile;
 	

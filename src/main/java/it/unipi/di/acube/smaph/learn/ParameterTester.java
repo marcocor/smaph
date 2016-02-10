@@ -203,15 +203,18 @@ public abstract class ParameterTester<E, G> implements Callable<ModelConfigurati
 			this.thrSteps =thrSteps;
 		}
 
+		public static LibSvmAnnotationRegressor getRegressor(ExampleGatherer<Annotation, HashSet<Annotation>> trainGatherer, ZScoreFeatureNormalizer scaleFn, int[] features, double gamma, double C, double threshold){
+			svm_problem trainProblem = trainGatherer.generateLibSvmProblem(features, scaleFn);
+			svm_parameter param = getParametersRegressor(gamma, C);
+			svm_model model = trainModel(param, trainProblem);
+
+			return new LibSvmAnnotationRegressor(model, threshold);
+		}
+
 		@Override
 		public ModelConfigurationResult call() throws Exception {
 			ZScoreFeatureNormalizer scaleFn = new ZScoreFeatureNormalizer(trainGatherer);
-			svm_problem trainProblem = trainGatherer.generateLibSvmProblem(this.features, scaleFn);
-
-			svm_parameter param = getParametersRegressor(gamma, C);
-
-			svm_model model = trainModel(param, trainProblem);
-			LibSvmAnnotationRegressor ar = new LibSvmAnnotationRegressor(model);
+			LibSvmAnnotationRegressor ar = getRegressor(trainGatherer, scaleFn, features, gamma, C, -1);
 
 			List<HashSet<Annotation>> golds = new Vector<>();
 			List<List<Pair<Annotation, Double>>> candidateAndPreds = new Vector<>();
@@ -233,31 +236,31 @@ public abstract class ParameterTester<E, G> implements Callable<ModelConfigurati
 			double thrMin = positiveScores.get((int) (positiveScores.size() * 0.05));
 			double thrMax = positiveScores.get((int) (positiveScores.size() * 0.95));
 
-			List<ModelConfigurationResult> configurations = new Vector<>();
-			scanThresholdRange(thrSteps, thrMin, thrMax, configurations, candidateAndPreds, golds);
-			
-			double bestThr = ModelConfigurationResult.findBest(configurations, optProfile, optProfileThr).getThreshold();
+			List<ModelConfigurationResult> thrConfigurations = new Vector<>();
+			scanThresholdRange(thrSteps, thrMin, thrMax, thrConfigurations, candidateAndPreds, golds);
+
+			double bestThr = ModelConfigurationResult.findBest(thrConfigurations, optProfile, optProfileThr).getThreshold();
 			double stepSize = (thrMax - thrMin) / thrSteps;
 			thrMin = bestThr - 2.0 * stepSize;
 			thrMax = bestThr + 2.0 * stepSize;
-			
-			scanThresholdRange(thrSteps, thrMin, thrMax, configurations, candidateAndPreds, golds);
 
-			ModelConfigurationResult bestMcr = ModelConfigurationResult.findBest(configurations, optProfile, optProfileThr);
+			scanThresholdRange(thrSteps, thrMin, thrMax, thrConfigurations, candidateAndPreds, golds);
+
+			ModelConfigurationResult bestMcr = ModelConfigurationResult.findBest(thrConfigurations, optProfile, optProfileThr);
 
 			System.err.printf("Best threshold: %s.%n", bestMcr.getReadable());
 
 			return bestMcr;
 		}
-		
+
 		public void scanThresholdRange(int thrSteps, double thrMin, double thrMax, List<ModelConfigurationResult> configurations,
-		        List<List<Pair<Annotation, Double>>> candidateAndPreds, List<HashSet<Annotation>> golds) throws IOException {
+				List<List<Pair<Annotation, Double>>> candidateAndPreds, List<HashSet<Annotation>> golds) throws IOException {
 			for (int i = 0; i < thrSteps; i++) {
 				double thr = thrMin + i * (thrMax - thrMin) / thrSteps;
 				MetricsResultSet metrics = new SolutionComputer.AnnotationSetSolutionComputer(wikiApi, thr).getResults(candidateAndPreds, golds);
 
 				ModelConfigurationResult mcr = new ModelConfigurationResult(features, -1, -1, gamma, C, thr, metrics,
-				        testGatherer.getExamplesCount());
+						testGatherer.getExamplesCount());
 				configurations.add(mcr);
 			}
 
@@ -274,9 +277,9 @@ public abstract class ParameterTester<E, G> implements Callable<ModelConfigurati
 		}
 
 		@Override
-        public ParameterTester<Annotation, HashSet<Annotation>> cloneWithGammaC(double gamma, double C) {
-	        return new ParameterTesterAR(features, trainGatherer, testGatherer, gamma, C, optProfile, optProfileThr, thrSteps, wikiApi);
-        }
+		public ParameterTester<Annotation, HashSet<Annotation>> cloneWithGammaC(double gamma, double C) {
+			return new ParameterTesterAR(features, trainGatherer, testGatherer, gamma, C, optProfile, optProfileThr, thrSteps, wikiApi);
+		}
 	}
 
 	public static class ParameterTesterEF extends ParameterTester<Tag, HashSet<Tag>> {
@@ -301,16 +304,19 @@ public abstract class ParameterTester<E, G> implements Callable<ModelConfigurati
 			this.wikiApi = wikiApi;
 		}
 
+		public static LibSvmEntityFilter getFilter(ExampleGatherer<Tag, HashSet<Tag>> trainGatherer, ZScoreFeatureNormalizer scaleFn, int[] features, double wPos, double wNeg, double gamma, double C){
+			svm_problem trainProblem = trainGatherer.generateLibSvmProblem(features, scaleFn);
+			svm_parameter param = getParametersClassifier(wPos, wNeg, gamma, C);
+			svm_model model = trainModel(param, trainProblem);
+
+			return new LibSvmEntityFilter(model);
+		}
+
 		@Override
 		public ModelConfigurationResult call() throws Exception {
 
 			ZScoreFeatureNormalizer scaleFn = new ZScoreFeatureNormalizer(trainGatherer);
-			svm_problem trainProblem = trainGatherer.generateLibSvmProblem(this.features, scaleFn);
-
-			svm_parameter param = getParametersClassifier(wPos, wNeg, gamma, C);
-
-			svm_model model = trainModel(param, trainProblem);
-			EntityFilter ef = new LibSvmEntityFilter(model);
+			EntityFilter ef = getFilter(trainGatherer, scaleFn, features, wPos, wNeg, gamma, C);
 
 			MetricsResultSet metrics = testEntityFilter(ef, testGatherer, this.features, scaleFn, new SolutionComputer.TagSetSolutionComputer(wikiApi));
 
@@ -334,7 +340,7 @@ public abstract class ParameterTester<E, G> implements Callable<ModelConfigurati
 		}
 
 		@Override
-        public ParameterTester<Tag, HashSet<Tag>> cloneWithGammaC(double gamma, double C) {
+		public ParameterTester<Tag, HashSet<Tag>> cloneWithGammaC(double gamma, double C) {
 			return new ParameterTesterEF(wPos, wNeg, features, trainGatherer, testGatherer, gamma, C, wikiApi);
 		}
 	}

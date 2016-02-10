@@ -327,13 +327,7 @@ public class GenerateTrainingAndTest {
 			String bingKey, String EFModelFileBase) throws FileNotFoundException,
 			ClassNotFoundException, IOException {
 		return getDefaultBingAnnotatorParam( wikiApi, 
-				bingKey, new LibSvmEntityFilter(EFModelFileBase+".model"), new ZScoreFeatureNormalizer(EFModelFileBase+".zscore", new EntityFeaturePack()), new DummyLinkBack(), true, true, true);
-	}
-	public static SmaphAnnotator getDefaultBingAnnotatorIndividualLBLiblinear(
-			WikipediaApiInterface wikiApi, String bingKey,
-			String AFModelFileBase, String AFScaleFile, double annotationFilterThreshold) throws FileNotFoundException, ClassNotFoundException, IOException {
-		return getDefaultBingAnnotatorParam( wikiApi, 
-				bingKey, new NoEntityFilter(), null, new IndividualAnnotationLinkBack(new LibLinearAnnotatorRegressor(AFModelFileBase), new ZScoreFeatureNormalizer(AFScaleFile, new AdvancedAnnotationFeaturePack()), wikiApi, annotationFilterThreshold), true, true, true);
+				bingKey, LibSvmEntityFilter.fromFile(EFModelFileBase+".model"), new ZScoreFeatureNormalizer(EFModelFileBase+".zscore", new EntityFeaturePack()), new DummyLinkBack(), true, true, true);
 	}
 	public static SmaphAnnotator getDefaultBingAnnotatorCollectiveLBLiblinear(
 			WikipediaApiInterface wikiApi, String bingKey,
@@ -360,9 +354,9 @@ public class GenerateTrainingAndTest {
 	}
 	public static SmaphAnnotator getDefaultBingAnnotatorIndividualAdvancedAnnotationRegressor(
 			WikipediaApiInterface wikiApi, String bingKey,
-			String AAFModelFileBase, String AAFScaleFile, double annotationFilterThreshold, double anchorMaxED) throws FileNotFoundException, ClassNotFoundException, IOException {
+			String AFFileBase, double anchorMaxED) throws FileNotFoundException, ClassNotFoundException, IOException {
 		return getDefaultBingAnnotatorParam( wikiApi, 
-				bingKey, new NoEntityFilter(), null, new AdvancedIndividualLinkback(new LibSvmAnnotationRegressor(AAFModelFileBase), new ZScoreFeatureNormalizer(AAFScaleFile, new AdvancedAnnotationFeaturePack()), wikiApi, annotationFilterThreshold, anchorMaxED), true, true, true);
+				bingKey, new NoEntityFilter(), null, new AdvancedIndividualLinkback(LibSvmAnnotationRegressor.fromFile(AFFileBase+".model"), new ZScoreFeatureNormalizer(AFFileBase+ ".zscore", new AdvancedAnnotationFeaturePack()), wikiApi, anchorMaxED), true, true, true);
 	}
 
 }

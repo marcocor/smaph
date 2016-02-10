@@ -24,15 +24,13 @@ public class AdvancedIndividualLinkback implements LinkBack {
 	private AnnotationRegressor ar;
 	private FeatureNormalizer annFn;
 	private WikipediaApiInterface wikiApi;
-	private double threshold;
 	private double edthreshold;
 
 	public AdvancedIndividualLinkback(AnnotationRegressor ar, FeatureNormalizer annFn, WikipediaApiInterface wikiApi,
-			double threshold, double edthreshold) throws FileNotFoundException, IOException {
+			double edthreshold) throws FileNotFoundException, IOException {
 		this.ar = ar;
 		this.annFn = annFn;
 		this.wikiApi = wikiApi;
-		this.threshold = threshold;
 		this.edthreshold = edthreshold;
 	}
 
@@ -62,7 +60,7 @@ public class AdvancedIndividualLinkback implements LinkBack {
 			scoreAndAnnotations.add(new Pair<Annotation, Double>(a, score));
 		}
 
-		return IndividualAnnotationLinkBack.getResult(scoreAndAnnotations, threshold);
+		return IndividualAnnotationLinkBack.getResult(scoreAndAnnotations, ar.threshold());
 	}
 
 	@Override
