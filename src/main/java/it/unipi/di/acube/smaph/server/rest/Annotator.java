@@ -13,8 +13,10 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-package it.cnr.isti.hpc.erd;
+package it.unipi.di.acube.smaph.server.rest;
 
+import it.cnr.isti.hpc.erd.Annotation;
+import it.cnr.isti.hpc.erd.WikipediaToFreebase;
 import it.unipi.di.acube.BingInterface;
 import it.unipi.di.acube.batframework.data.MultipleAnnotation;
 import it.unipi.di.acube.batframework.problems.CandidatesSpotter;
@@ -23,6 +25,7 @@ import it.unipi.di.acube.batframework.systemPlugins.WATAnnotator;
 import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
 import it.unipi.di.acube.smaph.EntityToVect;
 import it.unipi.di.acube.smaph.SmaphAnnotator;
+import it.unipi.di.acube.smaph.SmaphAnnotatorBuilder;
 import it.unipi.di.acube.smaph.SmaphConfig;
 import it.unipi.di.acube.smaph.WATRelatednessComputer;
 import it.unipi.di.acube.smaph.learn.GenerateModel;
@@ -52,6 +55,7 @@ public class Annotator {
 	private static LibSvmEntityFilter libSvmEntityFilter = null;
 	private String bingKey;
 	private static SmaphAnnotator collective = null;
+	private static SmaphAnnotator best = null;
 
 	public Annotator() {
 		SmaphConfig.setConfigFile("smaph-config.xml");
@@ -404,10 +408,9 @@ public class Annotator {
 						e.printStackTrace();
 						throw new RuntimeException(e);
 					}
-				String rankLibBindingModel = "models/model_1-255_RL_0.060.full.6.NDCG@19.ERD-S2S3S6.model"; // "models/model_train_binding_ranking.dat_130-132,139-141,172-174,224-225,229-234.t1000.l10.NDCG@19";
-				String bindingNorm = "models/train_binding_ranking_ERD-S2S3S6.zscore"; // "/tmp/train_binding_ranking.zscore";
+				String rankLibBindingModel = "models/model_1-255_RL_0.060.full.6.NDCG@19.ERD-S2S3S6"; // "models/model_train_binding_ranking.dat_130-132,139-141,172-174,224-225,229-234.t1000.l10.NDCG@19";
 				try {
-					collective = GenerateTrainingAndTest.getDefaultBingAnnotatorCollectiveLBRanklibAllSources(wikiApi, bingKey, rankLibBindingModel, bindingNorm);
+					collective = SmaphAnnotatorBuilder.getDefaultBingAnnotatorCollectiveLBRanklib(wikiApi, bingKey, rankLibBindingModel);
 					collective.setPredictNEOnly(true);
 				} catch (Exception e) {
 					e.printStackTrace();
@@ -416,6 +419,30 @@ public class Annotator {
 			}
 			
 			List<Annotation> res = annotatePure(query, textID, collective);
+			return res;
+		}else if (runId.startsWith("best")) {
+			if (best == null) {
+				SmaphConfig.setConfigFile("smaph-config.xml");
+				String bingKey = SmaphConfig.getDefaultBingKey();
+				String bingCache = SmaphConfig.getDefaultBingCache();
+				if (bingCache != null)
+					try {
+						BingInterface.setCache(bingCache);
+					} catch (ClassNotFoundException | IOException e) {
+						e.printStackTrace();
+						throw new RuntimeException(e);
+					}
+				String EFModelFileBase = "models/best_ef";
+				try {
+					best = SmaphAnnotatorBuilder.getDefaultBingAnnotatorEF(wikiApi, bingKey, EFModelFileBase);
+					best.setPredictNEOnly(true);
+				} catch (Exception e) {
+					e.printStackTrace();
+					throw new RuntimeException(e);
+				}
+			}
+			
+			List<Annotation> res = annotatePure(query, textID, best);
 			return res;
 		}
 
