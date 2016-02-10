@@ -8,13 +8,12 @@ import it.unipi.di.acube.batframework.metrics.Metrics;
 import it.unipi.di.acube.batframework.metrics.StrongAnnotationMatch;
 import it.unipi.di.acube.batframework.systemPlugins.WATAnnotator;
 import it.unipi.di.acube.batframework.utils.DumpData;
-import it.unipi.di.acube.batframework.utils.DumpResults;
 import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
 import it.unipi.di.acube.smaph.SmaphAnnotator;
+import it.unipi.di.acube.smaph.SmaphAnnotatorBuilder;
 import it.unipi.di.acube.smaph.SmaphAnnotatorDebugger;
 import it.unipi.di.acube.smaph.SmaphConfig;
 import it.unipi.di.acube.smaph.WATRelatednessComputer;
-import it.unipi.di.acube.smaph.learn.GenerateTrainingAndTest;
 
 import java.util.HashSet;
 
@@ -34,10 +33,9 @@ public class DebugMain {
 		WATAnnotator.setCache("wikisense.cache");
 		WATRelatednessComputer.setCache("relatedness.cache");
 		
-		String rankLibBindingModel = "models/model_1-225_RL_0.060.full.6.NDCG@10.model";
-		String rankLibBindingNorm = "models/train_binding_ranking.zscore";
+		String rankLibBindingModel = "models/model_1-225_RL_0.060.full.6.NDCG@10";
 
-		SmaphAnnotator ann = GenerateTrainingAndTest.getDefaultBingAnnotatorCollectiveLBRanklibAllSources(wikiApi, bingKey, rankLibBindingModel, rankLibBindingNorm);
+		SmaphAnnotator ann = SmaphAnnotatorBuilder.getDefaultBingAnnotatorCollectiveLBRanklib(wikiApi, bingKey, rankLibBindingModel);
 		ann.appendName("-lb-collective-ranking");
 		SmaphAnnotatorDebugger debugger = new SmaphAnnotatorDebugger();
 		ann.setDebugger(debugger);

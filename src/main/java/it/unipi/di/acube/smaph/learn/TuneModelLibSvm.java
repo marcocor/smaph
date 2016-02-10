@@ -26,6 +26,7 @@ import it.unipi.di.acube.batframework.utils.Pair;
 import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
 import it.unipi.di.acube.smaph.EntityToVect;
 import it.unipi.di.acube.smaph.SmaphAnnotator;
+import it.unipi.di.acube.smaph.SmaphAnnotatorBuilder;
 import it.unipi.di.acube.smaph.SmaphConfig;
 import it.unipi.di.acube.smaph.SmaphUtils;
 import it.unipi.di.acube.smaph.WATRelatednessComputer;
@@ -105,7 +106,7 @@ public class TuneModelLibSvm {
 		OptDataset opt = OptDataset.SMAPH_DATASET;
 		WikipediaToFreebase wikiToFreebase = new WikipediaToFreebase("mapdb");
 
-		SmaphAnnotator bingAnnotator = GenerateTrainingAndTest
+		SmaphAnnotator bingAnnotator = SmaphAnnotatorBuilder
 				.getDefaultBingAnnotatorGatherer(wikiApi, bingKey, true, true, true);
 
 		double maxAnchorSegmentED = 0.7;

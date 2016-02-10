@@ -46,7 +46,6 @@ import it.unipi.di.acube.smaph.linkback.bindingGenerator.BindingGenerator;
 import it.unipi.di.acube.smaph.main.ERDDatasetFilter;
 import it.unipi.di.acube.smaph.snippetannotationfilters.SnippetAnnotationFilter;
 import it.unipi.di.acube.smaph.wikiAnchors.EntityToAnchors;
-import it.cnr.isti.hpc.erd.WikipediaToFreebase;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -719,8 +718,7 @@ public class SmaphAnnotator implements Sa2WSystem {
 			List<HashSet<Annotation>> BRCandidates,
 			List<Pair<FeaturePack<Annotation>, Boolean>> advancedAnnVectorsToPresence,
 			List<Annotation> ARCandidates, boolean keepNEOnly,
-			BindingGenerator bg,
-			WikipediaToFreebase wikiToFreeb, double anchorMaxED)
+			BindingGenerator bg, double anchorMaxED)
 					throws Exception {
 
 		QueryInformation qi = getQueryInformation(query);

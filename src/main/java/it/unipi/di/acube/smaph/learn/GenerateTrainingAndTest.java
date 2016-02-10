@@ -16,43 +16,22 @@
 
 package it.unipi.di.acube.smaph.learn;
 
+import it.cnr.isti.hpc.erd.WikipediaToFreebase;
 import it.unimi.dsi.logging.ProgressLogger;
+import it.unipi.di.acube.BingInterface;
 import it.unipi.di.acube.batframework.data.Annotation;
 import it.unipi.di.acube.batframework.data.Tag;
 import it.unipi.di.acube.batframework.datasetPlugins.GERDAQDataset;
 import it.unipi.di.acube.batframework.datasetPlugins.YahooWebscopeL24Dataset;
 import it.unipi.di.acube.batframework.problems.A2WDataset;
-import it.unipi.di.acube.batframework.systemPlugins.WATAnnotator;
 import it.unipi.di.acube.batframework.utils.FreebaseApi;
 import it.unipi.di.acube.batframework.utils.Pair;
 import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
 import it.unipi.di.acube.smaph.SmaphAnnotator;
-import it.unipi.di.acube.smaph.learn.featurePacks.AdvancedAnnotationFeaturePack;
-import it.unipi.di.acube.smaph.learn.featurePacks.BindingFeaturePack;
-import it.unipi.di.acube.smaph.learn.featurePacks.EntityFeaturePack;
 import it.unipi.di.acube.smaph.learn.featurePacks.FeaturePack;
-import it.unipi.di.acube.smaph.learn.models.entityfilters.EntityFilter;
-import it.unipi.di.acube.smaph.learn.models.entityfilters.LibSvmEntityFilter;
-import it.unipi.di.acube.smaph.learn.models.entityfilters.NoEntityFilter;
-import it.unipi.di.acube.smaph.learn.models.linkback.annotationRegressor.LibLinearAnnotatorRegressor;
-import it.unipi.di.acube.smaph.learn.models.linkback.annotationRegressor.LibSvmAnnotationRegressor;
-import it.unipi.di.acube.smaph.learn.models.linkback.bindingRegressor.LibLinearBindingRegressor;
-import it.unipi.di.acube.smaph.learn.models.linkback.bindingRegressor.RankLibBindingRegressor;
-import it.unipi.di.acube.smaph.learn.normalizer.FeatureNormalizer;
-import it.unipi.di.acube.smaph.learn.normalizer.ZScoreFeatureNormalizer;
-import it.unipi.di.acube.smaph.linkback.DummyLinkBack;
-import it.unipi.di.acube.smaph.linkback.LinkBack;
-import it.unipi.di.acube.smaph.linkback.AdvancedIndividualLinkback;
-import it.unipi.di.acube.smaph.linkback.CollectiveLinkBack;
-import it.unipi.di.acube.smaph.linkback.IndividualAnnotationLinkBack;
 import it.unipi.di.acube.smaph.linkback.bindingGenerator.DefaultBindingGenerator;
 import it.unipi.di.acube.smaph.main.ERDDatasetFilter;
-import it.unipi.di.acube.smaph.snippetannotationfilters.FrequencyAnnotationFilter;
-import it.unipi.di.acube.BingInterface;
-import it.cnr.isti.hpc.erd.WikipediaToFreebase;
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Vector;
@@ -68,11 +47,11 @@ public class GenerateTrainingAndTest {
 			A2WDataset ds, ExampleGatherer<Tag, HashSet<Tag>> entityFilterGatherer, ExampleGatherer<HashSet<Annotation>, HashSet<Annotation>> linkBackCollectiveGatherer, ExampleGatherer<Annotation, HashSet<Annotation>> advancedIndividualAnnotationGatherer,
 			WikipediaToFreebase wikiToFreeb, boolean keepNEOnly, double anchorMaxED) throws Exception {
 		gatherExamples(bingAnnotator, ds, entityFilterGatherer,
-				linkBackCollectiveGatherer, advancedIndividualAnnotationGatherer, wikiToFreeb, keepNEOnly, -1, anchorMaxED);
+				linkBackCollectiveGatherer, advancedIndividualAnnotationGatherer, keepNEOnly, -1, anchorMaxED);
 	}
 	public static void gatherExamples(SmaphAnnotator bingAnnotator,
 			A2WDataset ds, ExampleGatherer<Tag, HashSet<Tag>> entityFilterGatherer, ExampleGatherer<HashSet<Annotation>, HashSet<Annotation>> linkBackCollectiveGatherer, ExampleGatherer<Annotation, HashSet<Annotation>> advancedAnnotationRegressorGatherer,
-			WikipediaToFreebase wikiToFreeb, boolean keepNEOnly, int limit, double anchorMaxED) throws Exception {
+			boolean keepNEOnly, int limit, double anchorMaxED) throws Exception {
 		limit = limit ==-1? ds.getSize() : Math.min(limit, ds.getSize());
 		ProgressLogger plog = new ProgressLogger(logger, "document");
 		plog.start("Collecting examples.");
@@ -102,7 +81,7 @@ public class GenerateTrainingAndTest {
 
 			bingAnnotator.generateExamples(query, goldStandard, goldStandardAnn, EFVectorsToPresence, EFCandidates,
 					LbVectorsToF1, BRCandidates, advAnnVectorsToPresence, ARCandidates, keepNEOnly,
-					new DefaultBindingGenerator(), wikiToFreeb, anchorMaxED);
+					new DefaultBindingGenerator(), anchorMaxED);
 
 			if (entityFilterGatherer != null)
 				entityFilterGatherer.addExample(goldBoolToDouble(EFVectorsToPresence), EFCandidates, goldStandard);
@@ -301,62 +280,4 @@ public class GenerateTrainingAndTest {
 		wikiApi.flush();
 
 	}
-	private static SmaphAnnotator getDefaultBingAnnotatorParam(
-			WikipediaApiInterface wikiApi,
-			String bingKey, EntityFilter entityFilter,FeatureNormalizer efNorm, LinkBack lb,
-			boolean s2, boolean s3, boolean s6) throws FileNotFoundException,
-			ClassNotFoundException, IOException {
-
-		WATAnnotator watDefault = new WATAnnotator(
-				"wikisense.mkapp.it", 80, "base", "COMMONNESS", "mw", "0.2",
-				"0.0", false, false, false);
-		return new SmaphAnnotator(entityFilter
-				, efNorm, lb, s2, s3,
-				10, s6, 25, false, watDefault, new FrequencyAnnotationFilter(0.03), wikiApi, bingKey);
-
-	}
-	public static SmaphAnnotator getDefaultBingAnnotatorGatherer(
-			WikipediaApiInterface wikiApi, 
-			String bingKey, boolean s2, boolean s3, boolean s6) throws FileNotFoundException,
-			ClassNotFoundException, IOException {
-		return getDefaultBingAnnotatorParam( wikiApi, 
-				bingKey, new NoEntityFilter(), null, new DummyLinkBack(), s2, s3, s6);
-	}
-	public static SmaphAnnotator getDefaultBingAnnotatorEF(
-			WikipediaApiInterface wikiApi, 
-			String bingKey, String EFModelFileBase) throws FileNotFoundException,
-			ClassNotFoundException, IOException {
-		return getDefaultBingAnnotatorParam( wikiApi, 
-				bingKey, LibSvmEntityFilter.fromFile(EFModelFileBase+".model"), new ZScoreFeatureNormalizer(EFModelFileBase+".zscore", new EntityFeaturePack()), new DummyLinkBack(), true, true, true);
-	}
-	public static SmaphAnnotator getDefaultBingAnnotatorCollectiveLBLiblinear(
-			WikipediaApiInterface wikiApi, String bingKey,
-			String lBmodel, String lBrange) throws FileNotFoundException, ClassNotFoundException, IOException {
-		CollectiveLinkBack lb = new CollectiveLinkBack(wikiApi, new DefaultBindingGenerator(), new LibLinearBindingRegressor(lBmodel), new ZScoreFeatureNormalizer(lBrange, new BindingFeaturePack()));
-		return getDefaultBingAnnotatorParam( wikiApi, 
-				bingKey, new NoEntityFilter(), null, lb, true, true, true);
-	}
-	public static SmaphAnnotator getDefaultBingAnnotatorCollectiveLBRanklibS6(
-			WikipediaApiInterface wikiApi, String bingKey,
-			String lBmodel, String lbRange) throws FileNotFoundException, ClassNotFoundException, IOException {
-		CollectiveLinkBack lb = new CollectiveLinkBack(wikiApi, new DefaultBindingGenerator(), new RankLibBindingRegressor(lBmodel), new ZScoreFeatureNormalizer(lbRange, new BindingFeaturePack()));
-		return getDefaultBingAnnotatorParam(
-				wikiApi, 
-				bingKey, new NoEntityFilter(), null, lb, false, false, true);
-	}
-	public static SmaphAnnotator getDefaultBingAnnotatorCollectiveLBRanklibAllSources(
-			WikipediaApiInterface wikiApi, String bingKey,
-			String lBmodel, String lbRange) throws FileNotFoundException, ClassNotFoundException, IOException {
-		CollectiveLinkBack lb = new CollectiveLinkBack(wikiApi, new DefaultBindingGenerator(), new RankLibBindingRegressor(lBmodel), new ZScoreFeatureNormalizer(lbRange, new BindingFeaturePack()));
-		return getDefaultBingAnnotatorParam(
-				wikiApi, 
-				bingKey, new NoEntityFilter(), null, lb, true, true, true);
-	}
-	public static SmaphAnnotator getDefaultBingAnnotatorIndividualAdvancedAnnotationRegressor(
-			WikipediaApiInterface wikiApi, String bingKey,
-			String AFFileBase, double anchorMaxED) throws FileNotFoundException, ClassNotFoundException, IOException {
-		return getDefaultBingAnnotatorParam( wikiApi, 
-				bingKey, new NoEntityFilter(), null, new AdvancedIndividualLinkback(LibSvmAnnotationRegressor.fromFile(AFFileBase+".model"), new ZScoreFeatureNormalizer(AFFileBase+ ".zscore", new AdvancedAnnotationFeaturePack()), wikiApi, anchorMaxED), true, true, true);
-	}
-
 }
