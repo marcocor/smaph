@@ -28,8 +28,7 @@ import it.unipi.di.acube.smaph.SmaphAnnotator;
 import it.unipi.di.acube.smaph.SmaphAnnotatorBuilder;
 import it.unipi.di.acube.smaph.SmaphConfig;
 import it.unipi.di.acube.smaph.WATRelatednessComputer;
-import it.unipi.di.acube.smaph.learn.GenerateModel;
-import it.unipi.di.acube.smaph.learn.GenerateTrainingAndTest;
+import it.unipi.di.acube.smaph.learn.GenerateProblemFiles;
 import it.unipi.di.acube.smaph.learn.featurePacks.EntityFeaturePack;
 import it.unipi.di.acube.smaph.learn.models.entityfilters.EntityFilter;
 import it.unipi.di.acube.smaph.learn.models.entityfilters.LibSvmEntityFilter;
@@ -181,7 +180,7 @@ public class Annotator {
 	 */
 	public List<Annotation> annotate(String runId, String textID, String query) {
 		if (runId.startsWith("miao")) {
-			String modelFileEF = GenerateModel.getModelFileNameBaseEF(
+			String modelFileEF = GenerateProblemFiles.getModelFileNameBaseEF(
 					new int[] {1, 2, 3, 6, 7, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 33, 34, 35, 36, 37},
 					3.8, 5.2, 0.01, 100.0)
 					+ "_" + "ANW-erd";
@@ -276,7 +275,7 @@ public class Annotator {
 				double wNeg = weightsToTest[idWeight][1];
 				double gamma = paramsToTest[idParam][0];
 				double C = paramsToTest[idParam][1];
-				String modelFileEF = GenerateModel.getModelFileNameBaseEF(
+				String modelFileEF = GenerateProblemFiles.getModelFileNameBaseEF(
 						featuresSetsToTest[idftr], wPos, wNeg, gamma, C)
 						+ "_" + sources+"-erd";
 				runId = String.format(SMAPH_PARAMS_FORMAT, "wikisense", 0.0,
