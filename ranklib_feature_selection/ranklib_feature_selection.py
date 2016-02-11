@@ -13,7 +13,7 @@ RANKER = 6
 
 def ftr_selection_loop(good_ftr, valid_ftrs, qid_cand_to_score, best_f1, update_foo, step, cpus=None):
 	while True:
-		candidate_ftrs = [f for f in valid_ftrs if f not in good_ftr] if update_foo == increment_features else good_ftr
+		candidate_ftrs = [f for f in valid_ftrs if f not in good_ftr] if update_foo == increment_features else [f for f in good_ftr if f in valid_ftrs]
 		ftr_buckets_left = get_feature_buckets(candidate_ftrs, step)
 		print("starting iteration with feature set: {}".format(good_ftr), file=sys.stderr)
 		print("all feature buckets to try: {}".format(ftr_buckets_left), file=sys.stderr)
@@ -83,6 +83,7 @@ if __name__ == '__main__':
 	parser.add_argument('--method', help="Method used in feature selection iterations", choices=['ablation', 'increment', 'oneshot'], required=True)
 	parser.add_argument('--dataset', help="Dataset code (e.g. ERD-S2S3S6)", required=True)
 	parser.add_argument('--startset', help="Feature set to start with (e.g. 1,3,5-10,24). Default: use all features (no features for 'increment' method)", required=False, default="")
+	parser.add_argument('--candidate_features', help="Feature set to try to add (increment) or remove (ablation) (e.g. 1,3,5-10,24). Default: use all features of the start set (ablation) or all valid features not in startset (increment)", required=False, default="")
 	parser.add_argument('--leaves', help="Number of tree leaves (e.g. 5,7,10-20). Default: 10.", required=False, default="10")
 	parser.add_argument('--opt_vals', help="Values to optimize NDGC with. (e.g. 5,7,10-20). Default: 12-23.", required=False, default="12-23")
 	parser.add_argument('--cpus', help="Number of training processes to start in parallel.", required=False, default="")
@@ -105,6 +106,8 @@ if __name__ == '__main__':
 
 	good_ftr = ftr_string_set(args.startset) if args.startset else valid_ftrs
 	
+	candidate_ftrs = ftr_string_set(args.candidate_features) if args.candidate_features else valid_ftrs
+
 	if args.method == 'ablation':
 		main_method, secondary_method = decrement_features, increment_features
 	elif args.method == 'increment':
@@ -121,12 +124,10 @@ if __name__ == '__main__':
 		if args.method == 'increment' and not good_ftr: #start from scratch
 			best_f1 = 0.0
 
-		good_ftr, best_f1 = do_one_phase(main_method, good_ftr, valid_ftrs, best_f1, 6)
-		good_ftr, best_f1 = do_one_phase(main_method, good_ftr, valid_ftrs, best_f1, 3)
-		good_ftr, best_f1 = do_one_phase(main_method, good_ftr, valid_ftrs, best_f1, 2)
-		good_ftr, best_f1 = do_one_phase(main_method, good_ftr, valid_ftrs, best_f1, 1)
+		good_ftr, best_f1 = do_one_phase(main_method, good_ftr, candidate_ftrs, best_f1, 6)
+		good_ftr, best_f1 = do_one_phase(main_method, good_ftr, candidate_ftrs, best_f1, 3)
 	
-		good_ftr, best_f1 = do_one_phase(secondary_method, good_ftr, valid_ftrs, best_f1, 1)
+		good_ftr, best_f1 = do_one_phase(secondary_method, good_ftr, candidate_ftrs, best_f1, 1)
 
 	print("Parameter tuning", file=sys.stderr)
 	overall_best_f1, overall_best_model = -1, None

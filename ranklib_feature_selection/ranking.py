@@ -10,7 +10,7 @@ import xml.etree.ElementTree as ET
 from collections import Counter
 
 RANKLIB_PATH = "../libs/RankLib-2.5.jar"
-JAVA_OPTS_TRAIN="-Xmx4g"
+JAVA_OPTS_TRAIN="-Xmx5g"
 JAVA_OPTS_SCORE="-Xmx512m"
 
 def ftr_string_set(s):
