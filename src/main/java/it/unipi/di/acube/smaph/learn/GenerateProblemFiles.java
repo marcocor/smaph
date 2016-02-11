@@ -23,7 +23,6 @@ import it.unipi.di.acube.batframework.data.Tag;
 import it.unipi.di.acube.batframework.systemPlugins.WATAnnotator;
 import it.unipi.di.acube.batframework.utils.FreebaseApi;
 import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
-import it.unipi.di.acube.smaph.EntityToVect;
 import it.unipi.di.acube.smaph.SmaphAnnotator;
 import it.unipi.di.acube.smaph.SmaphAnnotatorBuilder;
 import it.unipi.di.acube.smaph.SmaphConfig;
@@ -78,7 +77,6 @@ public class GenerateProblemFiles {
 		freebApi = new FreebaseApi(freebKey, freebCache);
 		WATAnnotator.setCache("wikisense.cache");
 		wikiToFreebase = new WikipediaToFreebase("mapdb");
-		EntityToVect.initialize();
 
 		if (line.hasOption("dump-entity-filter"))
 			generateEFModel(line.getOptionValue("outfile-base", ""));

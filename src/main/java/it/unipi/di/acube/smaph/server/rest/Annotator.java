@@ -23,7 +23,6 @@ import it.unipi.di.acube.batframework.problems.CandidatesSpotter;
 import it.unipi.di.acube.batframework.problems.Sa2WSystem;
 import it.unipi.di.acube.batframework.systemPlugins.WATAnnotator;
 import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
-import it.unipi.di.acube.smaph.EntityToVect;
 import it.unipi.di.acube.smaph.SmaphAnnotator;
 import it.unipi.di.acube.smaph.SmaphAnnotatorBuilder;
 import it.unipi.di.acube.smaph.SmaphConfig;
@@ -61,7 +60,6 @@ public class Annotator {
 		bingKey = SmaphConfig.getDefaultBingKey();
 		String bingCache = SmaphConfig.getDefaultBingCache();
 		try {
-			EntityToVect.initialize();
 			WATAnnotator.setCache("wikisense.cache");
 			if (wikiApi == null)
 				wikiApi = new WikipediaApiInterface("wid.cache",

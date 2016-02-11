@@ -24,7 +24,6 @@ import it.unipi.di.acube.batframework.systemPlugins.WATAnnotator;
 import it.unipi.di.acube.batframework.utils.FreebaseApi;
 import it.unipi.di.acube.batframework.utils.Pair;
 import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
-import it.unipi.di.acube.smaph.EntityToVect;
 import it.unipi.di.acube.smaph.SmaphAnnotator;
 import it.unipi.di.acube.smaph.SmaphAnnotatorBuilder;
 import it.unipi.di.acube.smaph.SmaphConfig;
@@ -101,7 +100,6 @@ public class TuneModelLibSvm {
 		WATRelatednessComputer.setCache("relatedness.cache");
 		WikipediaApiInterface wikiApi = new WikipediaApiInterface("wid.cache", "redirect.cache");
 		FreebaseApi freebApi = new FreebaseApi(freebKey, freebCache);
-		EntityToVect.initialize();
 
 		OptDataset opt = OptDataset.SMAPH_DATASET;
 		WikipediaToFreebase wikiToFreebase = new WikipediaToFreebase("mapdb");

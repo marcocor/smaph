@@ -13,10 +13,16 @@ import java.io.IOException;
 import java.net.URLEncoder;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Vector;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
 
+import org.aksw.gerbil.transfer.nif.Document;
+import org.aksw.gerbil.transfer.nif.Marking;
+import org.aksw.gerbil.transfer.nif.TurtleNIFDocumentCreator;
+import org.aksw.gerbil.transfer.nif.TurtleNIFDocumentParser;
+import org.aksw.gerbil.transfer.nif.data.ScoredNamedEntity;
 import org.codehaus.jettison.json.*;
 
 /**
@@ -25,8 +31,10 @@ import org.codehaus.jettison.json.*;
 
 @Path("")
 public class RestService {
-	WikipediaApiInterface wikiApi;
-	SmaphAnnotator entityFilterAnn, annotationRegressorAnn, collectiveAnn, defaultAnn;
+	private static WikipediaApiInterface wikiApi;
+	private static SmaphAnnotator entityFilterAnn, annotationRegressorAnn, collectiveAnn, defaultAnn;
+    private static TurtleNIFDocumentParser parser = new TurtleNIFDocumentParser();
+    private static TurtleNIFDocumentCreator creator = new TurtleNIFDocumentCreator();
 
 	{
 		wikiApi = new WikipediaApiInterface("wid.cache", "redirect.cache");
@@ -37,8 +45,8 @@ public class RestService {
 			if (bingCache != null)
 				BingInterface.setCache(bingCache);
 			entityFilterAnn = SmaphAnnotatorBuilder.getDefaultBingAnnotatorEF(wikiApi, bingKey, "models/best_ef");
-			annotationRegressorAnn = SmaphAnnotatorBuilder.getDefaultBingAnnotatorIndividualAdvancedAnnotationRegressor(wikiApi, bingKey, "models/best_af", 0.7);
-			collectiveAnn = SmaphAnnotatorBuilder.getDefaultBingAnnotatorCollectiveLBRanklib(wikiApi, bingKey, "models/best_collective");
+			annotationRegressorAnn = SmaphAnnotatorBuilder.getDefaultBingAnnotatorIndividualAdvancedAnnotationRegressor(wikiApi, bingKey, "models/best_ar", 0.7);
+			collectiveAnn = SmaphAnnotatorBuilder.getDefaultBingAnnotatorCollectiveLBRanklib(wikiApi, bingKey, "models/best_coll");
 		} catch (ClassNotFoundException | IOException e) {
 			e.printStackTrace();
 			throw new RuntimeException(e);
@@ -83,6 +91,24 @@ public class RestService {
 		return encodeResponseJson(defaultAnn.solveSa2W(text));
 	}
 
+	@POST
+	@Path("/nif")
+	public String nif(String request) {
+		Document doc;
+        try {
+	        doc = parser.getDocumentFromNIFString(request);
+        } catch (Exception e) {
+	        throw new RuntimeException(e);
+        }
+        
+        
+        doc.setMarkings(batToNif(defaultAnn.solveSa2W(doc.getText())));
+        
+        System.out.println("Result: " + doc.toString());
+
+		return creator.getDocumentAsNIFString(doc);
+	}
+
 	@GET
 	@Path("/annotation-regressor")
 	@Produces({ MediaType.APPLICATION_JSON })
@@ -104,6 +130,17 @@ public class RestService {
 		return encodeResponseJson(collectiveAnn.solveSa2W(text));
 	}
 
+	private static List<Marking> batToNif(HashSet<ScoredAnnotation> solution) {
+		Vector<Marking> markings = new Vector<>();
+		for (ScoredAnnotation aBat : solution)
+			try {
+				markings.add(new ScoredNamedEntity(aBat.getPosition(), aBat.getLength(), wikiApi.getTitlebyId(aBat.getConcept()), aBat.getScore()));
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
+		return markings;
+	}
+	
 	private String encodeResponseJson(HashSet<ScoredAnnotation> annotations) {
 		JSONObject res = new JSONObject();
 

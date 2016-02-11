@@ -4,7 +4,6 @@ import it.unipi.di.acube.batframework.data.Annotation;
 import it.unipi.di.acube.batframework.data.Tag;
 import it.unipi.di.acube.batframework.utils.Pair;
 import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
-import it.unipi.di.acube.smaph.EntityToVect;
 import it.unipi.di.acube.smaph.QueryInformation;
 import it.unipi.di.acube.smaph.SmaphUtils;
 import it.unipi.di.acube.smaph.WATRelatednessComputer;
@@ -63,8 +62,6 @@ public class AdvancedAnnotationFeaturePack extends FeaturePack<Annotation> {
 		features.put("commonness", EntityToAnchors.e2a().getCommonness(mention, a.getConcept()));
 		features.put("link_prob", WATRelatednessComputer.getLp(mention));
 		
-		putConditional(features, "entity2vec_lr_query_entity", EntityToVect.getLrScore(urlEncodedTitle, queryKeywords));
-		putConditional(features, "entity2vec_centroid_query_entity", EntityToVect.getCentroidScore(urlEncodedTitle, queryKeywords));
 		features.put("edit_distance_anchor_segment_sqrt_geometric_0.05", edAnchorsWeightSqrtGeom(mention, anchorAndOccurrencies, 0.05));
 		double expandibilityRight = expandibility(query, a.getPosition(), a.getPosition() + a.getLength(), anchorAndOccurrencies,
 		        true);
@@ -190,8 +187,6 @@ public class AdvancedAnnotationFeaturePack extends FeaturePack<Annotation> {
 			v.add("commonness");
 			v.add("link_prob");
 			v.add("edit_distance_title");
-			v.add("entity2vec_lr_query_entity");
-			v.add("entity2vec_centroid_query_entity");	
 			v.add("edit_distance_anchor_segment_sqrt_geometric_0.05");
 			v.add("expandibility_sum");
 			ftrNames = v.toArray(new String[] {});
