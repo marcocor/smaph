@@ -28,7 +28,7 @@
 				</plugins>
 			</build>
 		</profile>
-		
+
 		<profile>
 			<id>tune</id>
 			<build>
@@ -155,15 +155,15 @@
 			<artifactId>stax-api</artifactId>
 			<version>1.0.1</version>
 		</dependency>
-	<dependency>
-		<groupId>org.glassfish.jersey.containers</groupId>
-	<artifactId>jersey-container-grizzly2-http</artifactId>
-	</dependency>
-	<dependency>
-		<groupId>org.aksw</groupId>
-		<artifactId>gerbil.nif.transfer</artifactId>
-		<version>1.2.0</version>
-	</dependency>
+		<dependency>
+			<groupId>org.glassfish.jersey.containers</groupId>
+			<artifactId>jersey-container-grizzly2-http</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.aksw</groupId>
+			<artifactId>gerbil.nif.transfer</artifactId>
+			<version>1.2.0</version>
+		</dependency>
 	</dependencies>
 	<build>
 		<resources>
