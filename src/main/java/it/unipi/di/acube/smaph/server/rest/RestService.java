@@ -12,6 +12,7 @@ import it.cnr.isti.hpc.erd.Annotation;
 import it.cnr.isti.hpc.erd.WikipediaToFreebase;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -35,13 +36,17 @@ import org.codehaus.jettison.json.*;
 
 @Path("")
 public class RestService {
+	private static final String BASE_WIKIPEDIA_URI = "http://en.wikipedia.org/wiki/";
+	private static final String BASE_DBPEDIA_URI = "http://dbpedia.org/resource/";
 	private static WikipediaApiInterface wikiApi;
 	private static SmaphAnnotator entityFilterAnn, annotationRegressorAnn, collectiveAnn, defaultAnn;
-	private static TurtleNIFDocumentParser parser = new TurtleNIFDocumentParser();
-	private static TurtleNIFDocumentCreator creator = new TurtleNIFDocumentCreator();
+	private static TurtleNIFDocumentParser parser;
+	private static TurtleNIFDocumentCreator creator;
 	private static WikipediaToFreebase wikiToFreeb;
 
-	{
+	public static void initialize() {
+		parser = new TurtleNIFDocumentParser();
+		creator = new TurtleNIFDocumentCreator();
 		wikiApi = new WikipediaApiInterface("wid.cache", "redirect.cache");
 		SmaphConfig.setConfigFile("smaph-config.xml");
 		String bingKey = SmaphConfig.getDefaultBingKey();
@@ -50,8 +55,10 @@ public class RestService {
 			if (bingCache != null)
 				BingInterface.setCache(bingCache);
 			entityFilterAnn = SmaphAnnotatorBuilder.getDefaultBingAnnotatorEF(wikiApi, bingKey, "models/best_ef");
-			annotationRegressorAnn = SmaphAnnotatorBuilder.getDefaultBingAnnotatorIndividualAdvancedAnnotationRegressor(wikiApi, bingKey, "models/best_ar", 0.7);
-			collectiveAnn = SmaphAnnotatorBuilder.getDefaultBingAnnotatorCollectiveLBRanklib(wikiApi, bingKey, "models/best_coll");
+			annotationRegressorAnn = SmaphAnnotatorBuilder.getDefaultBingAnnotatorIndividualAdvancedAnnotationRegressor(wikiApi,
+			        bingKey, "models/best_ar", 0.7);
+			collectiveAnn = SmaphAnnotatorBuilder
+			        .getDefaultBingAnnotatorCollectiveLBRanklib(wikiApi, bingKey, "models/best_coll");
 		} catch (ClassNotFoundException | IOException e) {
 			e.printStackTrace();
 			throw new RuntimeException(e);
@@ -163,7 +170,7 @@ public class RestService {
 		Vector<Marking> markings = new Vector<>();
 		for (ScoredAnnotation aBat : ann.solveSa2W(doc.getText()))
 			try {
-				markings.add(new ScoredNamedEntity(aBat.getPosition(), aBat.getLength(), wikiApi.getTitlebyId(aBat.getConcept()), aBat.getScore()));
+				markings.add(new ScoredNamedEntity(aBat.getPosition(), aBat.getLength(), getDBPediaURI(wikiApi.getTitlebyId(aBat.getConcept())), aBat.getScore()));
 			} catch (IOException e) {
 				throw new RuntimeException(e);
 			}
@@ -185,11 +192,7 @@ public class RestService {
 					JSONObject annJson = new JSONObject();
 					annJson.put("wid", wid);
 					annJson.put("title", title);
-					annJson.put(
-							"url",
-							"http://en.wikipedia.org/wiki/"
-									+ URLEncoder.encode(title, "utf8").replace(
-											"+", "%20"));
+					annJson.put("url", getWikipediaURI(title));
 					annotJson.put(annJson);
 				}
 			}
@@ -199,6 +202,18 @@ public class RestService {
 		}
 
 		return res.toString();
+	}
+
+	public String getWikipediaURI(String title) {
+		try {
+	        return BASE_WIKIPEDIA_URI + URLEncoder.encode(title, "utf8").replace("+", "%20");
+        } catch (UnsupportedEncodingException e) {
+	        throw new RuntimeException(e);
+        }
+	}
+	
+	public static String getDBPediaURI(String title) {
+		return BASE_DBPEDIA_URI + WikipediaApiInterface.normalize(title);
 	}
 
 	public List<Annotation> annotatePure(String query, String textID,
