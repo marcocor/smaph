@@ -1,15 +1,19 @@
 package it.unipi.di.acube.smaph.learn.normalizer;
 
-import it.unipi.di.acube.smaph.SmaphAnnotatorDebugger;
 import it.unipi.di.acube.smaph.learn.ExampleGatherer;
 import it.unipi.di.acube.smaph.learn.featurePacks.FeaturePack;
 
 import java.io.*;
+import java.lang.invoke.MethodHandles;
 import java.util.*;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class ScaleFeatureNormalizer extends FeatureNormalizer {
-	HashMap<String, Double> max = new HashMap<>();
-	HashMap<String, Double> min = new HashMap<>();
+	private final static Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+	protected HashMap<String, Double> max = new HashMap<>();
+	protected HashMap<String, Double> min = new HashMap<>();
 
 	public <E extends Serializable> ScaleFeatureNormalizer(String rangeFile,
 			FeaturePack<E> fp) {
@@ -70,8 +74,7 @@ public class ScaleFeatureNormalizer extends FeatureNormalizer {
 			double rangeMax = Double.parseDouble(tokens[2]);
 			min.put(ftrName, rangeMin);
 			max.put(ftrName, rangeMax);
-			SmaphAnnotatorDebugger.out.printf(
-					"Feature %d range: [%.3f, %.3f]%n", featureId, rangeMin,
+			LOG.debug("Feature {} range: [{}, {}]", featureId, rangeMin,
 					rangeMax);
 		}
 	}

@@ -32,14 +32,6 @@ public class CollectiveLinkBackTest {
 		qi.entityToBoldNS = new HashMap<Tag,String[]>();
 		List<HashSet<Annotation>> possibleBindings = bg.getBindings(query, qi, new HashSet<Tag>(entityToBolds.keySet()), new WikipediaApiInterface(null, null));
 
-		for (HashSet<Annotation> binding : possibleBindings) {
-			for (Annotation ann : binding)
-				System.out.printf(
-						"[%s -> %d ] ",
-						query.substring(ann.getPosition(), ann.getPosition()
-								+ ann.getLength()), ann.getConcept());
-			System.out.println();
-		}
 		assertEquals(24, possibleBindings.size());
 		HashSet<Integer> verified = new HashSet<>();
 

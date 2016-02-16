@@ -28,7 +28,7 @@ import it.unipi.di.acube.batframework.metrics.StrongAnnotationMatch;
 import it.unipi.di.acube.batframework.metrics.StrongMentionAnnotationMatch;
 import it.unipi.di.acube.batframework.metrics.StrongTagMatch;
 import it.unipi.di.acube.batframework.problems.Sa2WSystem;
-import it.unipi.di.acube.batframework.systemPlugins.WATAnnotator;
+import it.unipi.di.acube.batframework.systemPlugins.CachedWATAnnotator;
 import it.unipi.di.acube.batframework.utils.AnnotationException;
 import it.unipi.di.acube.batframework.utils.Pair;
 import it.unipi.di.acube.batframework.utils.ProblemReduction;
@@ -49,6 +49,7 @@ import it.unipi.di.acube.smaph.wikiAnchors.EntityToAnchors;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.lang.invoke.MethodHandles;
 import java.net.URLDecoder;
 import java.util.Collection;
 import java.util.HashMap;
@@ -70,10 +71,11 @@ import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
 
 public class SmaphAnnotator implements Sa2WSystem {
+	private final static Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 	private static final String WIKI_URL_LEADING = "http://en.wikipedia.org/wiki/";
 	private WikipediaApiInterface wikiApi;
 	private BingInterface bingInterface = null;
-	private WATAnnotator snippetAnnotator;
+	private CachedWATAnnotator snippetAnnotator;
 	private EntityFilter entityFilter;
 	private FeatureNormalizer entityFilterNormalizer;
 	private LinkBack linkBack;
@@ -87,8 +89,6 @@ public class SmaphAnnotator implements Sa2WSystem {
 	private String appendName = "";
 	private SnippetAnnotationFilter snippetAnnotationFilter;
 	private boolean tagTitles;
-
-	private static Logger logger = LoggerFactory.getLogger(SmaphAnnotator.class);
 
 	/**
 	 * Constructs a SMAPH annotator.
@@ -123,7 +123,7 @@ public class SmaphAnnotator implements Sa2WSystem {
 			boolean includeSourceNormalSearch,
 			boolean includeSourceWikiSearch, int wikiSearchPages,
 			boolean includeSourceSnippets, int topKAnnotateSnippet, 
-			boolean tagTitles, WATAnnotator snippetAnnotator,
+			boolean tagTitles, CachedWATAnnotator snippetAnnotator,
 			SnippetAnnotationFilter snippetAnnotationFilter,
 			WikipediaApiInterface wikiApi, String bingKey) {
 		this.entityFilter = entityFilter;
@@ -220,7 +220,7 @@ public class SmaphAnnotator implements Sa2WSystem {
 			e.printStackTrace();
 			throw new RuntimeException(e);
 		}
-		SmaphAnnotatorDebugger.out.printf("*** FINISHED PROCESSING QUERY [%s] ***%n", query);
+		LOG.info("*** FINISHED PROCESSING QUERY [{}] ***", query);
 
 		return annotations;
 
@@ -439,12 +439,12 @@ public class SmaphAnnotator implements Sa2WSystem {
 			}
 			if (wid > 0 && !result.containsValue(wid)) {
 				result.put(rank, wid);
-				SmaphAnnotatorDebugger.out.printf(
-						"Found Wikipedia url:%s rank:%d id:%d%n",
+				LOG.debug(
+						"Found Wikipedia url:{} rank:{} id:{}",
 						urls.get(rank), rank, wid);
 			} else
-				SmaphAnnotatorDebugger.out.printf(
-						"Discarding Wikipedia url:%s rank:%d id:%d (double entity or invalid title)%n",
+				LOG.debug(
+						"Discarding Wikipedia url:{} rank:{} id:{} (double entity or invalid title)",
 						urls.get(rank), rank, wid);
 		}
 		return result;
@@ -734,10 +734,9 @@ public class SmaphAnnotator implements Sa2WSystem {
 				if (EFCandidates != null)
 					EFCandidates.add(tag);
 
-				System.out.printf("%d in query [%s] is a %s example.%n",
+				LOG.debug("{} in query [{}] is a {} example.",
 						tag.getConcept(), query,
-						goldStandard.contains(tag) ? "positive"
-								: "negative");
+						goldStandard.contains(tag) ? "positive" : "negative");
 			}
 
 		// Generate examples for linkBack
@@ -779,7 +778,7 @@ public class SmaphAnnotator implements Sa2WSystem {
 						.getRight()));
 				if (ARCandidates != null)
 					ARCandidates.add(ann);
-				System.out.printf("[%s]->%d in query [%s] is a %s example.%n",
+				LOG.info("[{}]->{} in query [{}] is a {} example.",
 						query.substring(ann.getPosition(), ann.getPosition() + ann.getLength()), ann.getConcept(), query,
 						annotationsAndFtrAndPresence.getRight() ? "positive" : "negative");
 
@@ -805,7 +804,7 @@ public class SmaphAnnotator implements Sa2WSystem {
 				AdvancedAnnotationFeaturePack features = new AdvancedAnnotationFeaturePack(a, query, qi, wikiApi);
 				annAndFtrsAndPresence.add(new ImmutableTriple<Annotation, AdvancedAnnotationFeaturePack, Boolean>(a, features, inGold));
 			} else
-				logger.debug("No anchors found for id=" + a.getConcept());
+				LOG.warn("No anchors found for id={}", a.getConcept());
 		}
 
 		return annAndFtrsAndPresence;

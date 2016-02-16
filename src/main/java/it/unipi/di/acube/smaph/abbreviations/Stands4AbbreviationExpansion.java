@@ -1,19 +1,37 @@
 package it.unipi.di.acube.smaph.abbreviations;
 
-import it.unipi.di.acube.smaph.SmaphAnnotatorDebugger;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.lang.invoke.MethodHandles;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.net.URLEncoder;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Scanner;
+import java.util.Vector;
 
-import java.io.*;
-import java.net.*;
-import java.util.*;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathConstants;
+import javax.xml.xpath.XPathExpression;
+import javax.xml.xpath.XPathFactory;
 
-import javax.xml.parsers.*;
-import javax.xml.xpath.*;
-
-import org.codehaus.jettison.json.JSONObject;
-import org.w3c.dom.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.w3c.dom.Document;
+import org.w3c.dom.NodeList;
 
 public class Stands4AbbreviationExpansion implements AbbreviationExpansion {
 	private static final String API_URL="http://www.stands4.com/services/v2/abbr.php";
+	private final static Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 	private static int flushCounter = 0;
 	private String tokenId, uid;
 	private static final int MAX_RETRY = 3;
@@ -45,8 +63,7 @@ public class Stands4AbbreviationExpansion implements AbbreviationExpansion {
 				API_URL, uid, tokenId, URLEncoder.encode(abbrev, "utf8")));
 
 		boolean cached = abbrToExpansion.containsKey(abbrev);
-		SmaphAnnotatorDebugger.out.printf("%s %s%n",
-				cached ? "<cached>" : "Querying", url);
+		LOG.info("{} {}", cached ? "<cached>" : "Querying", url);
 		if (cached) return abbrToExpansion.get(abbrev);
 
 
@@ -62,7 +79,7 @@ public class Stands4AbbreviationExpansion implements AbbreviationExpansion {
 		if (connection.getResponseCode() != 200) {
 			Scanner s = new Scanner(connection.getErrorStream())
 					.useDelimiter("\\A");
-			System.err.printf("Got HTTP error %d. Message is: %s%n",
+			LOG.error("Got HTTP error {}. Message is: {}",
 					connection.getResponseCode(), s.next());
 			s.close();
 			throw new RuntimeException("Got response code:"
@@ -74,7 +91,7 @@ public class Stands4AbbreviationExpansion implements AbbreviationExpansion {
 		try {
 			doc = builder.parse(connection.getInputStream());
 		} catch (IOException e) {
-			System.out.print("Got error while querying: " + url);
+			LOG.error("Got error while querying: {}", url);
 			throw e;
 		}
 
@@ -115,7 +132,7 @@ public class Stands4AbbreviationExpansion implements AbbreviationExpansion {
 		if (resultsCacheFilename != null
 				&& resultsCacheFilename.equals(cacheFilename))
 			return;
-		System.out.println("Loading bing cache...");
+		LOG.info("Loading bing cache...");
 		resultsCacheFilename = cacheFilename;
 		if (new File(resultsCacheFilename).exists()) {
 			ObjectInputStream ois = new ObjectInputStream(new FileInputStream(
@@ -127,16 +144,16 @@ public class Stands4AbbreviationExpansion implements AbbreviationExpansion {
 
 	public static synchronized void flush() throws FileNotFoundException, IOException {
 		if (flushCounter > 0 && resultsCacheFilename != null) {
-			SmaphAnnotatorDebugger.out.print("Flushing STANDS4 cache... ");
+			LOG.info("Flushing STANDS4 cache... ");
 			new File(resultsCacheFilename).createNewFile();
 			ObjectOutputStream oos = new ObjectOutputStream(
 					new FileOutputStream(resultsCacheFilename));
 			oos.writeObject(abbrToExpansion);
 			oos.close();
-			SmaphAnnotatorDebugger.out.println("Flushing STANDS4 cache Done.");
+			LOG.info("Flushing STANDS4 cache Done.");
 		}
 	}
-	
+
 	private String clean(String input){
 		return input.replaceAll("\\W", "").toLowerCase();
 	}

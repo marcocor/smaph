@@ -19,7 +19,6 @@ package it.unipi.di.acube.smaph.learn.models.entityfilters;
 import it.unipi.di.acube.batframework.data.Tag;
 import it.unipi.di.acube.smaph.learn.featurePacks.FeaturePack;
 import it.unipi.di.acube.smaph.learn.models.LibSvmModel;
-import it.unipi.di.acube.smaph.learn.models.linkback.annotationRegressor.LibSvmAnnotationRegressor;
 import it.unipi.di.acube.smaph.learn.normalizer.FeatureNormalizer;
 
 import java.io.FileInputStream;

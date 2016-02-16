@@ -1,21 +1,22 @@
 package it.unipi.di.acube.smaph.main;
 
-import java.io.FileWriter;
-import java.util.HashSet;
-
-import org.codehaus.jettison.json.JSONArray;
-import org.codehaus.jettison.json.JSONObject;
-import org.codehaus.jettison.json.JSONWriter;
-
 import it.unipi.di.acube.batframework.datasetPlugins.GERDAQDataset;
-import it.unipi.di.acube.batframework.datasetPlugins.YahooWebscopeL24Dataset;
-import it.unipi.di.acube.batframework.problems.*;
+import it.unipi.di.acube.batframework.problems.A2WDataset;
 import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
 import it.unipi.di.acube.smaph.SmaphConfig;
 import it.unipi.di.acube.smaph.SmaphUtils;
 import it.unipi.di.acube.smaph.abbreviations.Stands4AbbreviationExpansion;
 
+import java.io.FileWriter;
+import java.lang.invoke.MethodHandles;
+import java.util.HashSet;
+
+import org.codehaus.jettison.json.JSONWriter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class DatasetDump {
+	private final static Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
 	public static void main(String[] args) throws Exception {
 		WikipediaApiInterface wikiApi = new WikipediaApiInterface("wid.cache",
@@ -51,7 +52,7 @@ public class DatasetDump {
 						wr.key(t).array();
 						for (String expansion : ae.expand(t)){
 							wr.value(expansion);
-							System.out.printf("%s -> %s%n", t, expansion);
+							LOG.info("{} -> {}", t, expansion);
 						}
 						wr.endArray();
 					}

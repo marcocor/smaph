@@ -16,6 +16,7 @@ import it.unipi.di.acube.smaph.linkback.bindingGenerator.BindingGenerator;
 import it.unipi.di.acube.smaph.wikiAnchors.EntityToAnchors;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -23,7 +24,11 @@ import java.util.Set;
 import java.util.Vector;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class CollectiveLinkBack implements LinkBack {
+	private final static Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 	private BindingRegressor bindingRegressorModel;
 	private WikipediaApiInterface wikiApi;
 	private BindingGenerator bg;
@@ -45,12 +50,12 @@ public class CollectiveLinkBack implements LinkBack {
 		acceptedEntities = acceptedEntities.stream().filter(e -> EntityToAnchors.e2a().containsId(e.getConcept())).collect(Collectors.toCollection(HashSet::new));
 		
 		// Generate all possible bindings
-		System.err.println("Generating bindings.");
+		LOG.info("Generating bindings.");
 		List<HashSet<Annotation>> bindings = bg.getBindings(query, qi,
 				acceptedEntities, wikiApi);
-		System.err.println(String.format("Generated %d bindings.", bindings.size()));
+		LOG.info("Generated {} bindings.", bindings.size());
 
-		System.err.println("Generating Binding Features.");
+		LOG.info("Generating Binding Features.");
 		for (HashSet<Annotation> binding : bindings) {
 			//Discard bindings that have entities w/o anchors
 			/*boolean bad = false;
@@ -70,7 +75,7 @@ public class CollectiveLinkBack implements LinkBack {
 				debugger.addLinkbackBindingFeatures(query, binding, debugAnnotationFeatures, debugBindingFeatures);
 
 		}
-		System.err.println("Generated Binding Features.");
+		LOG.info("Generated Binding Features.");
 
 		return featurePacks;
 	}

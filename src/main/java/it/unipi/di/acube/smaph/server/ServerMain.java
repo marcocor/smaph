@@ -38,7 +38,7 @@ public class ServerMain {
 		LOG.info("Initializing server.");
 		RestService.initialize();
 		HttpServer server = startServer();
-		LOG.info(String.format("Smaph started with WADL available at " + "%sapplication.wadl%nPress Enter to terminate.", BASE_URI));
+		LOG.info("Smaph started with WADL available at " + "{}application.wadl\nPress Enter to terminate.", BASE_URI);
 		System.in.read();
 		server.shutdown();
 	}

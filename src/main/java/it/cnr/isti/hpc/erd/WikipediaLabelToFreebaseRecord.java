@@ -113,6 +113,7 @@ public class WikipediaLabelToFreebaseRecord {
 		}
 		record.setLabel(label);
 		String wikilabel = scanner.next();
+		scanner.close();
 		wikilabel = wikilabel.substring(1, wikilabel.length() - 1);
 		record.setWikipediaLabel(wikilabel);
 		return record;

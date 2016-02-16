@@ -20,7 +20,7 @@ import it.cnr.isti.hpc.erd.WikipediaToFreebase;
 import it.unipi.di.acube.BingInterface;
 import it.unipi.di.acube.batframework.data.Annotation;
 import it.unipi.di.acube.batframework.data.Tag;
-import it.unipi.di.acube.batframework.systemPlugins.WATAnnotator;
+import it.unipi.di.acube.batframework.systemPlugins.CachedWATAnnotator;
 import it.unipi.di.acube.batframework.utils.FreebaseApi;
 import it.unipi.di.acube.batframework.utils.Pair;
 import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
@@ -39,6 +39,7 @@ import it.unipi.di.acube.smaph.learn.models.linkback.annotationRegressor.LibSvmA
 import it.unipi.di.acube.smaph.learn.normalizer.ZScoreFeatureNormalizer;
 
 import java.io.Serializable;
+import java.lang.invoke.MethodHandles;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -48,8 +49,11 @@ import org.apache.commons.cli.GnuParser;
 import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
 import org.apache.commons.lang3.ArrayUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class TuneModelLibSvm {
+	private final static Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 	private static int THREADS_NUM = Runtime.getRuntime().availableProcessors();
 
 	public enum OptimizaionProfiles {
@@ -96,7 +100,7 @@ public class TuneModelLibSvm {
 		String freebKey = SmaphConfig.getDefaultFreebaseKey();
 		String freebCache = SmaphConfig.getDefaultFreebaseKey();
 		BingInterface.setCache(SmaphConfig.getDefaultBingCache());
-		WATAnnotator.setCache("wikisense.cache");
+		CachedWATAnnotator.setCache("wikisense.cache");
 		WATRelatednessComputer.setCache("relatedness.cache");
 		WikipediaApiInterface wikiApi = new WikipediaApiInterface("wid.cache", "redirect.cache");
 		FreebaseApi freebApi = new FreebaseApi(freebKey, freebCache);
@@ -129,8 +133,8 @@ public class TuneModelLibSvm {
 					ftrSelMethod, ftrRestriction, initialFtrSet, wikiApi);
 			System.gc();
 			for (ModelConfigurationResult res : modelAndStats.first)
-				System.out.println(res.getReadable());
-			System.out.println("Entity Filter - Overall best model:" + modelAndStats.second.getReadable());
+				LOG.info(res.getReadable());
+			LOG.info("Entity Filter - Overall best model:" + modelAndStats.second.getReadable());
 		}
 
 		if (line.hasOption("opt-annotation-regressor")) {
@@ -139,14 +143,14 @@ public class TuneModelLibSvm {
 					ftrRestriction, initialFtrSet, wikiApi);
 			System.gc();
 			for (ModelConfigurationResult res : modelAndStats.first)
-				System.out.println(res.getReadable());
-			System.out.println("Annotation Regressor - Overall best model:" + modelAndStats.second.getReadable());
+				LOG.info(res.getReadable());
+			LOG.info("Annotation Regressor - Overall best model:" + modelAndStats.second.getReadable());
 		}
 
-		System.out.println("Flushing everything...");
+		LOG.info("Flushing everything...");
 		BingInterface.flush();
 		wikiApi.flush();
-		WATAnnotator.flush();
+		CachedWATAnnotator.flush();
 		WATRelatednessComputer.flush();
 	}
 
@@ -201,7 +205,7 @@ public class TuneModelLibSvm {
 
 				bestwPos = bestWeights.getWPos();
 				bestwNeg = bestWeights.getWNeg();
-				System.err.printf("Done broad weighting. Best weight +/-: %f/%f%n", bestwPos, bestwNeg);
+				LOG.info("Done broad weighting. Best weight +/-: {}/{}", bestwPos, bestwNeg);
 			}
 
 			ModelConfigurationResult bestResult = ModelConfigurationResult
@@ -229,7 +233,7 @@ public class TuneModelLibSvm {
 					bestwNeg = bestWeightsRes.getWNeg();
 
 					restrictedFeaturesScoreboard.addAll(scoreboardWeightsTuning);
-					System.err.printf("Done fine weights tuning (iteration %d). Best weigth +/-: %f/%f%n", iteration, bestwPos, bestwNeg);
+					LOG.info("Done fine weights tuning (iteration {}). Best weigth +/-: {}/{}", iteration, bestwPos, bestwNeg);
 				}
 
 				// Fine-tune C and Gamma
@@ -252,7 +256,7 @@ public class TuneModelLibSvm {
 					bestGamma = bestCGammaResult.getGamma();
 
 					restrictedFeaturesScoreboard.addAll(scoreboardGammaCTuning);
-					System.err.printf("Done gamma-C tuning (iteration %d). Best gamma/C: %f/%f%n", iteration, bestGamma, bestC);
+					LOG.info("Done gamma-C tuning (iteration {}). Best gamma/C: {}/{}", iteration, bestGamma, bestC);
 				}
 
 				// Do feature selection
@@ -270,19 +274,19 @@ public class TuneModelLibSvm {
 							.findBest(scoreboardFtrSelection, optProfile,
 									optProfileThreshold).getFeatures();
 					restrictedFeaturesScoreboard.addAll(scoreboardFtrSelection);
-					System.err.printf("Done feature selection (iteration %d).%n", iteration);
+					LOG.info("Done feature selection (iteration {}).", iteration);
 				}
 
 				ModelConfigurationResult newBest = ModelConfigurationResult
 						.findBest(restrictedFeaturesScoreboard, optProfile, optProfileThreshold);
 				if (newBest.equalResult(bestResult, optProfile, optProfileThreshold)) {
-					System.err.printf("Not improving, stopping on iteration %d.%n",
+					LOG.info("Not improving, stopping on iteration {}.",
 							iteration);
 					break;
 				}
 				bestResult = newBest;
 			}
-			System.err.printf("Best result for restricted features iteration: %s%n", bestResult.getReadable());
+			LOG.info("Best result for restricted features iteration: {}", bestResult.getReadable());
 			globalScoreboard.addAll(restrictedFeaturesScoreboard);
 		}
 
@@ -351,7 +355,7 @@ public class TuneModelLibSvm {
 					bestGamma = bestCGammaResult.getGamma();
 					if (!ftrSelMethod.equals("increment"))
 						restrictedFeaturesScoreboard.addAll(scoreboardGammaCTuning);
-					System.err.printf("Done broad gamma-C tuning (iteration %d) best gamma/C: %f/%f%n", iteration, bestGamma, bestC);
+					LOG.error("Done broad gamma-C tuning (iteration {}) best gamma/C: {}/{}", iteration, bestGamma, bestC);
 				}
 
 				// Fine-tune C and Gamma
@@ -373,12 +377,12 @@ public class TuneModelLibSvm {
 						bestC = bestCGammaResult.getC();
 						bestGamma = bestCGammaResult.getGamma();
 
-						System.err.printf(
-								"Done fine gamma-C tuning (outer iteration %d, inner iteration %d) best gamma/C: %f/%f%n",
+						LOG.info(
+								"Done fine gamma-C tuning (outer iteration {}, inner iteration {}) best gamma/C: {}/{}",
 								iteration, i, bestGamma, bestC);
 					} else {
-						System.err.printf(
-								"No advances in inner gamma-C iteration (outer iteration %d, inner iteration %d) best gamma/C: %f/%f%n",
+						LOG.info(
+								"No advances in inner gamma-C iteration (outer iteration {}, inner iteration {}) best gamma/C: {}/{}",
 								iteration, i, bestGamma, bestC);
 						break;
 					}
@@ -403,14 +407,14 @@ public class TuneModelLibSvm {
 							.getFeatures();
 
 					restrictedFeaturesScoreboard.addAll(scoreboardFtrSelection);
-					System.err.printf("Done feature selection (iteration %d).%n", iteration);
+					LOG.info("Done feature selection (iteration {}).", iteration);
 				}
 
 				//Fine-tune threshold
 				{
 					int finalThrSteps = 100;
 					restrictedFeaturesScoreboard.add(new ParameterTesterAR(bestFeatures, trainGatherer, develGatherer, bestGamma, bestC, optProfile, optProfileThreshold, finalThrSteps, wikiApi).call());
-					System.err.printf("Done fine threshold selection (iteration %d).%n", iteration);
+					LOG.info("Done fine threshold selection (iteration {}).", iteration);
 				}
 
 				ModelConfigurationResult newBest = ModelConfigurationResult
@@ -418,13 +422,13 @@ public class TuneModelLibSvm {
 				if (bestResult != null
 						&& newBest.equalResult(bestResult, optProfile,
 								optProfileThreshold)) {
-					System.err.printf("Not improving, stopping on iteration %d.%n", iteration);
+					LOG.info("Not improving, stopping on iteration {}/", iteration);
 					break;
 				}
 				bestResult = newBest;
 			}
 			globalScoreboard.addAll(restrictedFeaturesScoreboard);
-			System.err.printf("Best result for restricted features iteration: %s%n", bestResult.getReadable());
+			LOG.info("Best result for restricted features iteration: {}", bestResult.getReadable());
 		}
 		
 		ModelConfigurationResult globalBest = ModelConfigurationResult.findBest(

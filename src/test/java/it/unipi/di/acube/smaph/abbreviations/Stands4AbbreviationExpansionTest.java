@@ -21,8 +21,6 @@ public class Stands4AbbreviationExpansionTest {
 
 	@Test
 	public void testExpand() throws Exception {
-		for (String s : ae.expand("cern."))
-			System.out.println("["+s+"] l="+s.length());
 		assertEquals(true, ae.expand("dept").contains("Department"));
 	}
 

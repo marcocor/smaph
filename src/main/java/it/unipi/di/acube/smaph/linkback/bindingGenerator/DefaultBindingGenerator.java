@@ -7,13 +7,18 @@ import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
 import it.unipi.di.acube.smaph.QueryInformation;
 import it.unipi.di.acube.smaph.SmaphUtils;
 
+import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.Vector;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class DefaultBindingGenerator implements BindingGenerator {
+	private final static Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 	private static final int MAX_SEGMENTATIONS = 1000;
 	private static final int MAX_SEGMENTATIONS_AFTER_FILTER = 150;//150;
 	private static final int MAX_BINDINGS_PER_SEGMENTATION = 50;//50;
@@ -127,7 +132,7 @@ public class DefaultBindingGenerator implements BindingGenerator {
 			insertedAnnotationSets.add(new HashSet<Annotation>());
 		}
 		
-		System.out.printf("Segmentations: %d Bindings: %d%n",
+		LOG.info("Segmentations: {} Bindings: {}",
 				segmentations.size(), annotationSets.size());
 		return annotationSets;
 	}
@@ -215,7 +220,7 @@ public class DefaultBindingGenerator implements BindingGenerator {
 							foundOverlappingSegment = true;
 							break;
 						}
-					System.out.println(query.substring(fixedSegment.first, fixedSegment.second)+" "+(foundOverlappingSegment?"overlap":"no-overlap"));
+					LOG.info(query.substring(fixedSegment.first, fixedSegment.second)+" "+(foundOverlappingSegment?"overlap":"no-overlap"));
 					if (foundOverlappingSegment)
 						continue;
 					//There are no overlapping fixed segments, delete all segmentations that contain segments conflicting with segment.
@@ -232,7 +237,7 @@ public class DefaultBindingGenerator implements BindingGenerator {
 						allSegmentations.remove(segmentationsToRemove.get(i).intValue());
 				}
 				
-				System.out.println(allSegmentations.size());
+				LOG.info(allSegmentations.size());
 				*/
 				
 				if (allSegmentations.size() > MAX_SEGMENTATIONS_AFTER_FILTER)

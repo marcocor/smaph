@@ -18,11 +18,15 @@ import it.unipi.di.acube.smaph.learn.normalizer.FeatureNormalizer;
 import it.unipi.di.acube.smaph.learn.normalizer.ZScoreFeatureNormalizer;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Vector;
 import java.util.concurrent.Callable;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import libsvm.svm;
 import libsvm.svm_model;
@@ -30,6 +34,7 @@ import libsvm.svm_parameter;
 import libsvm.svm_problem;
 
 public abstract class ParameterTester<E, G> implements Callable<ModelConfigurationResult> {
+	private final static Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 	public abstract ParameterTester<E, G> cloneWithFeatures(int[] ftrs);
 	public abstract ParameterTester<E, G> cloneWithWeights(double wPos, double wNeg);
 	public abstract ParameterTester<E, G> cloneWithGammaC(double gamma, double C);
@@ -99,7 +104,7 @@ public abstract class ParameterTester<E, G> implements Callable<ModelConfigurati
 		String error_msg = svm.svm_check_parameter(trainProblem, param);
 
 		if (error_msg != null) {
-			System.err.print("ERROR: " + error_msg + "\n");
+			LOG.error(error_msg);
 			System.exit(1);
 		}
 
@@ -248,7 +253,7 @@ public abstract class ParameterTester<E, G> implements Callable<ModelConfigurati
 
 			ModelConfigurationResult bestMcr = ModelConfigurationResult.findBest(thrConfigurations, optProfile, optProfileThr);
 
-			System.err.printf("Best threshold: %s.%n", bestMcr.getReadable());
+			LOG.debug("Best threshold: {}.", bestMcr.getReadable());
 
 			return bestMcr;
 		}
@@ -324,7 +329,7 @@ public abstract class ParameterTester<E, G> implements Callable<ModelConfigurati
 					features, wPos, wNeg, gamma, C, -1, metrics,
 					testGatherer.getExamplesCount());
 
-			System.err.printf("Found: %s.%n", mcr.getReadable());
+			LOG.info("Found: {}.", mcr.getReadable());
 
 			return mcr;
 		}

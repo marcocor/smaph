@@ -1,15 +1,19 @@
 package it.unipi.di.acube.smaph;
 
 import java.io.*;
+import java.lang.invoke.MethodHandles;
 import java.net.URLEncoder;
 
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import it.unipi.di.acube.batframework.utils.Pair;
 import it.unimi.dsi.fastutil.objects.Object2DoubleOpenHashMap;
 
 public class WATRelatednessComputer implements Serializable {
+	private final static Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 	private static final long serialVersionUID = 1L;
 	private static WATRelatednessComputer instance = new WATRelatednessComputer();
 	private Object2DoubleOpenHashMap<Pair<Integer,Integer>> cacheJaccard = new Object2DoubleOpenHashMap<>();
@@ -32,14 +36,13 @@ public class WATRelatednessComputer implements Serializable {
 	public static synchronized void flush() throws FileNotFoundException,
 			IOException {
 		if (flushCounter > 0 && resultsCacheFilename != null) {
-			SmaphAnnotatorDebugger.out.print("Flushing relatedness cache... ");
+			LOG.info("Flushing relatedness cache... ");
 			new File(resultsCacheFilename).createNewFile();
 			ObjectOutputStream oos = new ObjectOutputStream(
 					new FileOutputStream(resultsCacheFilename));
 			oos.writeObject(instance);
 			oos.close();
-			SmaphAnnotatorDebugger.out
-					.println("Flushing relatedness cache done.");
+			LOG.info("Flushing relatedness cache done.");
 		}
 	}
 	
@@ -48,7 +51,7 @@ public class WATRelatednessComputer implements Serializable {
 		if (resultsCacheFilename != null
 				&& resultsCacheFilename.equals(cacheFilename))
 			return;
-		System.out.println("Loading relatedness cache...");
+		LOG.info("Loading relatedness cache...");
 		resultsCacheFilename = cacheFilename;
 		if (new File(resultsCacheFilename).exists()) {
 			ObjectInputStream ois = new ObjectInputStream(new FileInputStream(
@@ -60,12 +63,12 @@ public class WATRelatednessComputer implements Serializable {
 
 	private double queryJsonRel(int wid1, int wid2, String urlTemplate) {
 		String url = String.format(urlTemplate, wid1, wid2);
-		System.out.print(url);
+		LOG.info(url);
 		JSONObject obj = SmaphUtils.httpQueryJson(url);
 		try {
 			increaseFlushCounter();
 			double rel = obj.getDouble("value");
-			System.out.println(" -> " + rel);
+			LOG.debug(" -> " + rel);
 			return rel;
 		} catch (Exception e) {
 			throw new RuntimeException(e);
@@ -102,7 +105,7 @@ public class WATRelatednessComputer implements Serializable {
 	private static double queryJsonLp(String anchor) {
 		try {
 			String url = String.format(URL_TEMPLATE_SPOT, URLEncoder.encode(anchor, "utf-8"));
-			System.out.println(url);
+			LOG.debug("Querying {}", url);
 			JSONObject obj = SmaphUtils.httpQueryJson(url);
 			instance.increaseFlushCounter();
 			JSONArray spots = obj.getJSONArray("spots");
@@ -110,7 +113,6 @@ public class WATRelatednessComputer implements Serializable {
 				JSONObject objI = spots.getJSONObject(i);
 				if (objI.getString("spot").equals(anchor)){
 					double lp = objI.getDouble("linkProb");
-					System.out.println("anchor: " + anchor + " lp:"+lp);
 					return lp;
 				}
 			}

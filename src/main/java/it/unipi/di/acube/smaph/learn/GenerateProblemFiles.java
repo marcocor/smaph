@@ -20,7 +20,7 @@ import it.cnr.isti.hpc.erd.WikipediaToFreebase;
 import it.unipi.di.acube.BingInterface;
 import it.unipi.di.acube.batframework.data.Annotation;
 import it.unipi.di.acube.batframework.data.Tag;
-import it.unipi.di.acube.batframework.systemPlugins.WATAnnotator;
+import it.unipi.di.acube.batframework.systemPlugins.CachedWATAnnotator;
 import it.unipi.di.acube.batframework.utils.FreebaseApi;
 import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
 import it.unipi.di.acube.smaph.SmaphAnnotator;
@@ -33,6 +33,7 @@ import it.unipi.di.acube.smaph.learn.normalizer.ZScoreFeatureNormalizer;
 
 import java.io.FileWriter;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -44,8 +45,11 @@ import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.GnuParser;
 import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class GenerateProblemFiles {
+	private final static Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 	private static String bingKey, freebKey, freebCache;
 	private static WikipediaApiInterface wikiApi;
 	private static FreebaseApi freebApi;
@@ -75,7 +79,7 @@ public class GenerateProblemFiles {
 		wikiApi = new WikipediaApiInterface("wid.cache", "redirect.cache");
 		WATRelatednessComputer.setCache("relatedness.cache");
 		freebApi = new FreebaseApi(freebKey, freebCache);
-		WATAnnotator.setCache("wikisense.cache");
+		CachedWATAnnotator.setCache("wikisense.cache");
 		wikiToFreebase = new WikipediaToFreebase("mapdb");
 
 		if (line.hasOption("dump-entity-filter"))
@@ -85,7 +89,7 @@ public class GenerateProblemFiles {
 		if (line.hasOption("dump-annotation-regressor"))
 			generateCollectiveModel(line.getOptionValue("outfile-base", ""));
 
-		WATAnnotator.flush();
+		CachedWATAnnotator.flush();
 		WATRelatednessComputer.flush();
 	}
 
@@ -99,16 +103,16 @@ public class GenerateProblemFiles {
 		GenerateTrainingAndTest.gatherExamplesTrainingAndDevel(bingAnnotator, trainEntityFilterGatherer,
 		        develEntityFilterGatherer, null, null, null, null, null, null, wikiApi, wikiToFreebase, freebApi, opt, -1);
 
-		System.out.println("Building Z-score normalizer over training set...");
+		LOG.info("Building Z-score normalizer over training set...");
 		ZScoreFeatureNormalizer fNormEF = new ZScoreFeatureNormalizer(trainEntityFilterGatherer);
 		fNormEF.dump("train_ef.zscore");
-		System.out.println("Dumping entity filter training problems (scaled)...");
+		LOG.info("Dumping entity filter training problems (scaled)...");
 		trainEntityFilterGatherer.dumpExamplesLibSvm(fileNamePrefix + "train_ef_zscore.dat", fNormEF);
-		System.out.println("Dumping entity filter training problems (original values)...");
+		LOG.info("Dumping entity filter training problems (original values)...");
 		trainEntityFilterGatherer.dumpExamplesLibSvm(fileNamePrefix + "train_ef.dat", new NoFeatureNormalizer());
-		System.out.println("Dumping entity filter development problems (scaled)...");
+		LOG.info("Dumping entity filter development problems (scaled)...");
 		develEntityFilterGatherer.dumpExamplesLibSvm(fileNamePrefix + "devel_ef_zscore.dat", fNormEF);
-		System.out.println("Dumping entity filter development problems (original values)...");
+		LOG.info("Dumping entity filter development problems (original values)...");
 		develEntityFilterGatherer.dumpExamplesLibSvm(fileNamePrefix + "devel_ef.dat", new NoFeatureNormalizer());
 	}
 
@@ -124,16 +128,16 @@ public class GenerateProblemFiles {
 		        trainAdvancedAnnotationGatherer, develAdvancedAnnotationGatherer, null, develInstances, wikiApi, wikiToFreebase,
 		        freebApi, opt, anchorMaxED);
 
-		System.out.println("Building Z-score normalizer over training set...");
+		LOG.info("Building Z-score normalizer over training set...");
 		ZScoreFeatureNormalizer fNormEF = new ZScoreFeatureNormalizer(trainAdvancedAnnotationGatherer);
 		fNormEF.dump("train_ar.zscore");
-		System.out.println("Dumping annotation regressor training problems (scaled)...");
+		LOG.info("Dumping annotation regressor training problems (scaled)...");
 		trainAdvancedAnnotationGatherer.dumpExamplesLibSvm(fileNamePrefix + "train_ar_zscore.dat", fNormEF);
-		System.out.println("Dumping annotation regressor training problems (original values)...");
+		LOG.info("Dumping annotation regressor training problems (original values)...");
 		trainAdvancedAnnotationGatherer.dumpExamplesLibSvm(fileNamePrefix + "train_ar.dat", new NoFeatureNormalizer());
-		System.out.println("Dumping annotation regressor development problems (scaled)...");
+		LOG.info("Dumping annotation regressor development problems (scaled)...");
 		develAdvancedAnnotationGatherer.dumpExamplesLibSvm(fileNamePrefix + "devel_ar_zscore.dat", fNormEF);
-		System.out.println("Dumping annotation regressor development problems (original values)...");
+		LOG.info("Dumping annotation regressor development problems (original values)...");
 		develAdvancedAnnotationGatherer.dumpExamplesLibSvm(fileNamePrefix + "devel_ar.dat", new NoFeatureNormalizer());
 	}
 
@@ -143,23 +147,23 @@ public class GenerateProblemFiles {
 
 		SmaphAnnotator bingAnnotator = SmaphAnnotatorBuilder.getDefaultBingAnnotatorGatherer(wikiApi, bingKey, useS2, useS3,
 		        useS6);
-		WATAnnotator.setCache("wikisense.cache");
+		CachedWATAnnotator.setCache("wikisense.cache");
 
 		ExampleGatherer<HashSet<Annotation>, HashSet<Annotation>> trainCollectiveGatherer = new ExampleGatherer<HashSet<Annotation>, HashSet<Annotation>>();
 		ExampleGatherer<HashSet<Annotation>, HashSet<Annotation>> develCollectiveGatherer = new ExampleGatherer<HashSet<Annotation>, HashSet<Annotation>>();
 		GenerateTrainingAndTest.gatherExamplesTrainingAndDevel(bingAnnotator, null, null, trainCollectiveGatherer,
 		        develCollectiveGatherer, null, null, null, null, wikiApi, wikiToFreebase, freebApi, opt, -1);
 
-		System.out.println("Building Z-score normalizer over training set...");
+		LOG.info("Building Z-score normalizer over training set...");
 		ZScoreFeatureNormalizer fNormEF = new ZScoreFeatureNormalizer(trainCollectiveGatherer);
 		fNormEF.dump("train_ar.zscore");
-		System.out.println("Dumping annotation regressor training problems (scaled)...");
+		LOG.info("Dumping annotation regressor training problems (scaled)...");
 		trainCollectiveGatherer.dumpExamplesRankLib(fileNamePrefix + "train_coll_zscore.dat", fNormEF);
-		System.out.println("Dumping annotation regressor training problems (original values)...");
+		LOG.info("Dumping annotation regressor training problems (original values)...");
 		trainCollectiveGatherer.dumpExamplesRankLib(fileNamePrefix + "train_coll.dat", new NoFeatureNormalizer());
-		System.out.println("Dumping annotation regressor development problems (scaled)...");
+		LOG.info("Dumping annotation regressor development problems (scaled)...");
 		develCollectiveGatherer.dumpExamplesRankLib(fileNamePrefix + "devel_coll_zscore.dat", fNormEF);
-		System.out.println("Dumping annotation regressor development problems (original values)...");
+		LOG.info("Dumping annotation regressor development problems (original values)...");
 		develCollectiveGatherer.dumpExamplesRankLib(fileNamePrefix + "devel_coll.dat", new NoFeatureNormalizer());
 	}
 

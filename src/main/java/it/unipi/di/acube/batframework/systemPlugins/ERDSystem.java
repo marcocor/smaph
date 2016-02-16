@@ -16,25 +16,26 @@
 
 package it.unipi.di.acube.batframework.systemPlugins;
 
+import it.unipi.di.acube.batframework.data.Tag;
+import it.unipi.di.acube.batframework.problems.C2WSystem;
+import it.unipi.di.acube.batframework.utils.AnnotationException;
+import it.unipi.di.acube.batframework.utils.FreebaseApi;
+import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
+
 import java.io.BufferedReader;
-import java.io.DataOutputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.lang.invoke.MethodHandles;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.net.URLEncoder;
 import java.util.Calendar;
 import java.util.HashSet;
 
 import org.apache.http.entity.mime.HttpMultipartMode;
 import org.apache.http.entity.mime.MultipartEntity;
 import org.apache.http.entity.mime.content.StringBody;
-
-import it.unipi.di.acube.batframework.data.Tag;
-import it.unipi.di.acube.batframework.problems.C2WSystem;
-import it.unipi.di.acube.batframework.utils.AnnotationException;
-import it.unipi.di.acube.batframework.utils.FreebaseApi;
-import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * An interface to a generic ERD System, as defined in <a
@@ -45,6 +46,7 @@ import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
  * 
  */
 public class ERDSystem implements C2WSystem {
+	private final static Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 	private String url;
 	private String name;
 	private String run;
@@ -118,7 +120,7 @@ public class ERDSystem implements C2WSystem {
 						connection.getErrorStream()));
 				String line = null;
 				while ((line = br.readLine()) != null)
-					System.err.println(line);
+					LOG.info(line);
 				throw new RuntimeException();
 			}
 
@@ -130,7 +132,7 @@ public class ERDSystem implements C2WSystem {
 				String title = freebApi.midToTitle(mid);
 				int wid;
 				if (title == null || (wid = wikiApi.getIdByTitle(title)) == -1)
-					System.err.println("Discarding mid=" + mid);
+					LOG.info("Discarding mid=" + mid);
 				else
 					res.add(new Tag(wid));
 			}

@@ -10,7 +10,6 @@ import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
 import it.unipi.di.acube.smaph.learn.featurePacks.EntityFeaturePack;
 
 import java.io.IOException;
-import java.io.PrintStream;
 import java.net.URLEncoder;
 import java.util.Collections;
 import java.util.Comparator;
@@ -28,7 +27,6 @@ import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 
 public class SmaphAnnotatorDebugger {
-	public static final PrintStream out = System.out;
 	public HashMap<String, List<Triple<String, Integer, HashSet<String>>>> queryToSourceEntityBolds = new HashMap<>();
 	private List<String> processedQueries = new Vector<>();
 	private HashMap<String, JSONObject> bingResponsesNS = new HashMap<String, JSONObject>();

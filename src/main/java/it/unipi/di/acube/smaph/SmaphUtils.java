@@ -18,13 +18,16 @@ package it.unipi.di.acube.smaph;
 
 import it.unipi.di.acube.batframework.data.ScoredAnnotation;
 import it.unipi.di.acube.batframework.data.Tag;
+import it.unipi.di.acube.batframework.problems.A2WDataset;
 import it.unipi.di.acube.batframework.utils.Pair;
 import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.Serializable;
+import java.lang.invoke.MethodHandles;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
@@ -43,15 +46,23 @@ import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
+import org.aksw.gerbil.io.nif.NIFWriter;
+import org.aksw.gerbil.io.nif.impl.TurtleNIFWriter;
+import org.aksw.gerbil.transfer.nif.data.DocumentImpl;
+import org.aksw.gerbil.transfer.nif.data.NamedEntity;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutableTriple;
 import org.apache.commons.lang3.tuple.Triple;
 import org.codehaus.jettison.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.tartarus.snowball.ext.EnglishStemmer;
 
 public class SmaphUtils {
+	private final static Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+	public static final String BASE_DBPEDIA_URI = "http://dbpedia.org/resource/";
 	public static final String WIKITITLE_ENDPAR_REGEX = "\\s*\\([^\\)]*\\)\\s*$";
 
 	/**
@@ -707,7 +718,7 @@ public class SmaphUtils {
 			if (conn.getResponseCode() != 200) {
 				Scanner s = new Scanner(conn.getErrorStream())
 				.useDelimiter("\\A");
-				System.err.printf("Got HTTP error %d. Message is: %s%n",
+				LOG.error("Got HTTP error {}. Message is: {}",
 						conn.getResponseCode(), s.next());
 				s.close();
 			}
@@ -790,5 +801,32 @@ public class SmaphUtils {
 		List<Tag> chosenCandidates = new Vector<Tag>();
 		populateBindingsRec(chosenCandidates, candidates, bindings, maxBindings);
 		return bindings;
+	}
+	
+
+	public static String getDBPediaURI(String title) {
+		return BASE_DBPEDIA_URI + WikipediaApiInterface.normalize(title);
+	}
+
+	public static void exportToNif(A2WDataset ds, String baseUri, WikipediaApiInterface wikiApi, OutputStream outputStream) {
+		List<org.aksw.gerbil.transfer.nif.Document> documents = new Vector<>();
+
+		for (int i = 0; i < ds.getSize(); i++) {
+			String text = ds.getTextInstanceList().get(i);
+			org.aksw.gerbil.transfer.nif.Document d = new DocumentImpl(text, baseUri + "/doc" + i);
+
+			for (it.unipi.di.acube.batframework.data.Annotation a : ds.getA2WGoldStandardList().get(i)) {
+				String title;
+				try {
+					title = wikiApi.getTitlebyId(a.getConcept());
+				} catch (IOException e) {
+					throw new RuntimeException(e);
+				}
+				d.addMarking(new NamedEntity(a.getPosition(), a.getLength(), getDBPediaURI(title)));
+			}
+			documents.add(d);
+		}
+		NIFWriter writer = new TurtleNIFWriter();
+		writer.writeNIF(documents, outputStream);
 	}
 }

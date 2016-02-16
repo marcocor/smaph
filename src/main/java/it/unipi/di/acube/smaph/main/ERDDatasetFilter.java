@@ -19,15 +19,19 @@ package it.unipi.di.acube.smaph.main;
 import it.unipi.di.acube.batframework.data.*;
 import it.unipi.di.acube.batframework.problems.A2WDataset;
 import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
-import it.unipi.di.acube.smaph.SmaphAnnotatorDebugger;
 import it.cnr.isti.hpc.erd.WikipediaToFreebase;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Vector;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class ERDDatasetFilter implements A2WDataset {
+	private final static Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 	private List<HashSet<Tag>> ERDTopics;
 	private A2WDataset ds;
 	private List<HashSet<Mention>> ERDMentions;
@@ -62,17 +66,15 @@ public class ERDDatasetFilter implements A2WDataset {
 			for (Annotation ann : anns) {
 				String title = wikiApi.getTitlebyId(ann.getConcept());
 				if (!EntityIsNE(wikiApi, ann.getConcept())) {
-					SmaphAnnotatorDebugger.out.printf("Discarding title=%s%n", title);
+					LOG.info("Discarding title={}", title);
 					continue;
 				}
-				SmaphAnnotatorDebugger.out.printf("Including title=%s%n", title);
+				LOG.info("Including title={}", title);
 				filteredAnns.add(ann);
 				filteredMentions.add(new Mention(ann.getPosition(), ann
 						.getLength()));
 			}
-
 		}
-
 	}
 
 	private void FilterERDTopics(List<HashSet<Tag>> c2wGoldStandardList, WikipediaApiInterface wikiApi)			throws IOException {
@@ -83,13 +85,12 @@ public class ERDDatasetFilter implements A2WDataset {
 			for (Tag t : tags) {
 				String title = wikiApi.getTitlebyId(t.getConcept());
 				if (!EntityIsNE(wikiApi, t.getConcept())) {
-					SmaphAnnotatorDebugger.out.printf("Discarding title=%s%n", title);
+					LOG.info("Discarding title={}", title);
 					continue;
 				}
-				SmaphAnnotatorDebugger.out.printf("Including title=%s%n", title);
+				LOG.info("Including title={}", title);
 				erdTags.add(new Tag(t.getConcept()));
 			}
-
 		}
 	}
 

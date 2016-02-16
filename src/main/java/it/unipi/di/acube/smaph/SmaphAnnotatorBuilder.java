@@ -1,6 +1,6 @@
 package it.unipi.di.acube.smaph;
 
-import it.unipi.di.acube.batframework.systemPlugins.WATAnnotator;
+import it.unipi.di.acube.batframework.systemPlugins.CachedWATAnnotator;
 import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
 import it.unipi.di.acube.smaph.learn.featurePacks.AdvancedAnnotationFeaturePack;
 import it.unipi.di.acube.smaph.learn.featurePacks.BindingFeaturePack;
@@ -28,8 +28,7 @@ public class SmaphAnnotatorBuilder {
 	        EntityFilter entityFilter, FeatureNormalizer efNorm, LinkBack lb, boolean s2, boolean s3, boolean s6)
 	        throws FileNotFoundException, ClassNotFoundException, IOException {
 
-		WATAnnotator watDefault = new WATAnnotator("wikisense.mkapp.it", 80, "base", "COMMONNESS", "mw", "0.2", "0.0", false,
-		        false, false);
+		CachedWATAnnotator watDefault = new CachedWATAnnotator("wikisense.mkapp.it", 80, "base", "COMMONNESS", "mw", "0.2", "0.0");
 		return new SmaphAnnotator(entityFilter, efNorm, lb, s2, s3, 10, s6, 25, false, watDefault, new FrequencyAnnotationFilter(
 		        0.03), wikiApi, bingKey);
 	}

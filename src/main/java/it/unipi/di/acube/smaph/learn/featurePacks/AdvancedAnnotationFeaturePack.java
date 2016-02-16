@@ -10,7 +10,6 @@ import it.unipi.di.acube.smaph.WATRelatednessComputer;
 import it.unipi.di.acube.smaph.wikiAnchors.EntityToAnchors;
 
 import java.io.IOException;
-import java.net.URLEncoder;
 import java.util.*;
 
 /**
@@ -41,15 +40,12 @@ public class AdvancedAnnotationFeaturePack extends FeaturePack<Annotation> {
 		if (qi.entityToBoldsSA.containsKey(entity))
 			bolds = qi.entityToBoldsSA.get(entity);
 
-		String title, urlEncodedTitle;
+		String title;
 		try {
 			title = wikiApi.getTitlebyId(a.getConcept());
-			urlEncodedTitle = URLEncoder.encode(title.replace(" ", "_"), "utf-8");
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
-		
-		List<String> queryKeywords = SmaphUtils.tokenize(query.replaceAll("[^a-zA-Z0-9]", " ").toLowerCase());
 		
 		HashMap<String, Double> features = new HashMap<String, Double>(entityFeatures);
 		features.put("edit_distance_anchor_segment_sqrt", edAnchorsWeightSqrt(mention, anchorAndOccurrencies));
