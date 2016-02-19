@@ -21,7 +21,7 @@ import it.unimi.dsi.logging.ProgressLogger;
 import it.unipi.di.acube.BingInterface;
 import it.unipi.di.acube.batframework.data.Annotation;
 import it.unipi.di.acube.batframework.data.Tag;
-import it.unipi.di.acube.batframework.datasetPlugins.GERDAQDataset;
+import it.unipi.di.acube.batframework.datasetPlugins.DatasetBuilder;
 import it.unipi.di.acube.batframework.datasetPlugins.YahooWebscopeL24Dataset;
 import it.unipi.di.acube.batframework.problems.A2WDataset;
 import it.unipi.di.acube.batframework.utils.FreebaseApi;
@@ -41,8 +41,9 @@ import org.slf4j.LoggerFactory;
 
 public class GenerateTrainingAndTest {
 	private static Logger logger = LoggerFactory.getLogger(GenerateTrainingAndTest.class);
+	private static final ClassLoader classLoader = GenerateTrainingAndTest.class.getClassLoader();
 
-	public enum OptDataset {ERD_CHALLENGE, SMAPH_DATASET, SMAPH_DATASET_NE}
+	public enum OptDataset {ERD_CHALLENGE, SMAPH_DATASET}
 	public static void gatherExamples(SmaphAnnotator bingAnnotator,
 			A2WDataset ds, ExampleGatherer<Tag, HashSet<Tag>> entityFilterGatherer, ExampleGatherer<HashSet<Annotation>, HashSet<Annotation>> linkBackCollectiveGatherer, ExampleGatherer<Annotation, HashSet<Annotation>> advancedIndividualAnnotationGatherer,
 			WikipediaToFreebase wikiToFreeb, boolean keepNEOnly, double anchorMaxED) throws Exception {
@@ -98,7 +99,7 @@ public class GenerateTrainingAndTest {
 			List<Pair<FeaturePack<E>, Boolean>> eFVectorsToPresence) {
 		List<Pair<FeaturePack<E>, Double>> res = new Vector<>();
 		for (Pair<FeaturePack<E>, Boolean> p : eFVectorsToPresence)
-			res.add(new Pair<FeaturePack<E>, Double>(p.first, p.second? 1.0
+			res.add(new Pair<FeaturePack<E>, Double>(p.first, p.second ? 1.0
 					: -1.0));
 		return res;
 	}
@@ -119,52 +120,33 @@ public class GenerateTrainingAndTest {
 			if (opt == OptDataset.ERD_CHALLENGE) {
 
 				boolean keepNEOnly = true;
-				A2WDataset smaphTrainA = new ERDDatasetFilter(new GERDAQDataset(
-						"datasets/gerdaq/gerdaq_trainingA.xml", wikiApi), wikiApi);
+				A2WDataset smaphTrainA = new ERDDatasetFilter(DatasetBuilder.getGerdaqTrainA(), wikiApi);
 				gatherExamples(bingAnnotator, smaphTrainA,
 						trainEntityFilterGatherer, trainLinkBackCollectiveGatherer,
 						trainIndividualAdvancedAnnotationGatherer, wikiToFreebase, keepNEOnly, anchorMaxED);
 
-				A2WDataset smaphTrainB = new ERDDatasetFilter(new GERDAQDataset(
-						"datasets/gerdaq/gerdaq_trainingB.xml", wikiApi), wikiApi);
+				A2WDataset smaphTrainB = new ERDDatasetFilter(DatasetBuilder.getGerdaqTrainB(), wikiApi);
 				gatherExamples(bingAnnotator, smaphTrainB,
 						trainEntityFilterGatherer, trainLinkBackCollectiveGatherer,
 						trainIndividualAdvancedAnnotationGatherer, wikiToFreebase, keepNEOnly, anchorMaxED);
 
-				A2WDataset smaphTest = new ERDDatasetFilter(new GERDAQDataset(
-						"datasets/gerdaq/gerdaq_test.xml", wikiApi), wikiApi);
+				A2WDataset smaphTest = new ERDDatasetFilter(DatasetBuilder.getGerdaqTest(), wikiApi);
 				gatherExamples(bingAnnotator, smaphTest,
 						trainEntityFilterGatherer, trainLinkBackCollectiveGatherer,
 						trainIndividualAdvancedAnnotationGatherer, wikiToFreebase, keepNEOnly, anchorMaxED);
 
-				A2WDataset smaphDevel = new ERDDatasetFilter(new GERDAQDataset(
-						"datasets/gerdaq/gerdaq_devel.xml", wikiApi), wikiApi);
+				A2WDataset smaphDevel = new ERDDatasetFilter(DatasetBuilder.getGerdaqDevel(), wikiApi);
 				gatherExamples(bingAnnotator, smaphDevel,
 						trainEntityFilterGatherer, trainLinkBackCollectiveGatherer,
 						trainIndividualAdvancedAnnotationGatherer, wikiToFreebase, keepNEOnly, anchorMaxED);
 
 				A2WDataset yahoo = new ERDDatasetFilter(
 						new YahooWebscopeL24Dataset(
-								"datasets/yahoo_webscope_L24/ydata-search-query-log-to-entities-v1_0.xml"),
+								classLoader.getResource("datasets/yahoo_webscope_L24/ydata-search-query-log-to-entities-v1_0.xml").getFile()),
 								wikiApi);
 				gatherExamples(bingAnnotator, yahoo, trainEntityFilterGatherer, trainLinkBackCollectiveGatherer,
 						trainIndividualAdvancedAnnotationGatherer, wikiToFreebase, keepNEOnly, anchorMaxED);
 
-				/*A2WDataset single = new ERDDatasetFilter(new SMAPHDataset(
-						"datasets/smaph/single_test.xml", wikiApi), wikiApi,
-						wikiToFreebase);
-				gatherExamples(bingAnnotator, single,
-						trainEntityFilterGatherer, trainLinkBackGatherer,
-						trainAnnotationGatherer, wikiToFreebase, ar, annFn);*/
-
-				/*
-				 * A2WDataset erd = new ERDDatasetFilter(new ERD2014Dataset(
-				 * "datasets/erd2014/Trec_beta.query.txt",
-				 * "datasets/erd2014/Trec_beta.annotation.txt", freebApi,
-				 * wikiApi), wikiApi, wikiToFreebase);
-				 * gatherExamples(bingAnnotator, erd, trainEntityFilterGatherer,
-				 * trainLinkBackGatherer, wikiToFreebase);
-				 */
 				if (trainInstances != null){
 					trainInstances.addAll(smaphTrainA.getTextInstanceList());
 					trainInstances.addAll(smaphTrainB.getTextInstanceList());
@@ -175,51 +157,16 @@ public class GenerateTrainingAndTest {
 
 			} else if (opt == OptDataset.SMAPH_DATASET) {
 				boolean keepNEOnly = false;
-				A2WDataset smaphTrainA = new GERDAQDataset(
-						"datasets/gerdaq/gerdaq_trainingA.xml", wikiApi);
+				A2WDataset smaphTrainA = DatasetBuilder.getGerdaqTrainA();
 				gatherExamples(bingAnnotator, smaphTrainA,
 						trainEntityFilterGatherer, trainLinkBackCollectiveGatherer,
 						trainIndividualAdvancedAnnotationGatherer, wikiToFreebase, keepNEOnly, anchorMaxED);
 
-				A2WDataset smaphTrainB = new GERDAQDataset(
-						"datasets/gerdaq/gerdaq_trainingB.xml", wikiApi);
+				A2WDataset smaphTrainB = DatasetBuilder.getGerdaqTrainB();
 				gatherExamples(bingAnnotator, smaphTrainB,
 						trainEntityFilterGatherer, trainLinkBackCollectiveGatherer,
 						trainIndividualAdvancedAnnotationGatherer, wikiToFreebase, keepNEOnly, anchorMaxED);
 
-				/*A2WDataset smaphDevel = new GERDAQDataset(
-						"datasets/gerdaq/gerdaq_devel.xml", wikiApi);
-				gatherExamples(bingAnnotator, smaphDevel,
-						trainEntityFilterGatherer, null, trainLinkBackGatherer,
-						trainAnnotationGatherer,  wikiToFreebase, ar, annFn, keepNEOnly);*/
-
-				/*				A2WDataset yahoo = new YahooWebscopeL24Dataset(
-						"datasets/yahoo_webscope_L24/ydata-search-query-log-to-entities-v1_0.xml");
-				gatherExamples(bingAnnotator, yahoo, trainEntityFilterGatherer,
-						trainLinkBackGatherer, wikiToFreebase);*/
-
-				/*A2WDataset smaphSingle = new GERDAQDataset(
-						"datasets/gerdaq/single_test.xml", wikiApi);
-				gatherExamples(bingAnnotator, smaphSingle,
-						trainEntityFilterGatherer, trainLinkBackCollectiveGatherer,
-						trainIndividualAdvancedAnnotationGatherer, wikiToFreebase, keepNEOnly, anchorMaxED);*/
-				if (trainInstances != null){
-					trainInstances.addAll(smaphTrainA.getTextInstanceList());
-					trainInstances.addAll(smaphTrainB.getTextInstanceList());
-				}
-			} else if (opt == OptDataset.SMAPH_DATASET_NE) {
-				boolean keepNEOnly = true;
-				A2WDataset smaphTrainA = new ERDDatasetFilter(new GERDAQDataset(
-						"datasets/gerdaq/gerdaq_trainingA.xml", wikiApi), wikiApi);
-				gatherExamples(bingAnnotator, smaphTrainA,
-						trainEntityFilterGatherer, trainLinkBackCollectiveGatherer,
-						trainIndividualAdvancedAnnotationGatherer, wikiToFreebase, keepNEOnly, anchorMaxED);
-
-				A2WDataset smaphTrainB = new ERDDatasetFilter(new GERDAQDataset(
-						"datasets/gerdaq/gerdaq_trainingB.xml", wikiApi), wikiApi);
-				gatherExamples(bingAnnotator, smaphTrainB,
-						trainEntityFilterGatherer, trainLinkBackCollectiveGatherer,
-						trainIndividualAdvancedAnnotationGatherer, wikiToFreebase, keepNEOnly, anchorMaxED);
 				if (trainInstances != null){
 					trainInstances.addAll(smaphTrainA.getTextInstanceList());
 					trainInstances.addAll(smaphTrainB.getTextInstanceList());
@@ -229,8 +176,7 @@ public class GenerateTrainingAndTest {
 		if (develEntityFilterGatherer != null || develLinkBackCollectiveGatherer != null|| develIndividualAdvancedAnnotationGatherer != null) {
 			if (opt == OptDataset.ERD_CHALLENGE) {
 				boolean keepNEOnly = true;
-				A2WDataset smaphDevel = new ERDDatasetFilter(new GERDAQDataset(
-						"datasets/gerdaq/gerdaq_devel.xml", wikiApi), wikiApi);
+				A2WDataset smaphDevel = new ERDDatasetFilter(DatasetBuilder.getGerdaqDevel(), wikiApi);
 				gatherExamples(bingAnnotator, smaphDevel,
 						develEntityFilterGatherer,
 						develLinkBackCollectiveGatherer,
@@ -242,30 +188,7 @@ public class GenerateTrainingAndTest {
 			}
 			else if (opt == OptDataset.SMAPH_DATASET){
 				boolean keepNEOnly = false;
-				/*A2WDataset smaphTest = new SMAPHDataset(
-						"datasets/gerdaq/gerdaq_test.xml", wikiApi);
-				gatherExamples(bingAnnotator, smaphTest,
-						develEntityFilterGatherer, develEntityRegressorGatherer, develLinkBackGatherer,develAnnotationGatherer,
-						wikiToFreebase, ar, annFn, keepNEOnly);*/
-
-				A2WDataset smaphDevel = new GERDAQDataset(
-						"datasets/gerdaq/gerdaq_devel.xml", wikiApi);
-				gatherExamples(bingAnnotator, smaphDevel,
-						develEntityFilterGatherer, develLinkBackCollectiveGatherer,
-						develIndividualAdvancedAnnotationGatherer,  wikiToFreebase, keepNEOnly, anchorMaxED);
-				/*A2WDataset smaphSingle = new GERDAQDataset(
-						"datasets/gerdaq/single_test.xml", wikiApi);
-				gatherExamples(bingAnnotator, smaphSingle,
-						develEntityFilterGatherer, develLinkBackCollectiveGatherer,
-						develIndividualAdvancedAnnotationGatherer, wikiToFreebase, keepNEOnly, anchorMaxED);*/
-				if (develInstances != null){
-					develInstances.addAll(smaphDevel.getTextInstanceList());
-				}
-			}
-			else if (opt == OptDataset.SMAPH_DATASET_NE){
-				boolean keepNEOnly = true;
-				A2WDataset smaphDevel = new ERDDatasetFilter(new GERDAQDataset(
-						"datasets/gerdaq/gerdaq_devel.xml", wikiApi), wikiApi);
+				A2WDataset smaphDevel = DatasetBuilder.getGerdaqDevel();
 				gatherExamples(bingAnnotator, smaphDevel,
 						develEntityFilterGatherer, develLinkBackCollectiveGatherer,
 						develIndividualAdvancedAnnotationGatherer,  wikiToFreebase, keepNEOnly, anchorMaxED);
@@ -273,11 +196,9 @@ public class GenerateTrainingAndTest {
 					develInstances.addAll(smaphDevel.getTextInstanceList());
 				}
 			}
-
 		}
 
 		BingInterface.flush();
 		wikiApi.flush();
-
 	}
 }
