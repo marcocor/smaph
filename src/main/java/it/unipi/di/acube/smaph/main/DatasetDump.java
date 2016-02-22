@@ -1,8 +1,7 @@
 package it.unipi.di.acube.smaph.main;
 
-import it.unipi.di.acube.batframework.datasetPlugins.GERDAQDataset;
+import it.unipi.di.acube.batframework.datasetPlugins.DatasetBuilder;
 import it.unipi.di.acube.batframework.problems.A2WDataset;
-import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
 import it.unipi.di.acube.smaph.SmaphConfig;
 import it.unipi.di.acube.smaph.SmaphUtils;
 import it.unipi.di.acube.smaph.abbreviations.Stands4AbbreviationExpansion;
@@ -19,9 +18,6 @@ public class DatasetDump {
 	private final static Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
 	public static void main(String[] args) throws Exception {
-		WikipediaApiInterface wikiApi = new WikipediaApiInterface("wid.cache",
-				"redirect.cache");
-		
     	SmaphConfig.setConfigFile("smaph-config.xml");
     	String tokenId = SmaphConfig.getDefaultStands4TokenId();
     	String uid = SmaphConfig.getDefaultStands4UserId();
@@ -31,14 +27,10 @@ public class DatasetDump {
 		Stands4AbbreviationExpansion.setCache(cache);
 
 		{
-			A2WDataset ds1 = new GERDAQDataset(
-					"datasets/gerdaq/gerdaq_trainingA.xml", wikiApi);
-			A2WDataset ds2 = new GERDAQDataset(
-					"datasets/gerdaq/gerdaq_trainingB.xml", wikiApi);
-			A2WDataset ds3 = new GERDAQDataset(
-					"datasets/gerdaq/gerdaq_test.xml", wikiApi);
-			A2WDataset ds4 = new GERDAQDataset(
-					"datasets/gerdaq/gerdaq_devel.xml", wikiApi);
+			A2WDataset ds1 = DatasetBuilder.getGerdaqTrainA();
+			A2WDataset ds2 = DatasetBuilder.getGerdaqTrainB();
+			A2WDataset ds3 = DatasetBuilder.getGerdaqTest();
+			A2WDataset ds4 = DatasetBuilder.getGerdaqDevel();
 			
 			HashSet<String> insertedKeys = new HashSet<>();
 			FileWriter fw = new FileWriter("abbrev.json");
