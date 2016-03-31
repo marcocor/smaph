@@ -13,6 +13,7 @@ import it.cnr.isti.hpc.erd.WikipediaToFreebase;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.lang.invoke.MethodHandles;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -29,13 +30,16 @@ import org.aksw.gerbil.transfer.nif.TurtleNIFDocumentCreator;
 import org.aksw.gerbil.transfer.nif.TurtleNIFDocumentParser;
 import org.aksw.gerbil.transfer.nif.data.ScoredNamedEntity;
 import org.codehaus.jettison.json.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author Marco Cornolti
  */
 
-@Path("")
+@Path("/")
 public class RestService {
+	private final static Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 	private static final String BASE_WIKIPEDIA_URI = "http://en.wikipedia.org/wiki/";
 	private static final String BASE_DBPEDIA_URI = "http://dbpedia.org/resource/";
 	private static WikipediaApiInterface wikiApi;
@@ -101,8 +105,8 @@ public class RestService {
 
 		try {
 			return debugger.toJson(wikiApi).toString();
-		} catch (JSONException | IOException e) {
-			e.printStackTrace();
+		} catch (Exception e) {
+			LOG.error("Error debugging query: "+ text, e);
 			throw new RuntimeException(e);
 		}
 	}

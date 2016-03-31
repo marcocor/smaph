@@ -1,6 +1,7 @@
 package it.unipi.di.acube.smaph.server;
 
 import org.glassfish.grizzly.http.server.HttpServer;
+import org.glassfish.grizzly.http.server.StaticHttpHandler;
 import org.glassfish.jersey.grizzly2.httpserver.GrizzlyHttpServerFactory;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.slf4j.Logger;
@@ -13,7 +14,7 @@ import java.lang.invoke.MethodHandles;
 import java.net.URI;
 
 public class ServerMain {
-	public static final String BASE_URI = "http://localhost:8080/smaph/";
+	public static final String BASE_URI = "http://localhost:8080/rest";
 	private final static Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
 	/**
@@ -24,8 +25,11 @@ public class ServerMain {
 	 */
 	public static HttpServer startServer() {
 		final ResourceConfig rc = new ResourceConfig().packages("it.unipi.di.acube.smaph.server.rest");
+		StaticHttpHandler staticHandler = new StaticHttpHandler("src/main/resources/webapp/");
 
-		return GrizzlyHttpServerFactory.createHttpServer(URI.create(BASE_URI), rc);
+		HttpServer httpServer = GrizzlyHttpServerFactory.createHttpServer(URI.create(BASE_URI), rc);
+		httpServer.getServerConfiguration().addHttpHandler(staticHandler, "/");
+		return httpServer;
 	}
 
 	/**
