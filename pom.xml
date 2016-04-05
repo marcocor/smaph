@@ -10,24 +10,33 @@
 	<properties>
 		<jersey.version>2.5.2</jersey.version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <smaph.port>8080</smaph.port>
+        <smaph.host>localhost</smaph.host>
 	</properties>
 
-	<profiles>
-		<profile>
-			<id>server</id>
-			<build>
-				<plugins>
-					<plugin>
-						<groupId>org.codehaus.mojo</groupId>
-						<artifactId>exec-maven-plugin</artifactId>
-						<version>1.4.0</version>
-						<configuration>
-							<mainClass>it.unipi.di.acube.smaph.server.ServerMain</mainClass>
-						</configuration>
-					</plugin>
-				</plugins>
-			</build>
-		</profile>
+    <profiles>
+        <profile>
+            <id>server</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <version>1.4.0</version>
+                        <configuration>
+                            <mainClass>it.unipi.di.acube.smaph.server.ServerMain</mainClass>
+                            <arguments>
+                                <argument>--host</argument>
+                                <argument>${smaph.host}</argument>
+                                <argument>--port</argument>
+                                <argument>${smaph.port}</argument>
+                            </arguments>
+                        </configuration>
+
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
 
 		<profile>
 			<id>tune</id>
@@ -57,6 +66,13 @@
 			</dependency>
 		</dependencies>
 	</dependencyManagement>
+	<repositories>
+		<repository>
+			<id>maven.aksw.internal</id>
+			<name>University Leipzig, AKSW Maven2 Repository</name>
+			<url>http://maven.aksw.org/repository/internal</url>
+		</repository>
+	</repositories>
 
 	<dependencies>
 		<dependency>
@@ -92,7 +108,7 @@
 		<dependency>
 			<groupId>it.unipi.di.acube</groupId>
 			<artifactId>bat-framework</artifactId>
-			<version>1.2-SNAPSHOT</version>
+			<version>1.3.1</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.httpcomponents</groupId>
