@@ -1,5 +1,11 @@
 package it.unipi.di.acube.smaph.server;
 
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.GnuParser;
+import org.apache.commons.cli.OptionBuilder;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 import org.glassfish.grizzly.http.server.HttpServer;
 import org.glassfish.grizzly.http.server.StaticHttpHandler;
 import org.glassfish.jersey.grizzly2.httpserver.GrizzlyHttpServerFactory;
@@ -14,7 +20,6 @@ import java.lang.invoke.MethodHandles;
 import java.net.URI;
 
 public class ServerMain {
-	public static final String BASE_URI = "http://localhost:8080/rest";
 	private final static Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
 	/**
@@ -23,11 +28,11 @@ public class ServerMain {
 	 * 
 	 * @return Grizzly HTTP server.
 	 */
-	public static HttpServer startServer() {
+	public static HttpServer startServer(String serverUri) {
 		final ResourceConfig rc = new ResourceConfig().packages("it.unipi.di.acube.smaph.server.rest");
 		StaticHttpHandler staticHandler = new StaticHttpHandler("src/main/resources/webapp/");
 
-		HttpServer httpServer = GrizzlyHttpServerFactory.createHttpServer(URI.create(BASE_URI), rc);
+		HttpServer httpServer = GrizzlyHttpServerFactory.createHttpServer(URI.create(serverUri), rc);
 		httpServer.getServerConfiguration().addHttpHandler(staticHandler, "/");
 		return httpServer;
 	}
@@ -37,12 +42,20 @@ public class ServerMain {
 	 * 
 	 * @param args
 	 * @throws IOException
+	 * @throws ParseException 
 	 */
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) throws IOException, ParseException {
+		CommandLineParser parser = new GnuParser();
+		Options options = new Options();
+		options.addOption(OptionBuilder.withLongOpt("host").hasArg().withArgName("HOSTNAME").withDescription("Server hostname").create("h"));
+		options.addOption(OptionBuilder.withLongOpt("port").hasArg().withArgName("PORT").withDescription("TCP port to listen.").create("p"));
+		CommandLine line = parser.parse(options, args);
+
+		String serverUri = String.format("http://%s:%d/rest", line.getOptionValue("host", "localhost"), Integer.parseInt(line.getOptionValue("port", "8080")));
 		LOG.info("Initializing server.");
 		RestService.initialize();
-		HttpServer server = startServer();
-		LOG.info("Smaph started with WADL available at " + "{}application.wadl\nPress Enter to terminate.", BASE_URI);
+		HttpServer server = startServer(serverUri);
+		LOG.info("Smaph started with WADL available at " + "{}application.wadl\nPress Enter to terminate.", serverUri);
 		System.in.read();
 		server.shutdown();
 	}
