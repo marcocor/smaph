@@ -47,32 +47,35 @@ function fillIn(query) {
 	       function (query, qdata){
 		 $( "#query" ).html( query );
 		 $( ".clear-data" ).empty()
-		 $.each(qdata.phase1.source1.bolds,
+		 $.each(qdata.phase1.source6.annotatedSnippets,
+			function (rank){
+			  var tr = $( "<tr>" );
+			  tr.appendTo($("#annotatedSnippetsTable"));
+			  $( "<td>" ).html(rank).appendTo(tr);
+			  var snippetTd = $( "<td>" ).appendTo(tr);
+			  $.each(this.parts,
+					  function (){
+				  var textnode = $( "<span>" ).appendTo(snippetTd);
+				  if (this.url)
+					  textnode = $( "<a>" ).attr("href", this.url).attr("target", "_blank").appendTo(textnode);
+				  
+				  var lastIdx = 0;
+				  var text = this.text;
+				  $.each(this.bolds,
+						  function (){
+					  $( "<span>" ).html(text.substring(lastIdx, this.begin)).appendTo(textnode);
+					  $( "<b>" ).html(text.substring(this.begin, this.end)).appendTo(textnode);
+					  lastIdx = this.end;
+				  });
+				  $( "<span>" ).html(text.substring(lastIdx)).appendTo(textnode);
+			  }
+			  );
+		 }
+		 );
+		$.each(qdata.phase1.source6.entityFeatures,
 			function (){
 			  var tr = $( "<tr>" );
-			  tr.appendTo($("#retrievedBoldsTable"));
-			  $( "<td>" ).html(this.rank).appendTo(tr);
-			  $( "<td>" ).html(this.bold).appendTo(tr);
-			  $( "<td>" ).html(this.editDistance).appendTo(tr);
-			});
-		 $.each(qdata.phase1.source1.filteredBolds,
-			function (){
-			  var tr = $( "<tr>" );
-			  tr.appendTo("#filteredBoldsTable");
-			  $( "<td>" ).html(this).appendTo(tr);
-			});
-		 var boldToFtrsS1 = {};
-		 var widToAcceptedS1 = {};
-		 $.each(qdata.phase1.source1.entityFeatures,
-			function (){
-			  boldToFtrsS1[this.bold] = this.features;
-			  widToAcceptedS1[this.wid] = this.accepted;
-			});
-		$.each(qdata.phase1.source1.annotations,
-			function (){
-			  var tr = $( "<tr>" );
-			  tr.appendTo("#annotationsTable");
-			  $( "<td>" ).html(this.bold).appendTo(tr);
+			  tr.appendTo("#entitiesSource6Table");
 			  $( "<td>" ).html(this.wid).appendTo(tr);
 			  var linkTd = $( "<td>" );
 			  linkTd.appendTo(tr);
@@ -81,13 +84,13 @@ function fillIn(query) {
 			  buttonTd.appendTo(tr);
 			  var acceptedTd = $( "<td>" );
 			  acceptedTd.appendTo(tr);
-			  if (widToAcceptedS1[this.wid])
+			  if (this.accepted)
 			    $("<span>").attr("class", "glyphicon glyphicon-ok green").appendTo(acceptedTd);
 			  else
 			    $("<span>").attr("class", "glyphicon glyphicon-remove red").appendTo(acceptedTd);
 			  
-			  //setup popover for feature button
-			  setupPopoverContent(buttonTd, this.wid, boldToFtrsS1[this.bold]);
+			  // setup popover for feature button
+			  setupPopoverContent(buttonTd, this.wid, this.features);
 			});
 		 var widToFtrsS2 = {};
 		 var widToAcceptedS2 = {};
@@ -118,9 +121,9 @@ function fillIn(query) {
 			    else
 			      $("<span>").attr("class", "glyphicon glyphicon-remove red").appendTo(acceptedTd);
 			  
-			  //setup popover for feature button
+			  // setup popover for feature button
 			  if (this.wid in widToFtrsS2)
-			    setupPopoverContent(buttonTd, this.wid, widToFtrsS2);
+			    setupPopoverContent(buttonTd, this.wid, widToFtrsS2[this.wid]);
 			});
 
 		 var widToFtrsS3 = {};
@@ -152,19 +155,19 @@ function fillIn(query) {
 			    else
 			      $("<span>").attr("class", "glyphicon glyphicon-remove red").appendTo(acceptedTd);
 			  
-			  //setup popover for feature button
+			  // setup popover for feature button
 			  if (this.wid in widToFtrsS3)
-			    setupPopoverContent(buttonTd, this.wid, widToFtrsS3);
+			    setupPopoverContent(buttonTd, this.wid, widToFtrsS3[this.wid]);
 			});
-		 var results = 0
 		 var span = $("<span>").append($("<strong>Found: </strong> "))
 		 $.each(qdata.results,
-			function (){
-			  
-			  span.append($("<a>").attr("href",this.url).html(this.title)).append(" &dash; ")
-			  results ++
+			function (idx){
+			  span.append(query.substring(this.begin, this.end) + " &rarr; ");
+			  span.append($("<a>").attr("href", this.url).attr("target", "_blank").html(this.title));
+			  if (idx != qdata.results.length -1)
+				  span.append(" &dash; ");
 			});
-		 if (results == 0)
+		 if (qdata.results.length == 0)
 		   $("#result-alert").html($("<strong>").html("No entities found for query: "+query))
 		 else
 		   $("#result-alert").html(span)
