@@ -33,7 +33,7 @@ public class IndividualAnnotationLinkBack implements LinkBack {
 		this.threshold = threshold;
 	}
 
-	public static List<Annotation> getAnnotations(String query,
+	private static List<Annotation> getAnnotations(String query,
 			Set<Tag> acceptedEntities, QueryInformation qi){
 		List<Pair<Integer, Integer>> segments = SmaphUtils.findSegments(query);
 		List<Annotation> annotations = new Vector<>();

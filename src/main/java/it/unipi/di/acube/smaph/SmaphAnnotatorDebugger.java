@@ -3,7 +3,6 @@ package it.unipi.di.acube.smaph;
 import it.unipi.di.acube.batframework.data.Annotation;
 import it.unipi.di.acube.batframework.data.Mention;
 import it.unipi.di.acube.batframework.data.ScoredAnnotation;
-import it.unipi.di.acube.batframework.data.Tag;
 import it.unipi.di.acube.batframework.metrics.MatchRelation;
 import it.unipi.di.acube.batframework.metrics.Metrics;
 import it.unipi.di.acube.batframework.metrics.StrongAnnotationMatch;
@@ -64,7 +63,7 @@ public class SmaphAnnotatorDebugger {
 		this.bingResponsesNS.put(query, bingResponse);
 	}
 
-	public JSONObject getBingResponseNormalSearch(String query) {
+	private JSONObject getBingResponseNormalSearch(String query) {
 		return this.bingResponsesNS.get(query);
 	}
 
@@ -72,7 +71,7 @@ public class SmaphAnnotatorDebugger {
 		this.bingResponsesWS.put(query, bingResponse);
 	}
 
-	public JSONObject getBingResponseWikiSearch(String query) {
+	private JSONObject getBingResponseWikiSearch(String query) {
 		return this.bingResponsesWS.get(query);
 	}
 
@@ -97,7 +96,7 @@ public class SmaphAnnotatorDebugger {
 		return textJs;
 	}
 	
-	public JSONArray getAnnotatedSnippetS6(String query, WikipediaApiInterface wikiApi) throws JSONException, IOException {
+	private JSONArray getAnnotatedSnippetS6(String query, WikipediaApiInterface wikiApi) throws JSONException, IOException {
 		JSONArray res = new JSONArray();
 		for (Triple<String, HashSet<Annotation>, HashSet<Mention>> p : this.annotatedSnippetsAndBoldsS6.get(query)) {
 			JSONObject pairJs = new JSONObject();
@@ -279,13 +278,6 @@ public class SmaphAnnotatorDebugger {
 
 	public HashMap<String, Set<Integer>> getCandidateEntities() {
 		return new HashMap<String, Set<Integer>>(candidateEntities);
-	}
-
-	public void addCandidateEntities(String query, Set<Tag> candidates) {
-		Set<Integer> wids = new HashSet<Integer>();
-		for (Tag candidateEntity: candidates)
-			wids.add(candidateEntity.getConcept());
-		candidateEntities.put(query, wids);
 	}
 
 	public void addLinkbackBindingScore(

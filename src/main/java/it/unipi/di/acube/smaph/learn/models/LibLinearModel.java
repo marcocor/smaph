@@ -12,7 +12,7 @@ import de.bwaldvogel.liblinear.Linear;
 import de.bwaldvogel.liblinear.Model;
 
 public abstract class LibLinearModel<T> {
-	Model model;
+	private Model model;
 
 	public LibLinearModel(String modelFile){
 		try {

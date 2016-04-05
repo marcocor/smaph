@@ -39,7 +39,7 @@ public abstract class ParameterTester<E, G> implements Callable<ModelConfigurati
 	public abstract ParameterTester<E, G> cloneWithWeights(double wPos, double wNeg);
 	public abstract ParameterTester<E, G> cloneWithGammaC(double gamma, double C);
 
-	public static svm_parameter getParametersClassifier(double wPos, double wNeg, double gamma, double C) {
+	private static svm_parameter getParametersClassifier(double wPos, double wNeg, double gamma, double C) {
 		svm_parameter param = new svm_parameter();
 		param.svm_type = svm_parameter.C_SVC;
 		param.kernel_type = svm_parameter.RBF;
@@ -79,7 +79,7 @@ public abstract class ParameterTester<E, G> implements Callable<ModelConfigurati
 		return param;
 	}
 
-	public static svm_parameter getParametersRegressor(double gamma, double C) {
+	private static svm_parameter getParametersRegressor(double gamma, double C) {
 		svm_parameter param = new svm_parameter();
 		param.svm_type = svm_parameter.EPSILON_SVR;
 		param.kernel_type = svm_parameter.RBF;
@@ -99,7 +99,7 @@ public abstract class ParameterTester<E, G> implements Callable<ModelConfigurati
 		return param;
 	}
 
-	public static svm_model trainModel(svm_parameter param, 
+	private static svm_model trainModel(svm_parameter param, 
 			svm_problem trainProblem) {
 		String error_msg = svm.svm_check_parameter(trainProblem, param);
 
@@ -258,7 +258,7 @@ public abstract class ParameterTester<E, G> implements Callable<ModelConfigurati
 			return bestMcr;
 		}
 
-		public void scanThresholdRange(int thrSteps, double thrMin, double thrMax, List<ModelConfigurationResult> configurations,
+		private void scanThresholdRange(int thrSteps, double thrMin, double thrMax, List<ModelConfigurationResult> configurations,
 				List<List<Pair<Annotation, Double>>> candidateAndPreds, List<HashSet<Annotation>> golds) throws IOException {
 			for (int i = 0; i < thrSteps; i++) {
 				double thr = thrMin + i * (thrMax - thrMin) / thrSteps;

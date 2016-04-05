@@ -44,8 +44,8 @@ import java.util.Map;
 public class WikipediaToFreebase {
 	private static WikipediaToFreebase wikiToFreebase;
 
-	Map<String, String> map;
-	Map<String, String> labels;
+	private Map<String, String> map;
+	private Map<String, String> labels;
 
 	public static WikipediaToFreebase getDefault() {
 		if (wikiToFreebase == null)

@@ -42,7 +42,7 @@ public class CachedWATAnnotator extends WATAnnotator {
 				minLinkProbability);
 	}
 
-	public static synchronized void increaseFlushCounter()
+	private static synchronized void increaseFlushCounter()
 			throws FileNotFoundException, IOException {
 		flushCounter++;
 		if ((flushCounter % FLUSH_EVERY) == 0)
@@ -77,7 +77,7 @@ public class CachedWATAnnotator extends WATAnnotator {
 		}
 	}
 
-	public static void unSetCache() {
+	public static void clearCache() {
 		url2jsonCache = new HashMap<>();
 		System.gc();
 	}

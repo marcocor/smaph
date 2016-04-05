@@ -72,7 +72,7 @@ public class EntityToAnchors {
 		return e2a;
 	}
 	
-	public EntityToAnchors(DB db) {
+	private EntityToAnchors(DB db) {
 		this.db = db;
 		entityToAnchorIDs = db.getTreeMap("entityToAnchorIDs");
 		entityToFreqs = db.getTreeMap("entityToFreqs");
@@ -87,7 +87,7 @@ public class EntityToAnchors {
 		return e2a;
 	}
 	
-	public static void createDB(String file) throws FileNotFoundException,
+	private static void createDB(String file) throws FileNotFoundException,
 			IOException {
 		
 		InputStream inputStream = new FileInputStream(file);
@@ -179,8 +179,6 @@ public class EntityToAnchors {
 		mdb.db.close();
 	}
 	
-	
-
 	public String idToAnchor(int aId){
 		String anchor = aidToAnchor.get(Integer.valueOf(aId));
 		if (anchor == null)

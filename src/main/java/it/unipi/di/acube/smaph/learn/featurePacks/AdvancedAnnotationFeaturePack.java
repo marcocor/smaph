@@ -102,11 +102,6 @@ public class AdvancedAnnotationFeaturePack extends FeaturePack<Annotation> {
 		return edMentionAnchor - edExpandedAnchor;
 	}
 
-	public static void putConditional(HashMap<String, Double> features, String featureName, Float value){
-		if (value != null)
-			features.put(featureName, value.doubleValue());
-	}
-
 	public static double minEdTitle(String mention, String title) {
 		return Math.min(SmaphUtils.getMinEditDist(title/*.toLowerCase()*/, mention), 1.0);
 	}

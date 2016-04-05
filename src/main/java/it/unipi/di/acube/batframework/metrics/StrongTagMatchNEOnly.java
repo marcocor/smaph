@@ -10,7 +10,7 @@ import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
 import it.unipi.di.acube.smaph.main.ERDDatasetFilter;
 
 public class StrongTagMatchNEOnly extends StrongTagMatch {
-	WikipediaApiInterface api;
+	private WikipediaApiInterface api;
 	public StrongTagMatchNEOnly(WikipediaApiInterface api) {
 		super(api);
 		this.api = api;

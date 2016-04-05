@@ -34,8 +34,6 @@ public class SmaphConfig {
 	private static String defaultFreebaseKey;
 	private static String defaultFreebaseCache;
 	private static String defaultBingKey;
-	private static String defaultTagmeKey;
-	private static String defaultTagmeHost;
 	private static String configFile;
 	private static String defaultBingCache;
 
@@ -47,35 +45,6 @@ public class SmaphConfig {
 	 */
 	public static void setConfigFile(String filename) {
 		configFile = filename;
-	}
-
-	/**
-	 * @return the default Tagme key.
-	 */
-	public static String getDefaultTagmeKey() {
-		if (defaultTagmeKey == null)
-			initialize();
-		if (defaultTagmeKey.isEmpty() || defaultTagmeKey.equals("TAGME_KEY"))
-			throw new RuntimeException(
-					"Configuration file "
-							+ configFile
-							+ " has dummy value 'TAGME_KEY' or is unset. Please replace with an actual Tagme key.");
-
-		return defaultTagmeKey;
-	}
-
-	/**
-	 * @return the default Tagme host.
-	 */
-	public static String getDefaultTagmeHost() {
-		if (defaultTagmeHost == null)
-			initialize();
-		if (defaultTagmeHost.isEmpty() || defaultTagmeHost.equals("TAGME_HOST"))
-			throw new RuntimeException(
-					"Configuration file "
-							+ configFile
-							+ " has dummy value 'TAGME_HOST' or is unset. Please replace with the actual Tagme host.");
-		return defaultTagmeHost;
 	}
 
 	/**
@@ -105,8 +74,6 @@ public class SmaphConfig {
 			defaultFreebaseKey = getConfigValue("freebase", "key", doc);
 			defaultFreebaseCache = getConfigValue("freebase", "cache", doc);
 			defaultBingKey = getConfigValue("bing", "key", doc);
-			defaultTagmeKey = getConfigValue("tagme", "key", doc);
-			defaultTagmeHost = getConfigValue("tagme", "host", doc);
 			defaultBingCache = getConfigValue("cache", "bing-cache", doc);
 			defaultStands4Cache = getConfigValue("stands4", "cache", doc);
 			defaultStands4TokenId = getConfigValue("stands4", "tokenid", doc);

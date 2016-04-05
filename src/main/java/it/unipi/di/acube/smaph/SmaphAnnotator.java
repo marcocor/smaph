@@ -232,34 +232,6 @@ public class SmaphAnnotator implements Sa2WSystem {
 	}
 
 	/**
-	 * Adjust the title of retrieved Wikipedia pages, e.g. removing final
-	 * parenthetical.
-	 * 
-	 * @param rankToIdWS
-	 *            a mapping from a rank (position in the search engine result)
-	 *            to the Wikipedia ID of the page in that rank.
-	 * @return a mapping from adjusted titles to a pair <wid, rank>
-	 */
-	private HashMap<String, Pair<Integer, Integer>> adjustTitles(
-			HashMap<Integer, Integer> rankToIdWS) {
-		HashMap<String, Pair<Integer, Integer>> res = new HashMap<>();
-		for (int rank : rankToIdWS.keySet()) {
-			int wid = rankToIdWS.get(rank);
-			try {
-				String title = wikiApi.getTitlebyId(wid);
-				if (title != null) {
-					SmaphUtils.removeTrailingParenthetical(title);
-					res.put(title, new Pair<Integer, Integer>(wid, rank));
-				}
-			} catch (IOException e) {
-				e.printStackTrace();
-				throw new RuntimeException();
-			}
-		}
-		return res;
-	}
-
-	/**
 	 * Turns a Wikipedia URL to the title of the Wikipedia page.
 	 * 
 	 * @param encodedWikiUrl
@@ -308,7 +280,7 @@ public class SmaphAnnotator implements Sa2WSystem {
 	 *             if something went wrong while querying Bing.
 	 */
 
-	public Triple<Integer, Double, JSONObject> takeBingData(String query,
+	private Triple<Integer, Double, JSONObject> takeBingData(String query,
 			List<Pair<String, Integer>> boldsAndRanks, List<String> urls,
 			List<String> relatedSearch,
 			List<Pair<String, Vector<Pair<Integer, Integer>>>> snippetsToBolds,
@@ -360,7 +332,7 @@ public class SmaphAnnotator implements Sa2WSystem {
 	 * @throws JSONException
 	 *             if the json returned by Bing could not be read.
 	 */
-	public static void getBoldsAndUrls(JSONArray webResults, double topk,
+	private static void getBoldsAndUrls(JSONArray webResults, double topk,
 			List<Pair<String, Integer>> boldsAndRanks, List<String> urls,
 			List<Pair<String, Vector<Pair<Integer, Integer>>>> snippetsToBolds, boolean tagTitles)
 					throws JSONException {
@@ -375,7 +347,7 @@ public class SmaphAnnotator implements Sa2WSystem {
 		}
 	}
 
-	public static void getBolds(String field,int rankI, List<Pair<String, Vector<Pair<Integer, Integer>>>> snippetsToBolds, List<Pair<String, Integer>> boldsAndRanks){
+	private static void getBolds(String field,int rankI, List<Pair<String, Vector<Pair<Integer, Integer>>>> snippetsToBolds, List<Pair<String, Integer>> boldsAndRanks){
 		String snippet = "";
 		byte[] startByte = new byte[] { (byte) 0xee, (byte) 0x80,
 				(byte) 0x80 };
@@ -454,7 +426,7 @@ public class SmaphAnnotator implements Sa2WSystem {
 	}
 
 
-	public QueryInformation getQueryInformation(String query, SmaphAnnotatorDebugger debugger) throws Exception {
+	private QueryInformation getQueryInformation(String query, SmaphAnnotatorDebugger debugger) throws Exception {
 
 		/** Search the query on bing */
 		List<Pair<String, Integer>> bingBoldsAndRankNS = null;
@@ -504,19 +476,16 @@ public class SmaphAnnotator implements Sa2WSystem {
 		/** Do the WikipediaSearch on bing. */
 		List<String> wikiSearchUrls = new Vector<>();
 		List<Pair<String, Integer>> bingBoldsAndRankWS = new Vector<>();
-		HashMap<String, Pair<Integer, Integer>> annTitlesToIdAndRankWS = null;
 		Triple<Integer, Double, JSONObject> resCountAndWebTotalWS = null;
 		HashMap<Integer, HashSet<String>> rankToBoldsWS = null;
 		Set<Tag> candidatesWS = null;
 		double webTotalWS = Double.NaN;
-		int resultsCountWS = -1;
 		HashMap<Integer, Integer> rankToIdWS = null;
 		HashMap<Integer, Integer> idToRankWS = null;
 		if (includeSourceWikiSearch | includeSourceNormalSearch) {
 			resCountAndWebTotalWS = takeBingData(query, bingBoldsAndRankWS,
 					wikiSearchUrls, null, null, topKWikiSearch, true);
 			webTotalWS = resCountAndWebTotalWS.getMiddle();
-			resultsCountWS = resCountAndWebTotalWS.getLeft();
 			rankToIdWS = urlsToRankID(wikiSearchUrls);
 			idToRankWS = SmaphUtils.inverseMap(rankToIdWS);
 			candidatesWS = new HashSet<>();
@@ -531,7 +500,6 @@ public class SmaphAnnotator implements Sa2WSystem {
 						resCountAndWebTotalWS.getRight());
 
 			}
-			annTitlesToIdAndRankWS = adjustTitles(rankToIdWS);
 		}
 
 		/** Annotate snippets */
@@ -556,17 +524,14 @@ public class SmaphAnnotator implements Sa2WSystem {
 		qi.includeSourceSnippets = includeSourceSnippets;
 
 		qi.idToRankNS = idToRankNS;
-		qi.entityToBoldNS = entityToBoldsNS;
 		qi.webTotalNS = webTotalNS;
 		qi.allBoldsNS = allBoldsNS;
 		qi.bingBoldsAndRankNS = bingBoldsAndRankNS;
 		qi.resultsCountNS = resultsCountNS;
 
 		qi.idToRankWS = idToRankWS;
-		qi.annTitlesToIdAndRankWS = annTitlesToIdAndRankWS;
 		qi.webTotalWS = webTotalWS;
 		qi.bingBoldsAndRankWS = bingBoldsAndRankWS;
-		qi.resultsCountWS = resultsCountWS; 
 
 		qi.entityToBoldsSA = entityToBoldsSA;
 		qi.entityToMentionsSA = entityToMentionsSA;

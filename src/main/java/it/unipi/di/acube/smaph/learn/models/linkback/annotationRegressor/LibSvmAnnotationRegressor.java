@@ -28,7 +28,7 @@ import libsvm.svm_model;
  */
 public class LibSvmAnnotationRegressor extends LibSvmModel<Annotation> implements AnnotationRegressor, Serializable {
     private static final long serialVersionUID = 1L;
-	double threshold;
+	private double threshold;
 	
 	public static LibSvmAnnotationRegressor fromFile(String file) {
 		LibSvmAnnotationRegressor obj;

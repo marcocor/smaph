@@ -23,7 +23,7 @@ public class DefaultBindingGenerator implements BindingGenerator {
 	private static final int MAX_SEGMENTATIONS_AFTER_FILTER = 150;//150;
 	private static final int MAX_BINDINGS_PER_SEGMENTATION = 50;//50;
 
-	public List<HashSet<Annotation>> getAllBindings(String query,
+	private List<HashSet<Annotation>> getAllBindings(String query,
 			HashMap<Tag, String[]> entityToBolds, HashMap<Tag, String> entitiesToTitles, Set<Tag> acceptedEntities) {
 		HashSet<HashSet<Annotation>> insertedAnnotationSets = new HashSet<>();
 		List<HashSet<Annotation>> annotationSets = new Vector<>();

@@ -35,7 +35,7 @@ import libsvm.svm_node;
 public abstract class LibSvmModel <T> implements Serializable {
 	private static final long serialVersionUID = 1L;
 	private svm_model model;
-	String modelFile;
+	private String modelFile;
 	
 	public static svm_node[] featuresArrayToNode(double[] ftrArray, int[] pickedFtrsI) {
 		svm_node[] ftrVect = new svm_node[pickedFtrsI.length];

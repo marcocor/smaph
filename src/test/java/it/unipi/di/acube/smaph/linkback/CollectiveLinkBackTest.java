@@ -29,7 +29,6 @@ public class CollectiveLinkBackTest {
 
 		QueryInformation qi = new QueryInformation();
 		qi.entityToBoldsSA = entityToBolds;
-		qi.entityToBoldNS = new HashMap<Tag,String[]>();
 		List<HashSet<Annotation>> possibleBindings = bg.getBindings(query, qi, new HashSet<Tag>(entityToBolds.keySet()), new WikipediaApiInterface(null, null));
 
 		assertEquals(24, possibleBindings.size());

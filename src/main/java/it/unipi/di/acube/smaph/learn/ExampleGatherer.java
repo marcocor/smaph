@@ -42,17 +42,6 @@ public class ExampleGatherer<T extends Serializable, G extends Serializable> {
 	 * @param list
 	 *            normalized feature vectors of this group, plus their gold
 	 *            value.
-	 */
-	public void addExample(List<Pair<FeaturePack<T>, Double>> list) {
-		addExample(list, null, null);
-	}
-
-	/**
-	 * Add all examples of an instance, forming a new group.
-	 * 
-	 * @param list
-	 *            normalized feature vectors of this group, plus their gold
-	 *            value.
 	 * @param groupData
 	 *            for each element of the list, the original data that produced
 	 *            that element.

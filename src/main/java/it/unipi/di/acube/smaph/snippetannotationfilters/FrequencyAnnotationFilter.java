@@ -7,7 +7,7 @@ import java.util.HashSet;
 import java.util.List;
 
 public class FrequencyAnnotationFilter implements SnippetAnnotationFilter {
-	double threshold;
+	private double threshold;
 
 	public FrequencyAnnotationFilter(double threshold) {
 		this.threshold = threshold;

@@ -60,7 +60,7 @@ public class TuneModelLibSvm {
 		MAXIMIZE_TN, MAXIMIZE_MICRO_F1, MAXIMIZE_MACRO_F1
 	}
 
-	public static double computeExpParameter(double max, double min, double kappa, int iteration, int steps) {
+	private static double computeExpParameter(double max, double min, double kappa, int iteration, int steps) {
 		if (iteration < 0)
 			return min;
 		double exp = max == min ? 1 : Math.log((max - min) / kappa) / Math.log(steps);
@@ -443,7 +443,7 @@ public class TuneModelLibSvm {
 				globalScoreboard, globalBest);
 	}
 
-	static class GammaCSelector <E extends Serializable, G extends Serializable> implements Runnable {
+	private static class GammaCSelector <E extends Serializable, G extends Serializable> implements Runnable {
 		private double gammaMin, gammaMax, cMin, cMax;
 		private double kappaC, kappaGamma;
 		private double origC, origGamma;
@@ -509,13 +509,13 @@ public class TuneModelLibSvm {
 		}
 	}
 
-	static class WeightSelector implements Runnable {
+	private static class WeightSelector implements Runnable {
 		private double wPosMin, wPosMax, wNegMin, wNegMax, gamma, C;
 		private ExampleGatherer<Tag, HashSet<Tag>> trainGatherer;
 		private ExampleGatherer<Tag, HashSet<Tag>> testGatherer;
 		private double kappaPos, kappaNeg;
 		private int[] features;
-		Vector<ModelConfigurationResult> scoreboard;
+		private Vector<ModelConfigurationResult> scoreboard;
 		private int steps;
 		private WikipediaApiInterface wikiApi;
 
@@ -583,10 +583,10 @@ public class TuneModelLibSvm {
 
 	}
 
-	static class AblationFeatureSelector<E extends Serializable,G extends Serializable> implements Runnable {
+	private static class AblationFeatureSelector<E extends Serializable,G extends Serializable> implements Runnable {
 		private double optProfileThreshold;
 		private OptimizaionProfiles optProfile;
-		Vector<ModelConfigurationResult> scoreboard;
+		private Vector<ModelConfigurationResult> scoreboard;
 		private ParameterTester<E, G> pt;
 
 		public AblationFeatureSelector(ParameterTester<E, G> pt, OptimizaionProfiles optProfile, double optProfileThreshold,
@@ -650,10 +650,10 @@ public class TuneModelLibSvm {
 		}
 	}
 
-	static class IncrementalFeatureSelector<E extends Serializable, G extends Serializable> implements Runnable {
+	private static class IncrementalFeatureSelector<E extends Serializable, G extends Serializable> implements Runnable {
 		private double optProfileThreshold;
 		private OptimizaionProfiles optProfile;
-		Vector<ModelConfigurationResult> scoreboard;
+		private Vector<ModelConfigurationResult> scoreboard;
 		private ParameterTester<E, G> pt;
 		private int[] selectedFeatures, restrictFeatures;
 

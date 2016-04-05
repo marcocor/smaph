@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.Vector;
 
 import it.unipi.di.acube.batframework.utils.Pair;
-import it.unipi.di.acube.smaph.SmaphUtils;
 import it.unipi.di.acube.smaph.learn.featurePacks.AdvancedAnnotationFeaturePack;
 
 import org.junit.Before;

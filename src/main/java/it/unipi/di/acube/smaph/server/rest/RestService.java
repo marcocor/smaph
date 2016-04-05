@@ -7,14 +7,13 @@ import it.unipi.di.acube.smaph.SmaphAnnotator;
 import it.unipi.di.acube.smaph.SmaphAnnotatorBuilder;
 import it.unipi.di.acube.smaph.SmaphAnnotatorDebugger;
 import it.unipi.di.acube.smaph.SmaphConfig;
+import it.unipi.di.acube.smaph.SmaphUtils;
 import it.unipi.di.acube.BingInterface;
 import it.cnr.isti.hpc.erd.Annotation;
 import it.cnr.isti.hpc.erd.WikipediaToFreebase;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.lang.invoke.MethodHandles;
-import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -40,8 +39,6 @@ import org.slf4j.LoggerFactory;
 @Path("/")
 public class RestService {
 	private final static Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-	private static final String BASE_WIKIPEDIA_URI = "http://en.wikipedia.org/wiki/";
-	private static final String BASE_DBPEDIA_URI = "http://dbpedia.org/resource/";
 	private static WikipediaApiInterface wikiApi;
 	private static SmaphAnnotator entityFilterAnn, annotationRegressorAnn, collectiveAnn, defaultAnn;
 	private static TurtleNIFDocumentParser parser;
@@ -173,7 +170,7 @@ public class RestService {
 		Vector<Marking> markings = new Vector<>();
 		for (ScoredAnnotation aBat : ann.solveSa2W(doc.getText()))
 			try {
-				markings.add(new ScoredNamedEntity(aBat.getPosition(), aBat.getLength(), getDBPediaURI(wikiApi.getTitlebyId(aBat.getConcept())), aBat.getScore()));
+				markings.add(new ScoredNamedEntity(aBat.getPosition(), aBat.getLength(), SmaphUtils.getDBPediaURI(wikiApi.getTitlebyId(aBat.getConcept())), aBat.getScore()));
 			} catch (IOException e) {
 				throw new RuntimeException(e);
 			}
@@ -195,7 +192,7 @@ public class RestService {
 					JSONObject annJson = new JSONObject();
 					annJson.put("wid", wid);
 					annJson.put("title", title);
-					annJson.put("url", getWikipediaURI(title));
+					annJson.put("url", SmaphUtils.getWikipediaURI(title));
 					annotJson.put(annJson);
 				}
 			}
@@ -205,18 +202,6 @@ public class RestService {
 		}
 
 		return res.toString();
-	}
-
-	public String getWikipediaURI(String title) {
-		try {
-	        return BASE_WIKIPEDIA_URI + URLEncoder.encode(title, "utf8").replace("+", "%20");
-        } catch (UnsupportedEncodingException e) {
-	        throw new RuntimeException(e);
-        }
-	}
-	
-	public static String getDBPediaURI(String title) {
-		return BASE_DBPEDIA_URI + WikipediaApiInterface.normalize(title);
 	}
 
 	public List<Annotation> annotatePure(String query, String textID,

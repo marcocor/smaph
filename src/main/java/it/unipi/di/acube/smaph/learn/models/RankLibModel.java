@@ -12,7 +12,7 @@ import ciir.umass.edu.learning.RankerFactory;
 import ciir.umass.edu.utilities.Sorter;
 
 public class RankLibModel <T>{
-	Ranker ranker;
+	private Ranker ranker;
 
 	public RankLibModel(String modelFile) {
 		RankerFactory rFact = new RankerFactory();

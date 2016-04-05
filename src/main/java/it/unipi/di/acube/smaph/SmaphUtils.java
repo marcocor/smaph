@@ -27,9 +27,11 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.Serializable;
+import java.io.UnsupportedEncodingException;
 import java.lang.invoke.MethodHandles;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -63,6 +65,7 @@ import org.tartarus.snowball.ext.EnglishStemmer;
 public class SmaphUtils {
 	private final static Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 	public static final String BASE_DBPEDIA_URI = "http://dbpedia.org/resource/";
+	public static final String BASE_WIKIPEDIA_URI = "http://en.wikipedia.org/wiki/";
 	public static final String WIKITITLE_ENDPAR_REGEX = "\\s*\\([^\\)]*\\)\\s*$";
 
 	/**
@@ -317,7 +320,7 @@ public class SmaphUtils {
 	 *            the stemmer.
 	 * @return str with all words stemmed.
 	 */
-	public static String stemString(String str, EnglishStemmer stemmer) {
+	private static String stemString(String str, EnglishStemmer stemmer) {
 		String stemmedString = "";
 		String[] words = str.split("\\s+");
 		for (int i = 0; i < words.length; i++) {
@@ -489,23 +492,6 @@ public class SmaphUtils {
 			if (entityToKeep == null || entityToKeep.contains(t))
 				res.put(t, tagToBoldsS6.get(t).toArray(new String[]{}));
 		return res;
-	}
-
-	public static HashMap<Tag, String[]> getEntitiesToBolds(
-			HashMap<String, Tag> boldToEntity, Set<Tag> entityToKeep) {
-		HashMap<Tag, String[]> entityToTexts = new HashMap<>();
-		for (String bold : boldToEntity.keySet()) {
-			Tag tag = boldToEntity.get(bold);
-			if (entityToKeep != null && !entityToKeep.contains(tag))
-				continue;
-			List<String> boldsForEntity = new Vector<>();
-			if (entityToTexts.containsKey(tag))
-				boldsForEntity.addAll(Arrays.asList(entityToTexts.get(tag)));
-			boldsForEntity.add(bold);
-			entityToTexts.put(tag, boldsForEntity.toArray(new String[] {}));
-
-		}
-		return entityToTexts;
 	}
 
 	public static HashMap<Tag, String> getEntitiesToTitles(
@@ -733,24 +719,6 @@ public class SmaphUtils {
 		}
 	}
 
-	private static double getAvgRank(int resultsCount,
-			HashMap<Integer, HashSet<String>> rankToBolds, String spot) {
-		List<Integer> positions = new Vector<>();
-		for (int rank = 0; rank < resultsCount; rank++)
-			if (rankToBolds.containsKey(rank)
-					&& rankToBolds.get(rank).contains(spot))
-				positions.add(rank);
-		return computeAvgRank(positions, resultsCount);
-	}
-
-	public static double getAvgRank(List<Pair<String, Integer>> spotAndRanks,
-			String spot, int resultsCount) {
-		HashMap<Integer, HashSet<String>> positions = new HashMap<>();
-		HashSet<String> spots = new HashSet<>();
-		SmaphUtils.mapRankToBoldsLC(spotAndRanks, positions, spots);
-		return getAvgRank(resultsCount, positions, spot);
-	}
-
 	public static double computeAvgRank(List<Integer> positions, int resultsCount) {
 		if (resultsCount==0) return 1;
 		float avg = 0;
@@ -764,11 +732,6 @@ public class SmaphUtils {
 
 	public static double getFrequency(int occurrences, int resultsCount) {
 		return (float) occurrences / (float) resultsCount;
-	}
-
-	public static double getFrequency(List<Pair<String, Integer>> boldAndRanks, String bold, int resultsCount) {
-		HashMap<String, HashSet<Integer>> positions = SmaphUtils.findPositionsLC(boldAndRanks);
-		return getFrequency(positions.get(bold.toLowerCase()).size(), resultsCount);
 	}
 
 	public static <T1, T2> HashMap<T1, T2> inverseMap(HashMap<T2, T1> map) {
@@ -806,6 +769,14 @@ public class SmaphUtils {
 
 	public static String getDBPediaURI(String title) {
 		return BASE_DBPEDIA_URI + WikipediaApiInterface.normalize(title);
+	}
+
+	public static String getWikipediaURI(String title) {
+		try {
+	        return BASE_WIKIPEDIA_URI + URLEncoder.encode(title, "utf8").replace("+", "%20");
+        } catch (UnsupportedEncodingException e) {
+	        throw new RuntimeException(e);
+        }
 	}
 
 	public static void exportToNif(A2WDataset ds, String baseUri, WikipediaApiInterface wikiApi, OutputStream outputStream) {

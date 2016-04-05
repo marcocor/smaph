@@ -12,15 +12,12 @@ public class QueryInformation {
 	public boolean includeSourceNormalSearch;
 	public boolean includeSourceWikiSearch;
 	public boolean includeSourceSnippets;
-	public HashMap<Tag, String[]> entityToBoldNS;
 	public Double webTotalNS;
 	public List<String> allBoldsNS;
 	public HashMap<Integer, Integer> idToRankNS;
 	public List<Pair<String, Integer>> bingBoldsAndRankNS;
 	public int resultsCountNS;
 	public double webTotalWS;
-	public double resultsCountWS;
-	public HashMap<String, Pair<Integer, Integer>> annTitlesToIdAndRankWS;
 	public List<Pair<String, Integer>> bingBoldsAndRankWS;
 	public HashMap<Integer, Integer> idToRankWS;
 	public HashMap<Tag, List<String>> entityToBoldsSA;
