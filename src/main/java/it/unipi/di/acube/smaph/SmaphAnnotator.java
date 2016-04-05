@@ -57,6 +57,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.Vector;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.xpath.XPathExpressionException;
@@ -72,7 +75,7 @@ import org.xml.sax.SAXException;
 
 public class SmaphAnnotator implements Sa2WSystem {
 	private final static Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-	private static final String WIKI_URL_LEADING = "http://en.wikipedia.org/wiki/";
+	private static final Pattern WIKI_URL_PATTERN = Pattern.compile("https?://en.wikipedia.org/wiki/(.+)");
 	private WikipediaApiInterface wikiApi;
 	private BingInterface bingInterface = null;
 	private CachedWATAnnotator snippetAnnotator;
@@ -84,7 +87,6 @@ public class SmaphAnnotator implements Sa2WSystem {
 	private int topKAnnotateSnippet;
 	private boolean includeSourceWikiSearch;
 	private int topKWikiSearch = 0;
-	private SmaphAnnotatorDebugger debugger;
 	private boolean predictNEonly;
 	private String appendName = "";
 	private SnippetAnnotationFilter snippetAnnotationFilter;
@@ -145,17 +147,6 @@ public class SmaphAnnotator implements Sa2WSystem {
 		this.predictNEonly = predictNEonly;
 	}
 
-	/**
-	 * Set an optional debugger to gather data about the process of a query.
-	 * 
-	 * @param debugger
-	 *            the debugger.
-	 */
-	public void setDebugger(SmaphAnnotatorDebugger debugger) {
-		this.debugger = debugger;
-		this.linkBack.setDebugger(debugger);
-	}
-
 	@Override
 	public HashSet<Annotation> solveA2W(String text) throws AnnotationException {
 		return ProblemReduction.Sa2WToA2W(solveSa2W(text));
@@ -189,8 +180,11 @@ public class SmaphAnnotator implements Sa2WSystem {
 	}
 
 	@Override
-	public HashSet<ScoredAnnotation> solveSa2W(String query)
-			throws AnnotationException {
+	public HashSet<ScoredAnnotation> solveSa2W(String query) throws AnnotationException {
+		return solveSa2W(query, null);
+	}
+
+	public HashSet<ScoredAnnotation> solveSa2W(String query, SmaphAnnotatorDebugger debugger) throws AnnotationException {
 		if (debugger != null)
 			debugger.addProcessedQuery(query);
 
@@ -198,7 +192,7 @@ public class SmaphAnnotator implements Sa2WSystem {
 		try {
 			HashSet<Tag> acceptedEntities = new HashSet<>();
 
-			QueryInformation qi = getQueryInformation(query);
+			QueryInformation qi = getQueryInformation(query, debugger);
 
 			for (Tag candidate : qi.allCandidates()){
 				if (predictNEonly
@@ -208,13 +202,24 @@ public class SmaphAnnotator implements Sa2WSystem {
 				boolean accept = entityFilter.filterEntity(fp, entityFilterNormalizer);
 				if (accept){
 					acceptedEntities.add(candidate);
-					if (debugger != null)
-						debugger.addResult(query, candidate.getConcept());
-
 				}
 			}
 			/** Link entities back to query mentions */
 			annotations = linkBack.linkBack(query, acceptedEntities, qi);
+
+			if (debugger != null){
+				debugger.addResult(query, annotations);
+				Set<Tag> resultsTag = annotations.stream().map(a -> new Tag(a.getConcept())).collect(Collectors.toSet());
+
+				for (Tag candidate : qi.candidatesNS)
+					debugger.addEntityFeaturesS2(query, candidate.getConcept(), EntityFeaturePack.getFeatures(candidate, query, qi, wikiApi), resultsTag.contains(candidate));
+				
+				for (Tag candidate : qi.candidatesWS)
+					debugger.addEntityFeaturesS3(query, candidate.getConcept(), EntityFeaturePack.getFeatures(candidate, query, qi, wikiApi), resultsTag.contains(candidate));
+				
+				for (Tag candidate : qi.candidatesSA)
+					debugger.addEntityFeaturesS6(query, candidate.getConcept(), EntityFeaturePack.getFeatures(candidate, query, qi, wikiApi), resultsTag.contains(candidate));
+			}
 
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -261,13 +266,11 @@ public class SmaphAnnotator implements Sa2WSystem {
 	 * @return a Wikipedia title, or null if the url is not a Wikipedia page.
 	 */
 	private static String decodeWikiUrl(String encodedWikiUrl) {
-		if (!encodedWikiUrl.matches("^" + WIKI_URL_LEADING + ".*")) {
+		Matcher matcher = WIKI_URL_PATTERN.matcher(encodedWikiUrl);
+		if (!matcher.matches())
 			return null;
-		}
 		try {
-			String title = URLDecoder.decode(
-					encodedWikiUrl.substring(WIKI_URL_LEADING.length()),
-					"utf-8");
+			String title = URLDecoder.decode(matcher.group(1), "utf-8");
 			if (!SmaphUtils.acceptWikipediaTitle(title))
 				return null;
 			return title;
@@ -451,7 +454,7 @@ public class SmaphAnnotator implements Sa2WSystem {
 	}
 
 
-	public QueryInformation getQueryInformation(String query) throws Exception {
+	public QueryInformation getQueryInformation(String query, SmaphAnnotatorDebugger debugger) throws Exception {
 
 		/** Search the query on bing */
 		List<Pair<String, Integer>> bingBoldsAndRankNS = null;
@@ -492,8 +495,6 @@ public class SmaphAnnotator implements Sa2WSystem {
 			}
 
 			if (debugger != null) {
-				debugger.addBoldPositionEditDistance(query, bingBoldsAndRankNS);
-				debugger.addSnippets(query, snippetsToBoldsNS);
 				debugger.addSource2SearchResult(query, rankToIdNS, urlsNS);
 				debugger.addBingResponseNormalSearch(query,
 						resCountAndWebTotalNS.getRight());
@@ -542,7 +543,7 @@ public class SmaphAnnotator implements Sa2WSystem {
 		if (includeSourceSnippets){
 			List<List<Pair<ScoredAnnotation, HashMap<String, Double>>>> snippetAnnotations = new Vector<>();
 			entityToBoldsSA = new HashMap<>();
-			annotateSnippets(snippetsToBoldsNS, snippetAnnotations, entityToBoldsSA);
+			annotateSnippets(snippetsToBoldsNS, snippetAnnotations, entityToBoldsSA, debugger, query);
 			entityToRanksSA = getSnippetAnnotationRanks(snippetAnnotations);
 			entityToMentionsSA = getSnippetMentions(snippetAnnotations, snippetsToBoldsNS);
 			entiyToAdditionalInfosSA = getSnippetAdditionalInfo(snippetAnnotations);
@@ -633,7 +634,7 @@ public class SmaphAnnotator implements Sa2WSystem {
 	private void annotateSnippets(
 			List<Pair<String, Vector<Pair<Integer, Integer>>>> snippetsToBolds,
 			List<List<Pair<ScoredAnnotation, HashMap<String, Double>>>> snippetAnnotations,
-			HashMap<Tag, List<String>> tagToBolds) throws IOException {
+			HashMap<Tag, List<String>> tagToBolds, SmaphAnnotatorDebugger debugger, String query) throws IOException {
 
 		for (Pair<String, Vector<Pair<Integer, Integer>>> snippetAndBolds : snippetsToBolds.subList(0, Math.min(snippetsToBolds.size(),topKAnnotateSnippet))) {
 			List<Pair<ScoredAnnotation, HashMap<String, Double>>> resI = new Vector<>();
@@ -668,10 +669,12 @@ public class SmaphAnnotator implements Sa2WSystem {
 							.getLength(), wid, a.getScore()));
 			}
 
+			HashSet<Annotation> filtered = new HashSet<>();
+			
 			for (ScoredAnnotation a : resolvedAnns)
 				for (Mention m : boldMentions)
-					//if (a.getPosition() <= m.getPosition() && m.getPosition()+m.getLength() <= a.getPosition() + a.getLength()) {
 					if (a.overlaps(m)) {
+						filtered.add(a);
 						resI.add(new Pair<>(a, addInfo.get(new Mention(a.getPosition(), a.getLength()))));
 						Tag t = new Tag(a.getConcept());
 						if (!tagToBolds.containsKey(t))
@@ -680,6 +683,9 @@ public class SmaphAnnotator implements Sa2WSystem {
 						tagToBolds.get(t).add(bold);
 						break;
 					}
+			if (debugger != null){
+				debugger.addAnnotatedSnippetS6(query, snippet, filtered, boldMentions);
+			}
 		}
 		return;
 	}
@@ -718,10 +724,10 @@ public class SmaphAnnotator implements Sa2WSystem {
 			List<HashSet<Annotation>> BRCandidates,
 			List<Pair<FeaturePack<Annotation>, Boolean>> advancedAnnVectorsToPresence,
 			List<Annotation> ARCandidates, boolean keepNEOnly,
-			BindingGenerator bg, double anchorMaxED)
+			BindingGenerator bg, double anchorMaxED, SmaphAnnotatorDebugger debugger)
 					throws Exception {
 
-		QueryInformation qi = getQueryInformation(query);
+		QueryInformation qi = getQueryInformation(query, debugger);
 
 		// Generate examples for entityFilter
 		if (EFVectorsToPresence != null)
@@ -753,7 +759,7 @@ public class SmaphAnnotator implements Sa2WSystem {
 			}
 			List<Triple<HashSet<Annotation>, BindingFeaturePack, Double>> bindingsToFtrAndF1 = getLBBindingToFtrsAndF1(
 					query, qi, bg, goldStandardAnn, new StrongAnnotationMatch(
-							wikiApi), acceptedEntities);
+							wikiApi), acceptedEntities, debugger);
 			for (Triple<HashSet<Annotation>, BindingFeaturePack, Double> bindingAndFtrsAndF1 : bindingsToFtrAndF1) {
 				BindingFeaturePack features = bindingAndFtrsAndF1.getMiddle();
 				double f1 = bindingAndFtrsAndF1.getRight();
@@ -810,9 +816,9 @@ public class SmaphAnnotator implements Sa2WSystem {
 		return annAndFtrsAndPresence;
 	}
 
-	private List<Triple<HashSet<Annotation>, BindingFeaturePack, Double>> getLBBindingToFtrsAndF1(
-			String query, QueryInformation qi, BindingGenerator bg,
-			HashSet<Annotation> goldStandardAnn, MatchRelation<Annotation> match, Set<Tag> acceptedEntities) {
+	private List<Triple<HashSet<Annotation>, BindingFeaturePack, Double>> getLBBindingToFtrsAndF1(String query,
+	        QueryInformation qi, BindingGenerator bg, HashSet<Annotation> goldStandardAnn, MatchRelation<Annotation> match,
+	        Set<Tag> acceptedEntities, SmaphAnnotatorDebugger debugger) {
 
 		Collection<Pair<HashSet<Annotation>, BindingFeaturePack>> bindingAndFeaturePacks = CollectiveLinkBack.getBindingFeaturePacks(query, acceptedEntities, qi, bg, wikiApi, debugger);
 
@@ -831,8 +837,8 @@ public class SmaphAnnotator implements Sa2WSystem {
 	}
 
 	public HashSet<ScoredAnnotation> getLBUpperBound1(String query,
-			HashSet<Annotation> goldStandardAnn) throws Exception {
-		QueryInformation qi = getQueryInformation(query);
+			HashSet<Annotation> goldStandardAnn, SmaphAnnotatorDebugger debugger) throws Exception {
+		QueryInformation qi = getQueryInformation(query, debugger);
 		HashSet<ScoredAnnotation> idealAnnotations = new HashSet<>();
 		StrongTagMatch stm = new StrongTagMatch(wikiApi);
 		for (Annotation ann : goldStandardAnn) {
@@ -848,12 +854,12 @@ public class SmaphAnnotator implements Sa2WSystem {
 	}
 
 	public Pair<HashSet<ScoredAnnotation>, Integer> getLBUpperBound2(String query,
-			HashSet<Annotation> goldStandardAnn, BindingGenerator bg)
+			HashSet<Annotation> goldStandardAnn, BindingGenerator bg, SmaphAnnotatorDebugger debugger)
 					throws Exception {
-		QueryInformation qi = getQueryInformation(query);
+		QueryInformation qi = getQueryInformation(query, debugger);
 		List<Triple<HashSet<Annotation>, BindingFeaturePack, Double>> bindingToFtrsAndF1 = getLBBindingToFtrsAndF1(
 				query, qi, bg, goldStandardAnn, new StrongAnnotationMatch(
-						wikiApi), qi.allCandidates());
+						wikiApi), qi.allCandidates(), debugger);
 		HashSet<Annotation> bestBinding = null;
 		double bestF1 = Double.NEGATIVE_INFINITY;
 		for (Triple<HashSet<Annotation>, BindingFeaturePack, Double> bindingAndFtrsAndF1 : bindingToFtrsAndF1) {
@@ -872,8 +878,8 @@ public class SmaphAnnotator implements Sa2WSystem {
 	}
 
 	public Pair<HashSet<ScoredAnnotation>, Integer> getLBUpperBound3(String query, HashSet<Annotation> goldStandardAnn,
-	        double maxAnchorEd) throws Exception {
-		QueryInformation qi = getQueryInformation(query);
+	        double maxAnchorEd, SmaphAnnotatorDebugger debugger) throws Exception {
+		QueryInformation qi = getQueryInformation(query, debugger);
 		List<Annotation> candidateAnnotations = AdvancedIndividualLinkback.getAnnotations(query, qi.allCandidates(),
 		        maxAnchorEd);
 		StrongAnnotationMatch sam = new StrongAnnotationMatch(wikiApi);
@@ -886,9 +892,9 @@ public class SmaphAnnotator implements Sa2WSystem {
 		return new Pair<HashSet<ScoredAnnotation>, Integer>(bestBindingScored, candidateAnnotations.size());
 	}
 
-	public HashSet<ScoredAnnotation> getLBUpperBound4(String query, HashSet<Annotation> gold) throws Exception {
+	public HashSet<ScoredAnnotation> getLBUpperBound4(String query, HashSet<Annotation> gold, SmaphAnnotatorDebugger debugger) throws Exception {
 		List<Pair<Integer, Integer>> segments = SmaphUtils.findSegments(query);
-		Set<Tag> entities = getQueryInformation(query).allCandidates();
+		Set<Tag> entities = getQueryInformation(query, debugger).allCandidates();
 		HashSet<ScoredAnnotation> solution = new HashSet<>();
 		StrongAnnotationMatch sam = new StrongAnnotationMatch(wikiApi);
 
@@ -902,12 +908,12 @@ public class SmaphAnnotator implements Sa2WSystem {
 	}
 
 	public HashSet<ScoredAnnotation> getUpperBoundMentions(String query,
-			HashSet<Annotation> goldStandardAnn, BindingGenerator bg)
+			HashSet<Annotation> goldStandardAnn, BindingGenerator bg, SmaphAnnotatorDebugger debugger)
 					throws Exception {
-		QueryInformation qi = getQueryInformation(query);
+		QueryInformation qi = getQueryInformation(query, debugger);
 		List<Triple<HashSet<Annotation>, BindingFeaturePack, Double>> bindingToFtrsAndF1 = getLBBindingToFtrsAndF1(
 				query, qi, bg, goldStandardAnn,
-				new StrongMentionAnnotationMatch(), qi.allCandidates());
+				new StrongMentionAnnotationMatch(), qi.allCandidates(), debugger);
 		HashSet<Annotation> bestBinding = null;
 		double bestF1 = Double.NEGATIVE_INFINITY;
 		for (Triple<HashSet<Annotation>, BindingFeaturePack, Double> bindingAndFtrsAndF1 : bindingToFtrsAndF1) {

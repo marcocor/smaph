@@ -82,7 +82,7 @@ public class GenerateTrainingAndTest {
 
 			bingAnnotator.generateExamples(query, goldStandard, goldStandardAnn, EFVectorsToPresence, EFCandidates,
 					LbVectorsToF1, BRCandidates, advAnnVectorsToPresence, ARCandidates, keepNEOnly,
-					new DefaultBindingGenerator(), anchorMaxED);
+					new DefaultBindingGenerator(), anchorMaxED, null);
 
 			if (entityFilterGatherer != null)
 				entityFilterGatherer.addExample(goldBoolToDouble(EFVectorsToPresence), EFCandidates, goldStandard);

@@ -100,8 +100,7 @@ public class RestService {
 	@Produces({ MediaType.APPLICATION_JSON })
 	public String debugSmaph(@QueryParam("Text") String text) {
 		SmaphAnnotatorDebugger debugger = new SmaphAnnotatorDebugger();
-		defaultAnn.setDebugger(debugger);
-		defaultAnn.solveSa2W(text);
+		defaultAnn.solveSa2W(text, debugger);
 
 		try {
 			return debugger.toJson(wikiApi).toString();
