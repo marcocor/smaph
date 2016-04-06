@@ -23,18 +23,33 @@ public class ServerMain {
 	private final static Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
 	/**
-	 * Starts Grizzly HTTP server exposing JAX-RS resources defined in this
-	 * application.
-	 * 
-	 * @return Grizzly HTTP server.
+	 * Starts Grizzly HTTP server exposing SMAPH JAX-RS resources.
 	 */
-	public static HttpServer startServer(String serverUri) {
-		final ResourceConfig rc = new ResourceConfig().packages("it.unipi.di.acube.smaph.server.rest");
+	public static void startServer(String serverUri) {
+		LOG.info("Initializing SMAPH services.");
+		RestService.initialize();
+
+		ResourceConfig rc = new ResourceConfig().packages("it.unipi.di.acube.smaph.server.rest");
 		StaticHttpHandler staticHandler = new StaticHttpHandler("src/main/resources/webapp/");
 
 		HttpServer httpServer = GrizzlyHttpServerFactory.createHttpServer(URI.create(serverUri), rc);
 		httpServer.getServerConfiguration().addHttpHandler(staticHandler, "/");
-		return httpServer;
+
+		Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
+			@Override
+			public void run() {
+				LOG.info("Shutting server down..");
+				httpServer.shutdown();
+			}
+		}, "shutdownHook"));
+
+		try {
+			httpServer.start();
+			LOG.info("Smaph started with WADL available at " + "{}application.wadl\nPress CTRL^C (SIGINT) to terminate.", serverUri);
+			Thread.currentThread().join();
+		} catch (Exception e) {
+			LOG.error("There was an error while starting Grizzly HTTP server.", e);
+		}
 	}
 
 	/**
@@ -52,11 +67,6 @@ public class ServerMain {
 		CommandLine line = parser.parse(options, args);
 
 		String serverUri = String.format("http://%s:%d/rest", line.getOptionValue("host", "localhost"), Integer.parseInt(line.getOptionValue("port", "8080")));
-		LOG.info("Initializing server.");
-		RestService.initialize();
-		HttpServer server = startServer(serverUri);
-		LOG.info("Smaph started with WADL available at " + "{}application.wadl\nPress Enter to terminate.", serverUri);
-		System.in.read();
-		server.shutdown();
+		startServer(serverUri);
 	}
 }
