@@ -95,29 +95,30 @@ public class SmaphAnnotatorDebugger {
 		};
 		return textJs;
 	}
-	
+
 	private JSONArray getAnnotatedSnippetS6(String query, WikipediaApiInterface wikiApi) throws JSONException, IOException {
 		JSONArray res = new JSONArray();
-		for (Triple<String, HashSet<Annotation>, HashSet<Mention>> p : this.annotatedSnippetsAndBoldsS6.get(query)) {
-			JSONObject pairJs = new JSONObject();
-			res.put(pairJs);
-			pairJs.put("snippet", p.getLeft());
-			JSONArray annotationsJs = new JSONArray();
-			pairJs.put("parts", annotationsJs);
-			int lastIdx = 0;
-			for (Annotation a : SmaphUtils.sorted(p.getMiddle())) {
-				annotationsJs.put(getTextPartJson(p.getLeft(), lastIdx, a.getPosition(), p.getRight()));
-				
-				JSONObject annotationJs = getTextPartJson(p.getLeft(), a.getPosition(), a.getPosition() + a.getLength(),
-				        p.getRight());
-				annotationsJs.put(annotationJs);
-				annotationJs.put("title", wikiApi.getTitlebyId(a.getConcept()));
-				annotationJs.put("wid", a.getConcept());
-				annotationJs.put("url", widToUrl(a.getConcept(), wikiApi));
-				lastIdx = a.getPosition() + a.getLength();
+		if (this.annotatedSnippetsAndBoldsS6.containsKey(query))
+			for (Triple<String, HashSet<Annotation>, HashSet<Mention>> p : this.annotatedSnippetsAndBoldsS6.get(query)) {
+				JSONObject pairJs = new JSONObject();
+				res.put(pairJs);
+				pairJs.put("snippet", p.getLeft());
+				JSONArray annotationsJs = new JSONArray();
+				pairJs.put("parts", annotationsJs);
+				int lastIdx = 0;
+				for (Annotation a : SmaphUtils.sorted(p.getMiddle())) {
+					annotationsJs.put(getTextPartJson(p.getLeft(), lastIdx, a.getPosition(), p.getRight()));
+
+					JSONObject annotationJs = getTextPartJson(p.getLeft(), a.getPosition(), a.getPosition() + a.getLength(),
+							p.getRight());
+					annotationsJs.put(annotationJs);
+					annotationJs.put("title", wikiApi.getTitlebyId(a.getConcept()));
+					annotationJs.put("wid", a.getConcept());
+					annotationJs.put("url", widToUrl(a.getConcept(), wikiApi));
+					lastIdx = a.getPosition() + a.getLength();
+				}
+				annotationsJs.put(getTextPartJson(p.getLeft(), lastIdx, p.getLeft().length(), p.getRight()));
 			}
-			annotationsJs.put(getTextPartJson(p.getLeft(), lastIdx, p.getLeft().length(), p.getRight()));
-		}
 		return res;
 	}
 
@@ -198,25 +199,25 @@ public class SmaphAnnotatorDebugger {
 			}
 		return res;
 	}
-	
+
 	private JSONArray getSourceSearchResultJson(
 			HashMap<String, List<Triple<Integer, String, Integer>>> source,
-			String query, WikipediaApiInterface wikiApi) throws JSONException,
-			IOException {
+			String query, WikipediaApiInterface wikiApi) throws JSONException, IOException {
 		JSONArray res = new JSONArray();
-		for (Triple<Integer, String, Integer> t : source.get(query)) {
-			JSONObject triple = new JSONObject();
-			res.put(triple);
-			triple.put("rank", t.getLeft());
-			triple.put("wid", t.getRight());
-			triple.put("title",
-					t.getRight() >= 0 ? wikiApi.getTitlebyId(t.getRight())
-							: "---not a wikipedia page---");
-			triple.put("url", t.getMiddle());
-		}
+		if (source.containsKey(query))
+			for (Triple<Integer, String, Integer> t : source.get(query)) {
+				JSONObject triple = new JSONObject();
+				res.put(triple);
+				triple.put("rank", t.getLeft());
+				triple.put("wid", t.getRight());
+				triple.put("title",
+						t.getRight() >= 0 ? wikiApi.getTitlebyId(t.getRight())
+								: "---not a wikipedia page---");
+				triple.put("url", t.getMiddle());
+			}
 		return res;
 	}
-	
+
 	private JSONArray getResultsJson(String query, WikipediaApiInterface wikiApi)
 			throws JSONException, IOException {
 		JSONArray res = new JSONArray();
@@ -303,30 +304,31 @@ public class SmaphAnnotatorDebugger {
 		float bestF1 = -1;
 		if (goldStandard != null)
 			bestF1 = getBestF1(this.linkBackBindingScore.get(query).keySet(), goldStandard, sam);
-		
+
 		Vector<Pair<JSONObject, Double>> res = new Vector<>();
-		for (HashSet<Annotation> binding : this.linkBackAnnotationFeaturesAndBindingFeatures.get(query).keySet()) {
-			Pair<HashMap<Annotation, HashMap<String, Double>>, HashMap<String, Double>> t = this.linkBackAnnotationFeaturesAndBindingFeatures.get(query).get(binding);
-			JSONObject tripleJs = new JSONObject();
-			JSONArray annotationsJs = new JSONArray();
-			tripleJs.put("annotations", annotationsJs);
-			for (Annotation a: SmaphUtils.sorted(t.first.keySet())){
-				JSONObject annotationJs = new JSONObject();
-				annotationsJs.put(annotationJs);
-				annotationJs.put("mention", query.substring(a.getPosition(), a.getPosition()+a.getLength()));
-				annotationJs.put("wid", a.getConcept());
-				annotationJs.put("title", wikiApi.getTitlebyId(a.getConcept()));
-				annotationJs.put("url", widToUrl(a.getConcept(), wikiApi));
-				JSONObject annotationFeaturesJs = new JSONObject();
-				annotationJs.put("annotation_features", annotationFeaturesJs);
-				for (String fName: SmaphUtils.sorted(t.first.get(a).keySet()))
-					annotationFeaturesJs.put(fName, t.first.get(a).get(fName));
-			}
-			
-			JSONObject bindingFeaturesJs = new JSONObject();
-			tripleJs.put("binding_features", bindingFeaturesJs);
-			for (String fName: SmaphUtils.sorted(t.second.keySet(), new CompareFeatureName()))
-				bindingFeaturesJs.put(fName, t.second.get(fName));
+		if (this.linkBackAnnotationFeaturesAndBindingFeatures.containsKey(query))
+			for (HashSet<Annotation> binding : this.linkBackAnnotationFeaturesAndBindingFeatures.get(query).keySet()) {
+				Pair<HashMap<Annotation, HashMap<String, Double>>, HashMap<String, Double>> t = this.linkBackAnnotationFeaturesAndBindingFeatures.get(query).get(binding);
+				JSONObject tripleJs = new JSONObject();
+				JSONArray annotationsJs = new JSONArray();
+				tripleJs.put("annotations", annotationsJs);
+				for (Annotation a: SmaphUtils.sorted(t.first.keySet())){
+					JSONObject annotationJs = new JSONObject();
+					annotationsJs.put(annotationJs);
+					annotationJs.put("mention", query.substring(a.getPosition(), a.getPosition()+a.getLength()));
+					annotationJs.put("wid", a.getConcept());
+					annotationJs.put("title", wikiApi.getTitlebyId(a.getConcept()));
+					annotationJs.put("url", widToUrl(a.getConcept(), wikiApi));
+					JSONObject annotationFeaturesJs = new JSONObject();
+					annotationJs.put("annotation_features", annotationFeaturesJs);
+					for (String fName: SmaphUtils.sorted(t.first.get(a).keySet()))
+						annotationFeaturesJs.put(fName, t.first.get(a).get(fName));
+				}
+
+				JSONObject bindingFeaturesJs = new JSONObject();
+				tripleJs.put("binding_features", bindingFeaturesJs);
+				for (String fName: SmaphUtils.sorted(t.second.keySet(), new CompareFeatureName()))
+					bindingFeaturesJs.put(fName, t.second.get(fName));
 
 			double score = this.linkBackBindingScore.get(query).get(binding);
 			res.add(new Pair<JSONObject, Double>(tripleJs, score));
