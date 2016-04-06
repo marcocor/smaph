@@ -165,7 +165,7 @@ function fillIn(query) {
 			  span.append(query.substring(this.begin, this.end) + " &rarr; ");
 			  span.append($("<a>").attr("href", this.url).attr("target", "_blank").html(this.title));
 			  if (idx != qdata.results.length -1)
-				  span.append(" &dash; ");
+				  span.append("; ");
 			});
 		 if (qdata.results.length == 0)
 		   $("#result-alert").html($("<strong>").html("No entities found for query: "+query))
