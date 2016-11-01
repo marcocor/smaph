@@ -129,7 +129,7 @@ public class TuneModelLibSvm {
 
 		if (line.hasOption("opt-entity-filter")) {
 			Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult> modelAndStats = trainIterativeEF(bingAnnotator,
-					opt, wikiToFreebase, freebApi, maxAnchorSegmentED, OptimizaionProfiles.MAXIMIZE_MACRO_F1, -1.0,
+					opt, wikiToFreebase, freebApi, OptimizaionProfiles.MAXIMIZE_MACRO_F1, -1.0,
 					ftrSelMethod, ftrRestriction, initialFtrSet, wikiApi);
 			System.gc();
 			for (ModelConfigurationResult res : modelAndStats.first)
@@ -155,7 +155,7 @@ public class TuneModelLibSvm {
 	}
 
 	private static Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult> trainIterativeEF(
-			SmaphAnnotator annotator, OptDataset optDs, WikipediaToFreebase wikiToFreebase, FreebaseApi freebApi, double maxAnchorSegmentED,
+			SmaphAnnotator annotator, OptDataset optDs, WikipediaToFreebase wikiToFreebase, FreebaseApi freebApi,
 			OptimizaionProfiles optProfile, double optProfileThreshold, String ftrSelMethod, int[][] restrictFeatures, int[] initialFeatures,
 			WikipediaApiInterface wikiApi) throws Exception {
 
@@ -169,7 +169,7 @@ public class TuneModelLibSvm {
 		ExampleGatherer<Tag, HashSet<Tag>> develGatherer = new ExampleGatherer<Tag, HashSet<Tag>>();
 
 		GenerateTrainingAndTest.gatherExamplesTrainingAndDevel(annotator, trainGatherer, develGatherer, null, null, null, null,
-				null, null, wikiApi, wikiToFreebase, freebApi, optDs, maxAnchorSegmentED);
+				null, null, wikiApi, wikiToFreebase, freebApi, optDs, -1);
 
 		int[] allFtrs = SmaphUtils.getAllFtrVect(new EntityFeaturePack().getFeatureCount());
 
@@ -355,7 +355,7 @@ public class TuneModelLibSvm {
 					bestGamma = bestCGammaResult.getGamma();
 					if (!ftrSelMethod.equals("increment"))
 						restrictedFeaturesScoreboard.addAll(scoreboardGammaCTuning);
-					LOG.error("Done broad gamma-C tuning (iteration {}) best gamma/C: {}/{}", iteration, bestGamma, bestC);
+					LOG.info("Done broad gamma-C tuning (iteration {}) best gamma/C: {}/{}", iteration, bestGamma, bestC);
 				}
 
 				// Fine-tune C and Gamma
