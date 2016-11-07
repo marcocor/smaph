@@ -349,12 +349,8 @@ public class SmaphAnnotator implements Sa2WSystem {
 
 	private static void getBolds(String field,int rankI, List<Pair<String, Vector<Pair<Integer, Integer>>>> snippetsToBolds, List<Pair<String, Integer>> boldsAndRanks){
 		String snippet = "";
-		byte[] startByte = new byte[] { (byte) 0xee, (byte) 0x80,
-				(byte) 0x80 };
-		byte[] stopByte = new byte[] { (byte) 0xee, (byte) 0x80,
-				(byte) 0x81 };
-		String start = new String(startByte);
-		String stop = new String(stopByte);
+		String start = new String(Character.toString((char) 0xe000));
+		String stop = new String(Character.toString((char) 0xe001));
 		field = field.replaceAll(stop + "." + start, " ");
 		int startIdx = field.indexOf(start);
 		int stopIdx = field.indexOf(stop, startIdx);
