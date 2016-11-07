@@ -20,7 +20,7 @@ public class WATRelatednessComputer implements Serializable {
 	private Object2DoubleOpenHashMap<Pair<Integer,Integer>> cacheMW = new Object2DoubleOpenHashMap<>();
 	private Object2DoubleOpenHashMap<String> cacheLp = new Object2DoubleOpenHashMap<>();
 	private static long flushCounter = 0;
-	private static final int FLUSH_EVERY = 200;
+	private static final int FLUSH_EVERY = 1000;
 	private static final String URL_TEMPLATE_JACCARD = "http://wikisense.mkapp.it/rel/id?src=%d&dst=%d&relatedness=jaccard";
 	private static final String URL_TEMPLATE_MW = "http://wikisense.mkapp.it/rel/id?src=%d&dst=%d&relatedness=mw";
 	private static final String URL_TEMPLATE_SPOT = "http://wikisense.mkapp.it/tag/spot?text=%s";
