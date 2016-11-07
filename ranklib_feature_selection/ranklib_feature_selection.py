@@ -85,7 +85,7 @@ if __name__ == '__main__':
 	parser.add_argument('--startset', help="Feature set to start with (e.g. 1,3,5-10,24). Default: use all features (no features for 'increment' method)", required=False, default="")
 	parser.add_argument('--candidate_features', help="Feature set to try to add (increment) or remove (ablation) (e.g. 1,3,5-10,24). Default: use all features of the start set (ablation) or all valid features not in startset (increment)", required=False, default="")
 	parser.add_argument('--leaves', help="Number of tree leaves (e.g. 5,7,10-20). Default: 10.", required=False, default="10")
-	parser.add_argument('--opt_vals', help="Values to optimize NDGC with. (e.g. 5,7,10-20). Default: 12-23.", required=False, default="12-23")
+	parser.add_argument('--opt_vals', help="Values to optimize NDGC with. (e.g. 5,7,10-20). Default: 1-23.", required=False, default="1-23")
 	parser.add_argument('--cpus', help="Number of training processes to start in parallel.", required=False, default="")
 	args = parser.parse_args()
 
