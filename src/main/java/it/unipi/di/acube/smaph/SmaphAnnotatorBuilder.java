@@ -3,7 +3,6 @@ package it.unipi.di.acube.smaph;
 import it.unipi.di.acube.batframework.systemPlugins.CachedWATAnnotator;
 import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
 import it.unipi.di.acube.smaph.learn.featurePacks.AdvancedAnnotationFeaturePack;
-import it.unipi.di.acube.smaph.learn.featurePacks.BindingFeaturePack;
 import it.unipi.di.acube.smaph.learn.featurePacks.EntityFeaturePack;
 import it.unipi.di.acube.smaph.learn.models.entityfilters.EntityFilter;
 import it.unipi.di.acube.smaph.learn.models.entityfilters.LibSvmEntityFilter;
@@ -12,6 +11,7 @@ import it.unipi.di.acube.smaph.learn.models.linkback.annotationRegressor.LibSvmA
 import it.unipi.di.acube.smaph.learn.models.linkback.bindingRegressor.RankLibBindingRegressor;
 import it.unipi.di.acube.smaph.learn.normalizer.FeatureNormalizer;
 import it.unipi.di.acube.smaph.learn.normalizer.ZScoreFeatureNormalizer;
+import it.unipi.di.acube.smaph.learn.normalizer.NoFeatureNormalizer;
 import it.unipi.di.acube.smaph.linkback.AdvancedIndividualLinkback;
 import it.unipi.di.acube.smaph.linkback.CollectiveLinkBack;
 import it.unipi.di.acube.smaph.linkback.DummyLinkBack;
@@ -56,7 +56,7 @@ public class SmaphAnnotatorBuilder {
 	public static SmaphAnnotator getDefaultBingAnnotatorCollectiveLBRanklib(WikipediaApiInterface wikiApi, String bingKey,
 	        String collModelBase) throws FileNotFoundException, ClassNotFoundException, IOException {
 		CollectiveLinkBack lb = new CollectiveLinkBack(wikiApi, new DefaultBindingGenerator(), new RankLibBindingRegressor(
-		        collModelBase + ".model"), new ZScoreFeatureNormalizer(collModelBase + ".zscore", new BindingFeaturePack()));
+		        collModelBase + ".model"), new NoFeatureNormalizer() /*new ZScoreFeatureNormalizer(collModelBase + ".zscore", new BindingFeaturePack())*/);
 		return getDefaultBingAnnotatorParam(wikiApi, bingKey, new NoEntityFilter(), null, lb, true, true, true);
 	}
 

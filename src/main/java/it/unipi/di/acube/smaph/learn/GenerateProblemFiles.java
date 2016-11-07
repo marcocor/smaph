@@ -76,7 +76,7 @@ public class GenerateProblemFiles {
 		freebKey = SmaphConfig.getDefaultFreebaseKey();
 		freebCache = SmaphConfig.getDefaultFreebaseCache();
 		BingInterface.setCache(SmaphConfig.getDefaultBingCache());
-		wikiApi = new WikipediaApiInterface("wid.cache", "redirect.cache");
+		wikiApi = WikipediaApiInterface.api();
 		WATRelatednessComputer.setCache("relatedness.cache");
 		freebApi = new FreebaseApi(freebKey, freebCache);
 		CachedWATAnnotator.setCache("wikisense.cache");
@@ -84,9 +84,9 @@ public class GenerateProblemFiles {
 
 		if (line.hasOption("dump-entity-filter"))
 			generateEFModel(line.getOptionValue("outfile-base", ""));
-		if (line.hasOption("dump-collective-rank"))
-			generateIndividualAdvancedAnnotationModel(line.getOptionValue("outfile-base", ""));
 		if (line.hasOption("dump-annotation-regressor"))
+			generateIndividualAdvancedAnnotationModel(line.getOptionValue("outfile-base", ""));
+		if (line.hasOption("dump-collective-rank"))
 			generateCollectiveModel(line.getOptionValue("outfile-base", ""));
 
 		CachedWATAnnotator.flush();
@@ -154,15 +154,8 @@ public class GenerateProblemFiles {
 		GenerateTrainingAndTest.gatherExamplesTrainingAndDevel(bingAnnotator, null, null, trainCollectiveGatherer,
 		        develCollectiveGatherer, null, null, null, null, wikiApi, wikiToFreebase, freebApi, opt, -1);
 
-		LOG.info("Building Z-score normalizer over training set...");
-		ZScoreFeatureNormalizer fNormEF = new ZScoreFeatureNormalizer(trainCollectiveGatherer);
-		fNormEF.dump("train_ar.zscore");
-		LOG.info("Dumping annotation regressor training problems (scaled)...");
-		trainCollectiveGatherer.dumpExamplesRankLib(fileNamePrefix + "train_coll_zscore.dat", fNormEF);
 		LOG.info("Dumping annotation regressor training problems (original values)...");
 		trainCollectiveGatherer.dumpExamplesRankLib(fileNamePrefix + "train_coll.dat", new NoFeatureNormalizer());
-		LOG.info("Dumping annotation regressor development problems (scaled)...");
-		develCollectiveGatherer.dumpExamplesRankLib(fileNamePrefix + "devel_coll_zscore.dat", fNormEF);
 		LOG.info("Dumping annotation regressor development problems (original values)...");
 		develCollectiveGatherer.dumpExamplesRankLib(fileNamePrefix + "devel_coll.dat", new NoFeatureNormalizer());
 	}
