@@ -31,10 +31,12 @@
  */
 package it.cnr.isti.hpc.erd;
 
-import it.cnr.isti.hpc.mapdb.MapDB;
-
 import java.io.File;
 import java.util.Map;
+
+import org.mapdb.DB;
+import org.mapdb.DBMaker;
+import org.mapdb.Serializer;
 
 /**
  * @author Diego Ceccarelli <diego.ceccarelli@isti.cnr.it>
@@ -55,11 +57,10 @@ public class WikipediaToFreebase {
 	
 	public WikipediaToFreebase(String folder) {
 		File dir = new File(folder);
-		File mapfile = new File(dir, "mapdb");
-		MapDB db = new MapDB(mapfile);
-		map = db.getCollection("index");
-		labels = db.getCollection("label");
-
+		File mapfile = new File(dir, "freebase.db");
+		DB db = DBMaker.fileDB(mapfile).fileMmapEnable().closeOnJvmShutdown().make();
+		map = db.hashMap("index", Serializer.STRING, Serializer.STRING).createOrOpen();
+		labels = db.hashMap("label", Serializer.STRING, Serializer.STRING).createOrOpen();
 	}
 
 	public String getLabel(String wikiid) {

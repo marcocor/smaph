@@ -16,37 +16,6 @@
 
 package it.unipi.di.acube.smaph;
 
-import it.unipi.di.acube.BingInterface;
-import it.unipi.di.acube.batframework.data.Annotation;
-import it.unipi.di.acube.batframework.data.Mention;
-import it.unipi.di.acube.batframework.data.ScoredAnnotation;
-import it.unipi.di.acube.batframework.data.ScoredTag;
-import it.unipi.di.acube.batframework.data.Tag;
-import it.unipi.di.acube.batframework.metrics.MatchRelation;
-import it.unipi.di.acube.batframework.metrics.Metrics;
-import it.unipi.di.acube.batframework.metrics.StrongAnnotationMatch;
-import it.unipi.di.acube.batframework.metrics.StrongMentionAnnotationMatch;
-import it.unipi.di.acube.batframework.metrics.StrongTagMatch;
-import it.unipi.di.acube.batframework.problems.Sa2WSystem;
-import it.unipi.di.acube.batframework.systemPlugins.CachedWATAnnotator;
-import it.unipi.di.acube.batframework.utils.AnnotationException;
-import it.unipi.di.acube.batframework.utils.Pair;
-import it.unipi.di.acube.batframework.utils.ProblemReduction;
-import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
-import it.unipi.di.acube.smaph.learn.featurePacks.AdvancedAnnotationFeaturePack;
-import it.unipi.di.acube.smaph.learn.featurePacks.BindingFeaturePack;
-import it.unipi.di.acube.smaph.learn.featurePacks.EntityFeaturePack;
-import it.unipi.di.acube.smaph.learn.featurePacks.FeaturePack;
-import it.unipi.di.acube.smaph.learn.models.entityfilters.EntityFilter;
-import it.unipi.di.acube.smaph.learn.normalizer.FeatureNormalizer;
-import it.unipi.di.acube.smaph.linkback.CollectiveLinkBack;
-import it.unipi.di.acube.smaph.linkback.LinkBack;
-import it.unipi.di.acube.smaph.linkback.AdvancedIndividualLinkback;
-import it.unipi.di.acube.smaph.linkback.bindingGenerator.BindingGenerator;
-import it.unipi.di.acube.smaph.main.ERDDatasetFilter;
-import it.unipi.di.acube.smaph.snippetannotationfilters.SnippetAnnotationFilter;
-import it.unipi.di.acube.smaph.wikiAnchors.EntityToAnchors;
-
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.lang.invoke.MethodHandles;
@@ -66,18 +35,50 @@ import javax.xml.xpath.XPathExpressionException;
 
 import org.apache.commons.lang3.tuple.ImmutableTriple;
 import org.apache.commons.lang3.tuple.Triple;
-import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
 
+import it.unipi.di.acube.batframework.data.Annotation;
+import it.unipi.di.acube.batframework.data.Mention;
+import it.unipi.di.acube.batframework.data.ScoredAnnotation;
+import it.unipi.di.acube.batframework.data.ScoredTag;
+import it.unipi.di.acube.batframework.data.Tag;
+import it.unipi.di.acube.batframework.metrics.MatchRelation;
+import it.unipi.di.acube.batframework.metrics.Metrics;
+import it.unipi.di.acube.batframework.metrics.StrongAnnotationMatch;
+import it.unipi.di.acube.batframework.metrics.StrongMentionAnnotationMatch;
+import it.unipi.di.acube.batframework.metrics.StrongTagMatch;
+import it.unipi.di.acube.batframework.problems.Sa2WSystem;
+import it.unipi.di.acube.batframework.systemPlugins.CachedWATAnnotator;
+import it.unipi.di.acube.batframework.utils.AnnotationException;
+import it.unipi.di.acube.batframework.utils.Pair;
+import it.unipi.di.acube.batframework.utils.ProblemReduction;
+import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
+import it.unipi.di.acube.searchapi.interfaces.WebSearchApi;
+import it.unipi.di.acube.searchapi.model.WebsearchResponse;
+import it.unipi.di.acube.searchapi.model.WebsearchResponseEntry;
+import it.unipi.di.acube.smaph.learn.featurePacks.AdvancedAnnotationFeaturePack;
+import it.unipi.di.acube.smaph.learn.featurePacks.BindingFeaturePack;
+import it.unipi.di.acube.smaph.learn.featurePacks.EntityFeaturePack;
+import it.unipi.di.acube.smaph.learn.featurePacks.FeaturePack;
+import it.unipi.di.acube.smaph.learn.models.entityfilters.EntityFilter;
+import it.unipi.di.acube.smaph.learn.normalizer.FeatureNormalizer;
+import it.unipi.di.acube.smaph.linkback.AdvancedIndividualLinkback;
+import it.unipi.di.acube.smaph.linkback.CollectiveLinkBack;
+import it.unipi.di.acube.smaph.linkback.LinkBack;
+import it.unipi.di.acube.smaph.linkback.bindingGenerator.BindingGenerator;
+import it.unipi.di.acube.smaph.main.ERDDatasetFilter;
+import it.unipi.di.acube.smaph.snippetannotationfilters.SnippetAnnotationFilter;
+import it.unipi.di.acube.smaph.wikiAnchors.EntityToAnchors;
+
 public class SmaphAnnotator implements Sa2WSystem {
 	private final static Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 	private static final Pattern WIKI_URL_PATTERN = Pattern.compile("https?://en.wikipedia.org/wiki/(.+)");
 	private WikipediaApiInterface wikiApi;
-	private BingInterface bingInterface = null;
+	private WebSearchApi bingInterface = null;
 	private CachedWATAnnotator snippetAnnotator;
 	private EntityFilter entityFilter;
 	private FeatureNormalizer entityFilterNormalizer;
@@ -117,7 +118,7 @@ public class SmaphAnnotator implements Sa2WSystem {
 	 *            Source 4 results limit.
 	 * @param wikiApi
 	 *            an API to Wikipedia.
-	 * @param bingKey
+	 * @param searchApi
 	 *            the key to the Bing API.
 	 */
 	public SmaphAnnotator(EntityFilter entityFilter, FeatureNormalizer entityFilterNormalizer,
@@ -127,7 +128,7 @@ public class SmaphAnnotator implements Sa2WSystem {
 			boolean includeSourceSnippets, int topKAnnotateSnippet, 
 			boolean tagTitles, CachedWATAnnotator snippetAnnotator,
 			SnippetAnnotationFilter snippetAnnotationFilter,
-			WikipediaApiInterface wikiApi, String bingKey) {
+			WikipediaApiInterface wikiApi, WebSearchApi searchApi) {
 		this.entityFilter = entityFilter;
 		this.entityFilterNormalizer = entityFilterNormalizer;
 		this.linkBack = linkBack;
@@ -135,7 +136,7 @@ public class SmaphAnnotator implements Sa2WSystem {
 		this.includeSourceNormalSearch = includeSourceNormalSearch;
 		this.includeSourceWikiSearch = includeSourceWikiSearch;
 		this.topKWikiSearch = wikiSearchPages;
-		this.bingInterface =  new BingInterface(bingKey);
+		this.bingInterface =  searchApi;
 		this.includeSourceSnippets = includeSourceSnippets;
 		this.snippetAnnotationFilter = snippetAnnotationFilter;
 		this.topKAnnotateSnippet = topKAnnotateSnippet;
@@ -282,7 +283,6 @@ public class SmaphAnnotator implements Sa2WSystem {
 
 	private Triple<Integer, Double, JSONObject> takeBingData(String query,
 			List<Pair<String, Integer>> boldsAndRanks, List<String> urls,
-			List<String> relatedSearch,
 			List<Pair<String, Vector<Pair<Integer, Integer>>>> snippetsToBolds,
 			int topk, boolean wikisearch) throws Exception {
 		if (!boldsAndRanks.isEmpty())
@@ -291,32 +291,18 @@ public class SmaphAnnotator implements Sa2WSystem {
 			throw new RuntimeException("urls must be empty");
 		if (wikisearch)
 			query += " wikipedia";
-		JSONObject bingReply = bingInterface.queryBing(query);
-		JSONObject data = (JSONObject) bingReply.get("d");
-		JSONObject results = (JSONObject) ((JSONArray) data.get("results"))
-				.get(0);
-		JSONArray webResults = (JSONArray) results.get("Web");
-		double webTotal = new Double((String) results.get("WebTotal"));
+		WebsearchResponse bingReply = bingInterface.query(query);
+		double webTotal = bingReply.getTotalResults();
 
-		getBoldsAndUrls(webResults, topk, boldsAndRanks, urls, snippetsToBolds, tagTitles);
-
-		if (relatedSearch != null) {
-			JSONArray relatedSearchResults = (JSONArray) results
-					.get("RelatedSearch");
-			for (int i = 0; i < relatedSearchResults.length(); i++) {
-				JSONObject resI = (JSONObject) relatedSearchResults.get(i);
-				String rsI = (String) resI.get("Title");
-				relatedSearch.add(rsI);
-			}
-		}
+		getBoldsAndUrls(bingReply, topk, boldsAndRanks, urls, snippetsToBolds, tagTitles);
 
 		return new ImmutableTriple<Integer, Double, JSONObject>(
-				webResults.length(), webTotal, bingReply);
+				bingReply.getWebEntries().size(), webTotal, bingReply.getJsonResponse());
 	}
 	/**
 	 * From the bing results extract the bolds and the urls.
 	 * 
-	 * @param webResults
+	 * @param bingReply
 	 *            the web results returned by Bing.
 	 * @param topk
 	 *            limit the extraction to the first topk results.
@@ -332,28 +318,26 @@ public class SmaphAnnotator implements Sa2WSystem {
 	 * @throws JSONException
 	 *             if the json returned by Bing could not be read.
 	 */
-	private static void getBoldsAndUrls(JSONArray webResults, double topk,
+	private static void getBoldsAndUrls(WebsearchResponse bingReply, double topk,
 			List<Pair<String, Integer>> boldsAndRanks, List<String> urls,
 			List<Pair<String, Vector<Pair<Integer, Integer>>>> snippetsToBolds, boolean tagTitles)
 					throws JSONException {
-		for (int i = 0; i < Math.min(webResults.length(), topk); i++) {
-			JSONObject resI = (JSONObject) webResults.get(i);
-			String titleI = (String) resI.get("Title");
-			String descI = (String) resI.get("Description");
-			String url = (String) resI.get("Url");
+		List<WebsearchResponseEntry> webEntries = bingReply.getWebEntries();
+		for (int i = 0; i < Math.min(webEntries.size(), topk); i++) {
+			WebsearchResponseEntry entry = webEntries.get(i);
+			String titleI = entry.getName();
+			String descI = entry.getSnippet();
+			String url = entry.getDisplayUrl().replaceAll(WebSearchApi.SNIPPET_BOLD_START_STR, "").replaceAll(WebSearchApi.SNIPPET_BOLD_END_STR, "");
 			urls.add(url);
-			//getBolds(titleI, i, snippetsToBolds, boldsAndRanks);
 			getBolds((tagTitles ? titleI + " " : "") + descI, i, snippetsToBolds, boldsAndRanks);
 		}
 	}
 
 	private static void getBolds(String field,int rankI, List<Pair<String, Vector<Pair<Integer, Integer>>>> snippetsToBolds, List<Pair<String, Integer>> boldsAndRanks){
 		String snippet = "";
-		String start = new String(Character.toString((char) 0xe000));
-		String stop = new String(Character.toString((char) 0xe001));
-		field = field.replaceAll(stop + "." + start, " ");
-		int startIdx = field.indexOf(start);
-		int stopIdx = field.indexOf(stop, startIdx);
+		field = field.replaceAll(WebSearchApi.SNIPPET_BOLD_END_STR + "." + WebSearchApi.SNIPPET_BOLD_START_STR, " ");
+		int startIdx = field.indexOf(WebSearchApi.SNIPPET_BOLD_START_STR);
+		int stopIdx = field.indexOf(WebSearchApi.SNIPPET_BOLD_END_STR, startIdx);
 		int lastStop = -1;
 		Vector<Pair<Integer, Integer>> boldPosInSnippet = new Vector<>();
 		while (startIdx != -1 && stopIdx != -1) {
@@ -365,8 +349,8 @@ public class SmaphAnnotator implements Sa2WSystem {
 					.length(), spot.length()));
 			snippet += spot;
 			lastStop = stopIdx;
-			startIdx = field.indexOf(start, startIdx + 1);
-			stopIdx = field.indexOf(stop, startIdx + 1);
+			startIdx = field.indexOf(WebSearchApi.SNIPPET_BOLD_START_STR, startIdx + 1);
+			stopIdx = field.indexOf(WebSearchApi.SNIPPET_BOLD_END_STR, startIdx + 1);
 		}
 		snippet += field.substring(lastStop + 1);
 		if (snippetsToBolds != null)
@@ -427,7 +411,6 @@ public class SmaphAnnotator implements Sa2WSystem {
 		/** Search the query on bing */
 		List<Pair<String, Integer>> bingBoldsAndRankNS = null;
 		List<String> urlsNS = null;
-		List<String> relatedSearchNS = null;
 		Triple<Integer, Double, JSONObject> resCountAndWebTotalNS = null;
 		int resultsCountNS = -1;
 		double webTotalNS = Double.NaN;
@@ -441,11 +424,10 @@ public class SmaphAnnotator implements Sa2WSystem {
 		if (includeSourceWikiSearch || includeSourceNormalSearch || includeSourceSnippets) {
 			bingBoldsAndRankNS = new Vector<>();
 			urlsNS = new Vector<>();
-			relatedSearchNS = new Vector<>();
 			snippetsToBoldsNS = new Vector<>();
 			candidatesNS = new HashSet<>();
 			resCountAndWebTotalNS = takeBingData(query, bingBoldsAndRankNS,
-					urlsNS, relatedSearchNS, snippetsToBoldsNS, Integer.MAX_VALUE,
+					urlsNS, snippetsToBoldsNS, Integer.MAX_VALUE,
 					false);
 			resultsCountNS = resCountAndWebTotalNS.getLeft();
 			webTotalNS = resCountAndWebTotalNS.getMiddle();
@@ -480,7 +462,7 @@ public class SmaphAnnotator implements Sa2WSystem {
 		HashMap<Integer, Integer> idToRankWS = null;
 		if (includeSourceWikiSearch | includeSourceNormalSearch) {
 			resCountAndWebTotalWS = takeBingData(query, bingBoldsAndRankWS,
-					wikiSearchUrls, null, null, topKWikiSearch, true);
+					wikiSearchUrls, null, topKWikiSearch, true);
 			webTotalWS = resCountAndWebTotalWS.getMiddle();
 			rankToIdWS = urlsToRankID(wikiSearchUrls);
 			idToRankWS = SmaphUtils.inverseMap(rankToIdWS);

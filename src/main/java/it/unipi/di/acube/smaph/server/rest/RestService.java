@@ -3,12 +3,13 @@ package it.unipi.di.acube.smaph.server.rest;
 import it.unipi.di.acube.batframework.data.ScoredAnnotation;
 import it.unipi.di.acube.batframework.problems.Sa2WSystem;
 import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
+import it.unipi.di.acube.searchapi.CachedSearchApi;
+import it.unipi.di.acube.searchapi.bing.BingSearchApi;
 import it.unipi.di.acube.smaph.SmaphAnnotator;
 import it.unipi.di.acube.smaph.SmaphAnnotatorBuilder;
 import it.unipi.di.acube.smaph.SmaphAnnotatorDebugger;
 import it.unipi.di.acube.smaph.SmaphConfig;
 import it.unipi.di.acube.smaph.SmaphUtils;
-import it.unipi.di.acube.BingInterface;
 import it.cnr.isti.hpc.erd.Annotation;
 import it.cnr.isti.hpc.erd.WikipediaToFreebase;
 
@@ -50,16 +51,14 @@ public class RestService {
 		creator = new TurtleNIFDocumentCreator();
 		wikiApi = new WikipediaApiInterface("wid.cache", "redirect.cache");
 		SmaphConfig.setConfigFile("smaph-config.xml");
-		String bingKey = SmaphConfig.getDefaultBingKey();
-		String bingCache = SmaphConfig.getDefaultBingCache();
+
 		try {
-			if (bingCache != null)
-				BingInterface.setCache(bingCache);
-			entityFilterAnn = SmaphAnnotatorBuilder.getDefaultBingAnnotatorEF(wikiApi, bingKey, "models/best_ef");
+			CachedSearchApi searchApiCache = new CachedSearchApi(new BingSearchApi(SmaphConfig.getDefaultBingKey()), SmaphConfig.getDefaultBingCache());
+			entityFilterAnn = SmaphAnnotatorBuilder.getDefaultBingAnnotatorEF(wikiApi, searchApiCache, "models/best_ef");
 			annotationRegressorAnn = SmaphAnnotatorBuilder.getDefaultBingAnnotatorIndividualAdvancedAnnotationRegressor(wikiApi,
-			        bingKey, "models/best_ar", 0.7);
+					searchApiCache, "models/best_ar", 0.7);
 			collectiveAnn = SmaphAnnotatorBuilder
-			        .getDefaultBingAnnotatorCollectiveLBRanklib(wikiApi, bingKey, "models/best_coll");
+			        .getDefaultBingAnnotatorCollectiveLBRanklib(wikiApi, searchApiCache, "models/best_coll");
 		} catch (ClassNotFoundException | IOException e) {
 			e.printStackTrace();
 			throw new RuntimeException(e);

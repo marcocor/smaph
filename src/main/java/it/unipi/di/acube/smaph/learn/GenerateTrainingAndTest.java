@@ -16,28 +16,26 @@
 
 package it.unipi.di.acube.smaph.learn;
 
-import it.cnr.isti.hpc.erd.WikipediaToFreebase;
-import it.unimi.dsi.logging.ProgressLogger;
-import it.unipi.di.acube.BingInterface;
-import it.unipi.di.acube.batframework.data.Annotation;
-import it.unipi.di.acube.batframework.data.Tag;
-import it.unipi.di.acube.batframework.datasetPlugins.DatasetBuilder;
-import it.unipi.di.acube.batframework.datasetPlugins.YahooWebscopeL24Dataset;
-import it.unipi.di.acube.batframework.problems.A2WDataset;
-import it.unipi.di.acube.batframework.utils.FreebaseApi;
-import it.unipi.di.acube.batframework.utils.Pair;
-import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
-import it.unipi.di.acube.smaph.SmaphAnnotator;
-import it.unipi.di.acube.smaph.learn.featurePacks.FeaturePack;
-import it.unipi.di.acube.smaph.linkback.bindingGenerator.DefaultBindingGenerator;
-import it.unipi.di.acube.smaph.main.ERDDatasetFilter;
-
 import java.util.HashSet;
 import java.util.List;
 import java.util.Vector;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import it.cnr.isti.hpc.erd.WikipediaToFreebase;
+import it.unimi.dsi.logging.ProgressLogger;
+import it.unipi.di.acube.batframework.data.Annotation;
+import it.unipi.di.acube.batframework.data.Tag;
+import it.unipi.di.acube.batframework.datasetPlugins.DatasetBuilder;
+import it.unipi.di.acube.batframework.datasetPlugins.YahooWebscopeL24Dataset;
+import it.unipi.di.acube.batframework.problems.A2WDataset;
+import it.unipi.di.acube.batframework.utils.Pair;
+import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
+import it.unipi.di.acube.smaph.SmaphAnnotator;
+import it.unipi.di.acube.smaph.learn.featurePacks.FeaturePack;
+import it.unipi.di.acube.smaph.linkback.bindingGenerator.DefaultBindingGenerator;
+import it.unipi.di.acube.smaph.main.ERDDatasetFilter;
 
 public class GenerateTrainingAndTest {
 	private static Logger logger = LoggerFactory.getLogger(GenerateTrainingAndTest.class);
@@ -114,7 +112,7 @@ public class GenerateTrainingAndTest {
 			ExampleGatherer<Annotation, HashSet<Annotation>> develIndividualAdvancedAnnotationGatherer,
 			List<String> trainInstances, List<String> develInstances,
 			WikipediaApiInterface wikiApi, WikipediaToFreebase wikiToFreebase,
-			FreebaseApi freebApi, OptDataset opt, double anchorMaxED) throws Exception {
+			OptDataset opt, double anchorMaxED) throws Exception {
 		if (trainEntityFilterGatherer != null || trainLinkBackCollectiveGatherer != null || trainIndividualAdvancedAnnotationGatherer != null) {
 
 			if (opt == OptDataset.ERD_CHALLENGE) {
@@ -197,8 +195,5 @@ public class GenerateTrainingAndTest {
 				}
 			}
 		}
-
-		BingInterface.flush();
-		wikiApi.flush();
 	}
 }

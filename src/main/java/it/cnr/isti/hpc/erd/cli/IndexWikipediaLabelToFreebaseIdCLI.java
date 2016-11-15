@@ -35,11 +35,13 @@ import it.cnr.isti.hpc.cli.AbstractCommandLineInterface;
 import it.cnr.isti.hpc.erd.WikipediaLabelToFreebaseRecord;
 import it.cnr.isti.hpc.io.reader.RecordReader;
 import it.cnr.isti.hpc.log.ProgressLogger;
-import it.cnr.isti.hpc.mapdb.MapDB;
 
 import java.io.File;
-import java.util.Map;
 
+import org.mapdb.DB;
+import org.mapdb.DBMaker;
+import org.mapdb.HTreeMap;
+import org.mapdb.Serializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,35 +50,30 @@ import org.slf4j.LoggerFactory;
  * 
  *         Created on Mar 15, 2014
  */
-public class IndexWikipediaLabelToFreebaseIdCLI extends
-		AbstractCommandLineInterface {
+public class IndexWikipediaLabelToFreebaseIdCLI {
 
 	private static final Logger logger = LoggerFactory
 			.getLogger(IndexWikipediaLabelToFreebaseIdCLI.class);
 
-	private static String[] params = new String[] { "input", "dbdir" };
-	private static String usage = "java -cp $jar it.cnr.isti.hpc.erd.cli.IndexWikipediaLabelToFreebaseIdCLI -input entity.tsv -dbdir index directory";
-
-	public IndexWikipediaLabelToFreebaseIdCLI(String[] args) {
-		super(args, params, usage);
-
-	}
+	private static String usage = "java -cp $jar it.cnr.isti.hpc.erd.cli.IndexWikipediaLabelToFreebaseIdCLI entity.tsv index_directory";
 
 	public static void main(String[] args) {
-		IndexWikipediaLabelToFreebaseIdCLI cli = new IndexWikipediaLabelToFreebaseIdCLI(
-				args);
+		if (args.length != 2){
+			logger.error(usage);
+			System.exit(1);
+		}
+		
 		RecordReader<WikipediaLabelToFreebaseRecord> reader = new RecordReader<WikipediaLabelToFreebaseRecord>(
-				cli.getInput(), new WikipediaLabelToFreebaseRecord.Parser());
-		File f = new File(cli.getParam("dbdir"));
+				args[0], new WikipediaLabelToFreebaseRecord.Parser());
+		File f = new File(args[1]);
 		if (!f.exists()) {
 			f.mkdirs();
 		}
-		File dbfile = new File(f, "mapdb");
-		MapDB db = new MapDB(dbfile, false);
-
+		File dbfile = new File(f, "freebase.db");
+		DB db = DBMaker.fileDB(dbfile).fileMmapEnable().closeOnJvmShutdown().make();
 		ProgressLogger pl = new ProgressLogger("indexed {} records", 100000);
-		Map<String, String> map = db.getCollection("index");
-		Map<String, String> labels = db.getCollection("label");
+		HTreeMap<String, String> map = db.hashMap("index", Serializer.STRING, Serializer.STRING).createOrOpen();
+		HTreeMap<String, String> labels = db.hashMap("label", Serializer.STRING, Serializer.STRING).createOrOpen();
 		for (WikipediaLabelToFreebaseRecord record : reader) {
 			map.put(record.getCleanWikipediaLabel(), record.getFreebaseId());
 			labels.put(record.getFreebaseId(), record.getLabel());
@@ -85,7 +82,7 @@ public class IndexWikipediaLabelToFreebaseIdCLI extends
 		db.commit();
 		db.close();
 
-		logger.info("file indexed, index in {}", cli.getParam("dbdir"));
+		logger.info("file indexed, index in {}", args[1]);
 
 	}
 

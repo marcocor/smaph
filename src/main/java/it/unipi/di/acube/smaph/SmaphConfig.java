@@ -99,24 +99,6 @@ public class SmaphConfig {
 		return defaultBingCache.isEmpty() ? null : defaultBingCache;
 	}
 
-	public static String getDefaultFreebaseKey() {
-		if (defaultFreebaseKey == null)
-			initialize();
-		if (defaultFreebaseKey.isEmpty() || defaultFreebaseKey.equals("FREEBASE_KEY"))
-			throw new RuntimeException(
-					"Configuration file "
-							+ configFile
-							+ " has dummy value 'FREEBASE_KEY' or is unset. Please replace with an actual Freebase key.");
-
-		return defaultFreebaseKey;
-	}
-	
-	public static String getDefaultFreebaseCache() {
-		if (defaultFreebaseCache == null)
-			initialize();
-		return defaultFreebaseCache.isEmpty() ? null : defaultFreebaseCache;
-	}
-
 	public static String getDefaultStands4TokenId() {
 		if (defaultStands4TokenId == null)
 			initialize();

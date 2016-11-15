@@ -20,9 +20,10 @@ import java.util.Vector;
 
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONWriter;
-import org.mapdb.BTreeMap;
 import org.mapdb.DB;
 import org.mapdb.DBMaker;
+import org.mapdb.HTreeMap;
+import org.mapdb.Serializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,51 +36,46 @@ public class EntityToAnchors {
 	/**
 	 * entity -> anchor-IDs
 	 */
-	private BTreeMap<Integer,int[]> entityToAnchorIDs;
+	private HTreeMap<Integer, int[]> entityToAnchorIDs;
 	
 	/**
 	 * entity -> frequencies of anchor-ID for entity
 	 */
-	private BTreeMap<Integer,int[]> entityToFreqs;
+	private HTreeMap<Integer,int[]> entityToFreqs;
 	
 	/**
 	 * From anchor to anchor-ID
 	 */
-	private BTreeMap<String, Integer> anchorToAid;
+	private HTreeMap<String, Integer> anchorToAid;
 	
 	/**
 	 * From anchor-ID to snchor
 	 */
-	private BTreeMap<Integer, String> aidToAnchor;
+	private HTreeMap<Integer, String> aidToAnchor;
 	
 	/**
 	 * anchor-ID -> how many times the anchor has been seen 
 	 */
-	private BTreeMap<Integer, Integer> anchorToOccurrences;	
+	private HTreeMap<Integer, Integer> anchorToOccurrences;	
 	
 	private static Logger logger = LoggerFactory.getLogger(EntityToAnchors.class.getName());
 
 	private static EntityToAnchors fromDB() {
 		logger.info("Opening E2A database.");
-		EntityToAnchors e2a = new EntityToAnchors(DBMaker
-				.newFileDB(new File(DATASET_FILENAME))
-				.transactionDisable()
-				.closeOnJvmShutdown()
-				.readOnly()
-				.cacheLRUEnable()
-		        .make());
+		DB db = DBMaker.fileDB(DATASET_FILENAME).fileMmapEnable().closeOnJvmShutdown().make();
+		EntityToAnchors e2a = new EntityToAnchors(db);
 		logger.info("Loading E2A database done.");
 		return e2a;
 	}
-	
+
 	private EntityToAnchors(DB db) {
 		this.db = db;
-		entityToAnchorIDs = db.getTreeMap("entityToAnchorIDs");
-		entityToFreqs = db.getTreeMap("entityToFreqs");
-		anchorToAid = db.getTreeMap("anchorToAid");
-		aidToAnchor = db.getTreeMap("aidToAnchor");
-		anchorToOccurrences = db.getTreeMap("anchorToOccurrences");
-    }
+		entityToAnchorIDs = db.hashMap("entityToAnchorIDs", Serializer.INTEGER, Serializer.INT_ARRAY).createOrOpen();
+		entityToFreqs = db.hashMap("entityToFreqs", Serializer.INTEGER, Serializer.INT_ARRAY).createOrOpen();
+		anchorToAid = db.hashMap("anchorToAid", Serializer.STRING, Serializer.INTEGER).createOrOpen();
+		aidToAnchor = db.hashMap("aidToAnchor", Serializer.INTEGER, Serializer.STRING).createOrOpen();
+		anchorToOccurrences = db.hashMap("anchorToOccurrences", Serializer.INTEGER, Serializer.INTEGER).createOrOpen();
+	}
 
 	public static EntityToAnchors e2a() {
 		if (e2a == null)
@@ -95,14 +91,7 @@ public class EntityToAnchors {
 				inputStream, "UTF-8"));
 
 		logger.info("Building database...");
-		EntityToAnchors mdb = new EntityToAnchors(
-				DBMaker.newFileDB(new File(DATASET_FILENAME))
-				.transactionDisable()
-				.closeOnJvmShutdown()
-				.asyncWriteEnable()
-		        .asyncWriteFlushDelay(100)
-				.cacheLRUEnable()
-		        .make());
+		EntityToAnchors mdb = new EntityToAnchors(DBMaker.fileDB(DATASET_FILENAME).fileMmapEnable().closeOnJvmShutdown().make());
 
 		long count = 0;
 		long processedMbs = 0;
@@ -172,9 +161,6 @@ public class EntityToAnchors {
 		logger.info("Committing changes...");
 		mdb.db.commit();
 
-		logger.info("Compacting db...");
-		mdb.db.compact();
-		
 		logger.info("Closing db...");
 		mdb.db.close();
 	}
@@ -271,7 +257,7 @@ public class EntityToAnchors {
 		FileWriter fw = new FileWriter(file);
 		JSONWriter wr = new JSONWriter(fw);
 		wr.object();
-		for (int pageid : entityToAnchorIDs.keySet()) {
+		for (int pageid : entityToAnchorIDs.getKeys()) {
 			wr.key(Integer.toString(pageid)).array();
 			List<Pair<String, Integer>> anchorAndFreqs = getAnchors(pageid);
 			for (Pair<String, Integer> p: anchorAndFreqs)
