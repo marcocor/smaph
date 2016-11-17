@@ -15,10 +15,10 @@ public class QueryInformation {
 	public Double webTotalNS;
 	public List<String> allBoldsNS;
 	public HashMap<Integer, Integer> idToRankNS;
-	public List<Pair<String, Integer>> bingBoldsAndRankNS;
+	public List<Pair<String, Integer>> boldsAndRankNS;
 	public int resultsCountNS;
 	public double webTotalWS;
-	public List<Pair<String, Integer>> bingBoldsAndRankWS;
+	public List<Pair<String, Integer>> boldsAndRankWS;
 	public HashMap<Integer, Integer> idToRankWS;
 	public HashMap<Tag, List<String>> entityToBoldsSA;
 	public HashMap<Tag, List<String>> entityToMentionsSA;

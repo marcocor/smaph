@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <smaph>
-	<setting name="freebase">
-		<param name="key" value="FREEBASE_KEY" />
-	</setting>
 	<setting name="cache">
-		<param name="bing-cache" value="" />
+		<param name="websearch-cache" value="" />
+	</setting>
+	<setting name="google-cse">
+		<param name="api-key" value="GOOGLE_API_KEY" />
+		<param name="cse-id" value="GOOGLE_CSE_ID" />
 	</setting>
 	<setting name="bing">
 		<param name="key" value="BING_KEY" />

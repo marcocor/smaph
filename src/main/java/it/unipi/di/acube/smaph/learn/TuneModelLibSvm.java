@@ -45,8 +45,8 @@ import it.unipi.di.acube.batframework.data.Tag;
 import it.unipi.di.acube.batframework.systemPlugins.CachedWATAnnotator;
 import it.unipi.di.acube.batframework.utils.Pair;
 import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
-import it.unipi.di.acube.searchapi.CachedSearchApi;
-import it.unipi.di.acube.searchapi.bing.BingSearchApi;
+import it.unipi.di.acube.searchapi.CachedWebsearchApi;
+import it.unipi.di.acube.searchapi.callers.BingSearchApiCaller;
 import it.unipi.di.acube.smaph.SmaphAnnotator;
 import it.unipi.di.acube.smaph.SmaphAnnotatorBuilder;
 import it.unipi.di.acube.smaph.SmaphConfig;
@@ -105,8 +105,8 @@ public class TuneModelLibSvm {
 
 		Locale.setDefault(Locale.US);
 		SmaphConfig.setConfigFile("smaph-config.xml");
-		CachedSearchApi searchApiCache = new CachedSearchApi(new BingSearchApi(SmaphConfig.getDefaultBingKey()),
-		        SmaphConfig.getDefaultBingCache());
+		CachedWebsearchApi searchApiCache = new CachedWebsearchApi(new BingSearchApiCaller(SmaphConfig.getDefaultBingKey()),
+		        SmaphConfig.getDefaultWebsearchCache());
 		CachedWATAnnotator.setCache("wikisense.cache");
 		WATRelatednessComputer.setCache("relatedness.cache");
 		WikipediaApiInterface wikiApi = new WikipediaApiInterface("wid.cache", "redirect.cache");
@@ -114,7 +114,7 @@ public class TuneModelLibSvm {
 		OptDataset opt = OptDataset.SMAPH_DATASET;
 		WikipediaToFreebase wikiToFreebase = WikipediaToFreebase.getDefault();
 
-		SmaphAnnotator bingAnnotator = SmaphAnnotatorBuilder
+		SmaphAnnotator smaphGatherer = SmaphAnnotatorBuilder
 				.getDefaultBingAnnotatorGatherer(wikiApi, searchApiCache, true, true, true);
 
 		double maxAnchorSegmentED = 0.7;
@@ -134,7 +134,7 @@ public class TuneModelLibSvm {
 		int[] initialFtrSet = line.hasOption("initial-ftr-set") ? SmaphUtils.strToFeatureVector(line.getOptionValue("initial-ftr-set")) : null;
 
 		if (line.hasOption("opt-entity-filter")) {
-			Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult> modelAndStats = trainIterativeEF(bingAnnotator,
+			Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult> modelAndStats = trainIterativeEF(smaphGatherer,
 					opt, wikiToFreebase, OptimizaionProfiles.MAXIMIZE_MACRO_F1, -1.0,
 					ftrSelMethod, ftrRestriction, initialFtrSet, wikiApi);
 			System.gc();
@@ -144,7 +144,7 @@ public class TuneModelLibSvm {
 		}
 
 		if (line.hasOption("opt-annotation-regressor")) {
-			Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult> modelAndStats = trainIterativeAR(bingAnnotator, opt,
+			Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult> modelAndStats = trainIterativeAR(smaphGatherer, opt,
 					wikiToFreebase, maxAnchorSegmentED, OptimizaionProfiles.MAXIMIZE_MACRO_F1, -1.0, ftrSelMethod,
 					ftrRestriction, initialFtrSet, wikiApi);
 			System.gc();
@@ -154,7 +154,7 @@ public class TuneModelLibSvm {
 		}
 
 		LOG.info("Flushing everything...");
-		searchApiCache.flush();
+		searchApiCache.close();
 		wikiApi.flush();
 		CachedWATAnnotator.flush();
 		WATRelatednessComputer.flush();

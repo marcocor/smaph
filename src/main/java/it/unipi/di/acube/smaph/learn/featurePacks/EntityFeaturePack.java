@@ -112,7 +112,7 @@ public class EntityFeaturePack extends FeaturePack<Tag> {
 			if (qi.candidatesNS.contains(candidate)) {
 				int rank = qi.idToRankNS.get(wid);
 				Triple<Double, Double, Double> EDCapitalizedWordcount = getBoldsEDCapitalizedWordcount(query, rank,
-						qi.bingBoldsAndRankNS);
+						qi.boldsAndRankNS);
 				res.put("found_s2", 1.0);
 				res.put("s2_rank", (double) rank);
 				res.put("s2_capitalizedBolds", EDCapitalizedWordcount.getLeft());
@@ -132,7 +132,7 @@ public class EntityFeaturePack extends FeaturePack<Tag> {
 			if (qi.candidatesWS.contains(candidate)) {
 				int rank = qi.idToRankWS.get(wid);
 				Triple<Double, Double, Double> EDCapitalizedWordcount = getBoldsEDCapitalizedWordcount(query, rank,
-						qi.bingBoldsAndRankWS);
+						qi.boldsAndRankWS);
 				res.put("found_s3", 1.0);
 				res.put("s3_rank", (double) rank);
 				res.put("s3_capitalizedBolds", EDCapitalizedWordcount.getLeft());
@@ -269,12 +269,12 @@ public class EntityFeaturePack extends FeaturePack<Tag> {
 			throw new RuntimeException("Unrecognized additional features.");
 	}
 
-	private static Triple<Double, Double, Double> getBoldsEDCapitalizedWordcount(String query, int rank, List<Pair<String, Integer>> bingBolds){
+	private static Triple<Double, Double, Double> getBoldsEDCapitalizedWordcount(String query, int rank, List<Pair<String, Integer>> websearchBolds){
 		double minEdDist = 1.0;
 		double capitalized = 0;
 		double avgNumWords = 0;
 		int boldsCount = 0;
-		for (Pair<String, Integer> p : bingBolds)
+		for (Pair<String, Integer> p : websearchBolds)
 			if (p.second == rank) {
 				boldsCount++;
 				minEdDist = Math.min(minEdDist,

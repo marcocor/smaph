@@ -31,11 +31,11 @@ public class SmaphConfig {
 	private static String defaultStands4UserId;
 	private static String defaultStands4Cache;
 	private static String defaultStands4TokenId;
-	private static String defaultFreebaseKey;
-	private static String defaultFreebaseCache;
+	private static String defaultGoogleApiKey;
+	private static String defaultGoogleCseId;
 	private static String defaultBingKey;
 	private static String configFile;
-	private static String defaultBingCache;
+	private static String defaultWebsearchCache;
 
 	/**
 	 * Set the configuration file.
@@ -45,6 +45,34 @@ public class SmaphConfig {
 	 */
 	public static void setConfigFile(String filename) {
 		configFile = filename;
+	}
+
+	/**
+	 * @return the default Google API key.
+	 */
+	public static String getDefaultGoogleApiKey() {
+		if (defaultGoogleApiKey == null)
+			initialize();
+		if (defaultGoogleApiKey.isEmpty() || defaultGoogleApiKey.equals("GOOGLE_API_KEY"))
+			throw new RuntimeException(
+					"Configuration file "
+							+ configFile
+							+ " has dummy value 'GOOGLE_API_KEY' or is unset. Please replace with an actual Google API key.");
+		return defaultGoogleApiKey;
+	}
+
+	/**
+	 * @return the default Google Custom Search Engine ID.
+	 */
+	public static String getDefaultGoogleCseId() {
+		if (defaultGoogleCseId == null)
+			initialize();
+		if (defaultGoogleCseId.isEmpty() || defaultGoogleCseId.equals("GOOGLE_CSE_ID"))
+			throw new RuntimeException(
+					"Configuration file "
+							+ configFile
+							+ " has dummy value 'GOOGLE_CSE_ID' or is unset. Please replace with an actual google CSE id.");
+		return defaultGoogleCseId;
 	}
 
 	/**
@@ -71,10 +99,10 @@ public class SmaphConfig {
 		try {
 			builder = factory.newDocumentBuilder();
 			doc = builder.parse(new FileInputStream(configFile));
-			defaultFreebaseKey = getConfigValue("freebase", "key", doc);
-			defaultFreebaseCache = getConfigValue("freebase", "cache", doc);
 			defaultBingKey = getConfigValue("bing", "key", doc);
-			defaultBingCache = getConfigValue("cache", "bing-cache", doc);
+			defaultGoogleApiKey = getConfigValue("google-cse", "api-key", doc);
+			defaultGoogleCseId = getConfigValue("google-cse", "cse-id", doc);
+			defaultWebsearchCache = getConfigValue("cache", "websearch-cache", doc);
 			defaultStands4Cache = getConfigValue("stands4", "cache", doc);
 			defaultStands4TokenId = getConfigValue("stands4", "tokenid", doc);
 			defaultStands4UserId = getConfigValue("stands4", "uid", doc);
@@ -93,10 +121,10 @@ public class SmaphConfig {
 		return userExpr.evaluate(doc);
 	}
 
-	public static String getDefaultBingCache() {
-		if (defaultBingCache == null)
+	public static String getDefaultWebsearchCache() {
+		if (defaultWebsearchCache == null)
 			initialize();
-		return defaultBingCache.isEmpty() ? null : defaultBingCache;
+		return defaultWebsearchCache.isEmpty() ? null : defaultWebsearchCache;
 	}
 
 	public static String getDefaultStands4TokenId() {

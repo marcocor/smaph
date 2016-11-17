@@ -3,8 +3,8 @@ package it.unipi.di.acube.smaph.server.rest;
 import it.unipi.di.acube.batframework.data.ScoredAnnotation;
 import it.unipi.di.acube.batframework.problems.Sa2WSystem;
 import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
-import it.unipi.di.acube.searchapi.CachedSearchApi;
-import it.unipi.di.acube.searchapi.bing.BingSearchApi;
+import it.unipi.di.acube.searchapi.CachedWebsearchApi;
+import it.unipi.di.acube.searchapi.callers.BingSearchApiCaller;
 import it.unipi.di.acube.smaph.SmaphAnnotator;
 import it.unipi.di.acube.smaph.SmaphAnnotatorBuilder;
 import it.unipi.di.acube.smaph.SmaphAnnotatorDebugger;
@@ -53,7 +53,7 @@ public class RestService {
 		SmaphConfig.setConfigFile("smaph-config.xml");
 
 		try {
-			CachedSearchApi searchApiCache = new CachedSearchApi(new BingSearchApi(SmaphConfig.getDefaultBingKey()), SmaphConfig.getDefaultBingCache());
+			CachedWebsearchApi searchApiCache = new CachedWebsearchApi(new BingSearchApiCaller(SmaphConfig.getDefaultBingKey()), SmaphConfig.getDefaultWebsearchCache());
 			entityFilterAnn = SmaphAnnotatorBuilder.getDefaultBingAnnotatorEF(wikiApi, searchApiCache, "models/best_ef");
 			annotationRegressorAnn = SmaphAnnotatorBuilder.getDefaultBingAnnotatorIndividualAdvancedAnnotationRegressor(wikiApi,
 					searchApiCache, "models/best_ar", 0.7);

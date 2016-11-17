@@ -1,14 +1,5 @@
 package it.unipi.di.acube.smaph;
 
-import it.unipi.di.acube.batframework.data.Annotation;
-import it.unipi.di.acube.batframework.data.Mention;
-import it.unipi.di.acube.batframework.data.ScoredAnnotation;
-import it.unipi.di.acube.batframework.metrics.MatchRelation;
-import it.unipi.di.acube.batframework.metrics.Metrics;
-import it.unipi.di.acube.batframework.metrics.StrongAnnotationMatch;
-import it.unipi.di.acube.batframework.utils.Pair;
-import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
-
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.util.Collection;
@@ -28,10 +19,19 @@ import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 
+import it.unipi.di.acube.batframework.data.Annotation;
+import it.unipi.di.acube.batframework.data.Mention;
+import it.unipi.di.acube.batframework.data.ScoredAnnotation;
+import it.unipi.di.acube.batframework.metrics.MatchRelation;
+import it.unipi.di.acube.batframework.metrics.Metrics;
+import it.unipi.di.acube.batframework.metrics.StrongAnnotationMatch;
+import it.unipi.di.acube.batframework.utils.Pair;
+import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
+
 public class SmaphAnnotatorDebugger {
 	private List<String> processedQueries = new Vector<>();
-	private HashMap<String, JSONObject> bingResponsesNS = new HashMap<String, JSONObject>();
-	private HashMap<String, JSONObject> bingResponsesWS = new HashMap<String, JSONObject>();
+	private HashMap<String, List<JSONObject>> websearchResponsesNS = new HashMap<String, List<JSONObject>>();
+	private HashMap<String, List<JSONObject>> websearchResponsesWS = new HashMap<String, List<JSONObject>>();
 	private HashMap<String, List<Triple<String, HashSet<Annotation>, HashSet<Mention>>>> annotatedSnippetsAndBoldsS6 = new HashMap<>();
 	private HashMap<String, List<Triple<Integer, HashMap<String, Double>, Boolean>>> entityFeaturesS2 = new HashMap<>();
 	private HashMap<String, List<Triple<Integer, HashMap<String, Double>, Boolean>>> entityFeaturesS3 = new HashMap<>();
@@ -58,21 +58,27 @@ public class SmaphAnnotatorDebugger {
 		}
 	}
 
-	public void addBingResponseNormalSearch(String query,
-			JSONObject bingResponse) {
-		this.bingResponsesNS.put(query, bingResponse);
+	public void addWebsearchResponseNormalSearch(String query,
+			List<JSONObject> websearchResponse) {
+		this.websearchResponsesNS.put(query, websearchResponse);
 	}
 
-	private JSONObject getBingResponseNormalSearch(String query) {
-		return this.bingResponsesNS.get(query);
+	private JSONArray getWebsearchResponseNormalSearch(String query) {
+		JSONArray responses = new JSONArray();
+		for (JSONObject r : this.websearchResponsesNS.get(query))
+			responses.put(r);
+		return responses;
 	}
 
-	public void addBingResponseWikiSearch(String query, JSONObject bingResponse) {
-		this.bingResponsesWS.put(query, bingResponse);
+	public void addWebsearchResponseWikiSearch(String query, List<JSONObject> websearchResponse) {
+		this.websearchResponsesWS.put(query, websearchResponse);
 	}
 
-	private JSONObject getBingResponseWikiSearch(String query) {
-		return this.bingResponsesWS.get(query);
+	private JSONArray getWebsearchResponseWikiSearch(String query) {
+		JSONArray responses = new JSONArray();
+		for (JSONObject r : this.websearchResponsesWS.get(query))
+			responses.put(r);
+		return responses;
 	}
 
 	public void addAnnotatedSnippetS6(String query, String snippet, HashSet<Annotation> annotations, HashSet<Mention> bolds) {
@@ -246,8 +252,8 @@ public class SmaphAnnotatorDebugger {
 			JSONObject phase1S2 = new JSONObject();
 			JSONObject phase1S3 = new JSONObject();
 			JSONObject phase1S6 = new JSONObject();
-			queryData.put("bingResponseNS", getBingResponseNormalSearch(query));
-			queryData.put("bingResponseWS", getBingResponseWikiSearch(query));
+			queryData.put("websearchResponseNS", getWebsearchResponseNormalSearch(query));
+			queryData.put("websearchResponseWS", getWebsearchResponseWikiSearch(query));
 			queryData.put("phase1", phase1);
 			phase1.put("source2", phase1S2);
 			phase1.put("source3", phase1S3);

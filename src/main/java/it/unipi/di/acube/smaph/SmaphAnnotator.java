@@ -57,7 +57,7 @@ import it.unipi.di.acube.batframework.utils.AnnotationException;
 import it.unipi.di.acube.batframework.utils.Pair;
 import it.unipi.di.acube.batframework.utils.ProblemReduction;
 import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
-import it.unipi.di.acube.searchapi.interfaces.WebSearchApi;
+import it.unipi.di.acube.searchapi.WebsearchApi;
 import it.unipi.di.acube.searchapi.model.WebsearchResponse;
 import it.unipi.di.acube.searchapi.model.WebsearchResponseEntry;
 import it.unipi.di.acube.smaph.learn.featurePacks.AdvancedAnnotationFeaturePack;
@@ -78,7 +78,7 @@ public class SmaphAnnotator implements Sa2WSystem {
 	private final static Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 	private static final Pattern WIKI_URL_PATTERN = Pattern.compile("https?://en.wikipedia.org/wiki/(.+)");
 	private WikipediaApiInterface wikiApi;
-	private WebSearchApi bingInterface = null;
+	private WebsearchApi websearchApi = null;
 	private CachedWATAnnotator snippetAnnotator;
 	private EntityFilter entityFilter;
 	private FeatureNormalizer entityFilterNormalizer;
@@ -86,6 +86,7 @@ public class SmaphAnnotator implements Sa2WSystem {
 	private boolean includeSourceNormalSearch;
 	private boolean includeSourceSnippets;
 	private int topKAnnotateSnippet;
+	private int topKWikiResults;
 	private boolean includeSourceWikiSearch;
 	private int topKWikiSearch = 0;
 	private boolean predictNEonly;
@@ -119,16 +120,16 @@ public class SmaphAnnotator implements Sa2WSystem {
 	 * @param wikiApi
 	 *            an API to Wikipedia.
 	 * @param searchApi
-	 *            the key to the Bing API.
+	 *            the key to the search engine API.
 	 */
 	public SmaphAnnotator(EntityFilter entityFilter, FeatureNormalizer entityFilterNormalizer,
 			LinkBack linkBack,
 			boolean includeSourceNormalSearch,
 			boolean includeSourceWikiSearch, int wikiSearchPages,
-			boolean includeSourceSnippets, int topKAnnotateSnippet, 
+			boolean includeSourceSnippets, int topKAnnotateSnippet, int topKWikiResults,
 			boolean tagTitles, CachedWATAnnotator snippetAnnotator,
 			SnippetAnnotationFilter snippetAnnotationFilter,
-			WikipediaApiInterface wikiApi, WebSearchApi searchApi) {
+			WikipediaApiInterface wikiApi, WebsearchApi searchApi) {
 		this.entityFilter = entityFilter;
 		this.entityFilterNormalizer = entityFilterNormalizer;
 		this.linkBack = linkBack;
@@ -136,10 +137,11 @@ public class SmaphAnnotator implements Sa2WSystem {
 		this.includeSourceNormalSearch = includeSourceNormalSearch;
 		this.includeSourceWikiSearch = includeSourceWikiSearch;
 		this.topKWikiSearch = wikiSearchPages;
-		this.bingInterface =  searchApi;
+		this.websearchApi =  searchApi;
 		this.includeSourceSnippets = includeSourceSnippets;
 		this.snippetAnnotationFilter = snippetAnnotationFilter;
 		this.topKAnnotateSnippet = topKAnnotateSnippet;
+		this.topKWikiResults = topKWikiResults;
 		this.tagTitles = tagTitles;
 		this.snippetAnnotator = snippetAnnotator;
 	}
@@ -256,32 +258,32 @@ public class SmaphAnnotator implements Sa2WSystem {
 	}
 
 	/**
-	 * Issue a query to Bing and extract the result.
+	 * Issue a query to the search engine and extract the result.
 	 * 
 	 * @param query
-	 *            the query to be issued to Bing
+	 *            the query to be issued to the search engine
 	 * @param boldsAndRanks
 	 *            storage for the bolds (a pair &lt;bold, rank&gt; means bold
 	 *            appeared in the snippets of the result in position rank)
 	 * @param urls
-	 *            storage for the urls found by Bing.
+	 *            storage for the urls found by the search engine.
 	 * @param relatedSearch
 	 *            storage for the "related search" suggestions.
 	 * @param snippetsToBolds
 	 *            storage for the list of pairs &lt;snippets, the bolds found in
 	 *            that snippet&gt;
-	 * @return a triple &lt;results, webTotal, bingReply&gt; where results is
-	 *         the number of results returned by Bing, webTotal is the number of
-	 *         pages found by Bing, and bingReply is the raw Bing reply.
+	 * @return a triple &lt;results, webTotal, websearchReply&gt; where results is
+	 *         the number of results returned by the search engine, webTotal is the number of
+	 *         pages found by the search engine, and websearchReply is the raw search engine reply.
 	 * @param topk
 	 *            limit to top-k results.
 	 * @param wikisearch
 	 *            whether to append the word "wikipedia" to the query or not.
 	 * @throws Exception
-	 *             if something went wrong while querying Bing.
+	 *             if something went wrong while querying the search engine.
 	 */
 
-	private Triple<Integer, Double, JSONObject> takeBingData(String query,
+	private Triple<Integer, Double, List<JSONObject>> takeWebsearchData(String query,
 			List<Pair<String, Integer>> boldsAndRanks, List<String> urls,
 			List<Pair<String, Vector<Pair<Integer, Integer>>>> snippetsToBolds,
 			int topk, boolean wikisearch) throws Exception {
@@ -291,19 +293,20 @@ public class SmaphAnnotator implements Sa2WSystem {
 			throw new RuntimeException("urls must be empty");
 		if (wikisearch)
 			query += " wikipedia";
-		WebsearchResponse bingReply = bingInterface.query(query);
-		double webTotal = bingReply.getTotalResults();
+		WebsearchResponse websearchReply = websearchApi.query(query, topk);
+		double webTotal = websearchReply.getTotalResults();
 
-		getBoldsAndUrls(bingReply, topk, boldsAndRanks, urls, snippetsToBolds, tagTitles);
+		getBoldsAndUrls(websearchReply, topk, boldsAndRanks, urls, snippetsToBolds, tagTitles);
 
-		return new ImmutableTriple<Integer, Double, JSONObject>(
-				bingReply.getWebEntries().size(), webTotal, bingReply.getJsonResponse());
+		return new ImmutableTriple<Integer, Double, List<JSONObject>>(
+				websearchReply.getWebEntries().size(), webTotal, websearchReply.getJsonResponses());
 	}
+	
 	/**
-	 * From the bing results extract the bolds and the urls.
+	 * From the websearch results extract the bolds and the urls.
 	 * 
-	 * @param bingReply
-	 *            the web results returned by Bing.
+	 * @param websearchResult
+	 *            the web results returned by the search engine.
 	 * @param topk
 	 *            limit the extraction to the first topk results.
 	 * @param boldsAndRanks
@@ -316,18 +319,18 @@ public class SmaphAnnotator implements Sa2WSystem {
 	 *            storage for the list of pairs &lt;snippets, the bolds found in
 	 *            that snippet&gt;
 	 * @throws JSONException
-	 *             if the json returned by Bing could not be read.
+	 *             if the json returned by the search engine could not be read.
 	 */
-	private static void getBoldsAndUrls(WebsearchResponse bingReply, double topk,
+	private static void getBoldsAndUrls(WebsearchResponse websearchResult, int topk,
 			List<Pair<String, Integer>> boldsAndRanks, List<String> urls,
 			List<Pair<String, Vector<Pair<Integer, Integer>>>> snippetsToBolds, boolean tagTitles)
 					throws JSONException {
-		List<WebsearchResponseEntry> webEntries = bingReply.getWebEntries();
+		List<WebsearchResponseEntry> webEntries = websearchResult.getWebEntries();
 		for (int i = 0; i < Math.min(webEntries.size(), topk); i++) {
 			WebsearchResponseEntry entry = webEntries.get(i);
 			String titleI = entry.getName();
 			String descI = entry.getSnippet();
-			String url = entry.getDisplayUrl().replaceAll(WebSearchApi.SNIPPET_BOLD_START_STR, "").replaceAll(WebSearchApi.SNIPPET_BOLD_END_STR, "");
+			String url = entry.getDisplayUrl();
 			urls.add(url);
 			getBolds((tagTitles ? titleI + " " : "") + descI, i, snippetsToBolds, boldsAndRanks);
 		}
@@ -335,9 +338,9 @@ public class SmaphAnnotator implements Sa2WSystem {
 
 	private static void getBolds(String field,int rankI, List<Pair<String, Vector<Pair<Integer, Integer>>>> snippetsToBolds, List<Pair<String, Integer>> boldsAndRanks){
 		String snippet = "";
-		field = field.replaceAll(WebSearchApi.SNIPPET_BOLD_END_STR + "." + WebSearchApi.SNIPPET_BOLD_START_STR, " ");
-		int startIdx = field.indexOf(WebSearchApi.SNIPPET_BOLD_START_STR);
-		int stopIdx = field.indexOf(WebSearchApi.SNIPPET_BOLD_END_STR, startIdx);
+		field = field.replaceAll(WebsearchApi.SNIPPET_BOLD_END_STR + "." + WebsearchApi.SNIPPET_BOLD_START_STR, " ");
+		int startIdx = field.indexOf(WebsearchApi.SNIPPET_BOLD_START_STR);
+		int stopIdx = field.indexOf(WebsearchApi.SNIPPET_BOLD_END_STR, startIdx);
 		int lastStop = -1;
 		Vector<Pair<Integer, Integer>> boldPosInSnippet = new Vector<>();
 		while (startIdx != -1 && stopIdx != -1) {
@@ -349,8 +352,8 @@ public class SmaphAnnotator implements Sa2WSystem {
 					.length(), spot.length()));
 			snippet += spot;
 			lastStop = stopIdx;
-			startIdx = field.indexOf(WebSearchApi.SNIPPET_BOLD_START_STR, startIdx + 1);
-			stopIdx = field.indexOf(WebSearchApi.SNIPPET_BOLD_END_STR, startIdx + 1);
+			startIdx = field.indexOf(WebsearchApi.SNIPPET_BOLD_START_STR, startIdx + 1);
+			stopIdx = field.indexOf(WebsearchApi.SNIPPET_BOLD_END_STR, startIdx + 1);
 		}
 		snippet += field.substring(lastStop + 1);
 		if (snippetsToBolds != null)
@@ -366,12 +369,13 @@ public class SmaphAnnotator implements Sa2WSystem {
 	 * 
 	 * @param urls
 	 *            a list of urls.
+	 * @param limit 
 	 * @return a mapping from position to Wikipedia page IDs.
 	 */
-	private HashMap<Integer, Integer> urlsToRankID(List<String> urls) {
+	private HashMap<Integer, Integer> urlsToRankID(List<String> urls, int limit) {
 		HashMap<Integer, Integer> result = new HashMap<>();
 		HashMap<Integer, String> rankToTitle = new HashMap<>();
-		for (int i = 0; i < urls.size(); i++) {
+		for (int i = 0; i < urls.size() && i < limit; i++) {
 			String title = decodeWikiUrl(urls.get(i));
 			if (title != null)
 				rankToTitle.put(i, title);
@@ -408,10 +412,10 @@ public class SmaphAnnotator implements Sa2WSystem {
 
 	private QueryInformation getQueryInformation(String query, SmaphAnnotatorDebugger debugger) throws Exception {
 
-		/** Search the query on bing */
-		List<Pair<String, Integer>> bingBoldsAndRankNS = null;
+		/** Search the query on the search engine */
+		List<Pair<String, Integer>> boldsAndRankNS = null;
 		List<String> urlsNS = null;
-		Triple<Integer, Double, JSONObject> resCountAndWebTotalNS = null;
+		Triple<Integer, Double, List<JSONObject>> resCountAndWebTotalNS = null;
 		int resultsCountNS = -1;
 		double webTotalNS = Double.NaN;
 		HashMap<Integer, Integer> rankToIdNS = null;
@@ -422,20 +426,20 @@ public class SmaphAnnotator implements Sa2WSystem {
 		Set<Tag> candidatesNS = null;
 		HashMap<Integer, Integer> idToRankNS = null;
 		if (includeSourceWikiSearch || includeSourceNormalSearch || includeSourceSnippets) {
-			bingBoldsAndRankNS = new Vector<>();
+			boldsAndRankNS = new Vector<>();
 			urlsNS = new Vector<>();
 			snippetsToBoldsNS = new Vector<>();
 			candidatesNS = new HashSet<>();
-			resCountAndWebTotalNS = takeBingData(query, bingBoldsAndRankNS,
-					urlsNS, snippetsToBoldsNS, Integer.MAX_VALUE,
+			resCountAndWebTotalNS = takeWebsearchData(query, boldsAndRankNS,
+					urlsNS, snippetsToBoldsNS, Math.max(topKAnnotateSnippet, topKWikiResults),
 					false);
 			resultsCountNS = resCountAndWebTotalNS.getLeft();
 			webTotalNS = resCountAndWebTotalNS.getMiddle();
-			rankToIdNS = urlsToRankID(urlsNS);
+			rankToIdNS = urlsToRankID(urlsNS, topKWikiResults);
 			idToRankNS  = SmaphUtils.inverseMap(rankToIdNS);
 			rankToBoldsNS = new HashMap<>();
-			allBoldsNS = SmaphUtils.boldPairsToListLC(bingBoldsAndRankNS);
-			SmaphUtils.mapRankToBoldsLC(bingBoldsAndRankNS, rankToBoldsNS, null);
+			allBoldsNS = SmaphUtils.boldPairsToListLC(boldsAndRankNS);
+			SmaphUtils.mapRankToBoldsLC(boldsAndRankNS, rankToBoldsNS, null);
 			for (int rank : rankToIdNS.keySet()) {
 				String[] bolds = rankToBoldsNS.containsKey(rank) ? rankToBoldsNS
 						.get(rank).toArray(new String[] {}) : new String[] {};
@@ -446,35 +450,35 @@ public class SmaphAnnotator implements Sa2WSystem {
 
 			if (debugger != null) {
 				debugger.addSource2SearchResult(query, rankToIdNS, urlsNS);
-				debugger.addBingResponseNormalSearch(query,
+				debugger.addWebsearchResponseNormalSearch(query,
 						resCountAndWebTotalNS.getRight());
 			}
 		}
 
-		/** Do the WikipediaSearch on bing. */
+		/** Do the WikipediaSearch on the search engine. */
 		List<String> wikiSearchUrls = new Vector<>();
-		List<Pair<String, Integer>> bingBoldsAndRankWS = new Vector<>();
-		Triple<Integer, Double, JSONObject> resCountAndWebTotalWS = null;
+		List<Pair<String, Integer>> boldsAndRankWS = new Vector<>();
+		Triple<Integer, Double, List<JSONObject>> resCountAndWebTotalWS = null;
 		HashMap<Integer, HashSet<String>> rankToBoldsWS = null;
 		Set<Tag> candidatesWS = null;
 		double webTotalWS = Double.NaN;
 		HashMap<Integer, Integer> rankToIdWS = null;
 		HashMap<Integer, Integer> idToRankWS = null;
 		if (includeSourceWikiSearch | includeSourceNormalSearch) {
-			resCountAndWebTotalWS = takeBingData(query, bingBoldsAndRankWS,
+			resCountAndWebTotalWS = takeWebsearchData(query, boldsAndRankWS,
 					wikiSearchUrls, null, topKWikiSearch, true);
 			webTotalWS = resCountAndWebTotalWS.getMiddle();
-			rankToIdWS = urlsToRankID(wikiSearchUrls);
+			rankToIdWS = urlsToRankID(wikiSearchUrls, topKWikiSearch);
 			idToRankWS = SmaphUtils.inverseMap(rankToIdWS);
 			candidatesWS = new HashSet<>();
 			for (int wid : rankToIdWS.values())
 				candidatesWS.add(new Tag(wid));
 			rankToBoldsWS = new HashMap<>();
-			SmaphUtils.mapRankToBoldsLC(bingBoldsAndRankWS, rankToBoldsWS, null);
+			SmaphUtils.mapRankToBoldsLC(boldsAndRankWS, rankToBoldsWS, null);
 			if (debugger != null) {
 				debugger.addSource3SearchResult(query, rankToIdWS,
 						wikiSearchUrls);
-				debugger.addBingResponseWikiSearch(query,
+				debugger.addWebsearchResponseWikiSearch(query,
 						resCountAndWebTotalWS.getRight());
 
 			}
@@ -504,12 +508,12 @@ public class SmaphAnnotator implements Sa2WSystem {
 		qi.idToRankNS = idToRankNS;
 		qi.webTotalNS = webTotalNS;
 		qi.allBoldsNS = allBoldsNS;
-		qi.bingBoldsAndRankNS = bingBoldsAndRankNS;
+		qi.boldsAndRankNS = boldsAndRankNS;
 		qi.resultsCountNS = resultsCountNS;
 
 		qi.idToRankWS = idToRankWS;
 		qi.webTotalWS = webTotalWS;
-		qi.bingBoldsAndRankWS = bingBoldsAndRankWS;
+		qi.boldsAndRankWS = boldsAndRankWS;
 
 		qi.entityToBoldsSA = entityToBoldsSA;
 		qi.entityToMentionsSA = entityToMentionsSA;

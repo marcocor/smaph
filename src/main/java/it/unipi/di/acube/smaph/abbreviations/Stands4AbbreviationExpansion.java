@@ -132,7 +132,7 @@ public class Stands4AbbreviationExpansion implements AbbreviationExpansion {
 		if (resultsCacheFilename != null
 				&& resultsCacheFilename.equals(cacheFilename))
 			return;
-		LOG.info("Loading bing cache...");
+		LOG.info("Loading STANDS4 cache...");
 		resultsCacheFilename = cacheFilename;
 		if (new File(resultsCacheFilename).exists()) {
 			ObjectInputStream ois = new ObjectInputStream(new FileInputStream(

@@ -2,7 +2,7 @@ package it.unipi.di.acube.smaph;
 
 import it.unipi.di.acube.batframework.systemPlugins.CachedWATAnnotator;
 import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
-import it.unipi.di.acube.searchapi.interfaces.WebSearchApi;
+import it.unipi.di.acube.searchapi.WebsearchApi;
 import it.unipi.di.acube.smaph.learn.featurePacks.AdvancedAnnotationFeaturePack;
 import it.unipi.di.acube.smaph.learn.featurePacks.EntityFeaturePack;
 import it.unipi.di.acube.smaph.learn.models.entityfilters.EntityFilter;
@@ -25,21 +25,21 @@ import java.io.IOException;
 
 public class SmaphAnnotatorBuilder {
 	
-	private static SmaphAnnotator getDefaultBingAnnotatorParam(WikipediaApiInterface wikiApi, WebSearchApi searchApi,
+	private static SmaphAnnotator getDefaultBingAnnotatorParam(WikipediaApiInterface wikiApi, WebsearchApi searchApi,
 	        EntityFilter entityFilter, FeatureNormalizer efNorm, LinkBack lb, boolean s2, boolean s3, boolean s6)
 	        throws FileNotFoundException, ClassNotFoundException, IOException {
 
 		CachedWATAnnotator watDefault = new CachedWATAnnotator("wikisense.mkapp.it", 80, "base", "COMMONNESS", "mw", "0.2", "0.0");
-		return new SmaphAnnotator(entityFilter, efNorm, lb, s2, s3, 10, s6, 25, false, watDefault, new FrequencyAnnotationFilter(
+		return new SmaphAnnotator(entityFilter, efNorm, lb, s2, s3, 10, s6, 25, 25, false, watDefault, new FrequencyAnnotationFilter(
 		        0.03), wikiApi, searchApi);
 	}
 
-	public static SmaphAnnotator getDefaultBingAnnotatorGatherer(WikipediaApiInterface wikiApi, WebSearchApi searchApi, boolean s2,
+	public static SmaphAnnotator getDefaultBingAnnotatorGatherer(WikipediaApiInterface wikiApi, WebsearchApi searchApi, boolean s2,
 	        boolean s3, boolean s6) throws FileNotFoundException, ClassNotFoundException, IOException {
 		return getDefaultBingAnnotatorParam(wikiApi, searchApi, new NoEntityFilter(), null, new DummyLinkBack(), s2, s3, s6);
 	}
 
-	public static SmaphAnnotator getDefaultBingAnnotatorEF(WikipediaApiInterface wikiApi, WebSearchApi searchApi, String EFModelFileBase)
+	public static SmaphAnnotator getDefaultBingAnnotatorEF(WikipediaApiInterface wikiApi, WebsearchApi searchApi, String EFModelFileBase)
 	        throws FileNotFoundException, ClassNotFoundException, IOException {
 		return getDefaultBingAnnotatorParam(wikiApi, searchApi, LibSvmEntityFilter.fromFile(EFModelFileBase + ".model"),
 		        new ZScoreFeatureNormalizer(EFModelFileBase + ".zscore", new EntityFeaturePack()), new DummyLinkBack(), true,
@@ -47,14 +47,14 @@ public class SmaphAnnotatorBuilder {
 	}
 
 	public static SmaphAnnotator getDefaultBingAnnotatorIndividualAdvancedAnnotationRegressor(WikipediaApiInterface wikiApi,
-	        WebSearchApi searchApi, String AFFileBase, double anchorMaxED) throws FileNotFoundException, ClassNotFoundException,
+	        WebsearchApi searchApi, String AFFileBase, double anchorMaxED) throws FileNotFoundException, ClassNotFoundException,
 	        IOException {
 		return getDefaultBingAnnotatorParam(wikiApi, searchApi, new NoEntityFilter(), null, new AdvancedIndividualLinkback(
 		        LibSvmAnnotationRegressor.fromFile(AFFileBase + ".model"), new ZScoreFeatureNormalizer(AFFileBase + ".zscore",
 		                new AdvancedAnnotationFeaturePack()), wikiApi, anchorMaxED), true, true, true);
 	}
 
-	public static SmaphAnnotator getDefaultBingAnnotatorCollectiveLBRanklib(WikipediaApiInterface wikiApi, WebSearchApi searchApi,
+	public static SmaphAnnotator getDefaultBingAnnotatorCollectiveLBRanklib(WikipediaApiInterface wikiApi, WebsearchApi searchApi,
 	        String collModelBase) throws FileNotFoundException, ClassNotFoundException, IOException {
 		CollectiveLinkBack lb = new CollectiveLinkBack(wikiApi, new DefaultBindingGenerator(), new RankLibBindingRegressor(
 		        collModelBase + ".model"), new NoFeatureNormalizer() /*new ZScoreFeatureNormalizer(collModelBase + ".zscore", new BindingFeaturePack())*/);
