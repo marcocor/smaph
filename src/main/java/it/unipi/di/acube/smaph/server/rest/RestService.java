@@ -34,7 +34,7 @@ import it.unipi.di.acube.batframework.data.ScoredAnnotation;
 import it.unipi.di.acube.batframework.problems.Sa2WSystem;
 import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
 import it.unipi.di.acube.smaph.SmaphAnnotator;
-import it.unipi.di.acube.smaph.SmaphAnnotatorBuilder;
+import it.unipi.di.acube.smaph.SmaphBuilder;
 import it.unipi.di.acube.smaph.SmaphAnnotatorDebugger;
 import it.unipi.di.acube.smaph.SmaphConfig;
 import it.unipi.di.acube.smaph.SmaphUtils;
@@ -51,7 +51,7 @@ public class RestService {
 	private static TurtleNIFDocumentParser parser;
 	private static TurtleNIFDocumentCreator creator;
 	private static WikipediaToFreebase wikiToFreeb;
-	private static SmaphAnnotatorBuilder.Websearch ws = SmaphAnnotatorBuilder.Websearch.BING;
+	private static SmaphBuilder.Websearch ws = SmaphBuilder.Websearch.BING;
 
 	public static void initialize() {
 		parser = new TurtleNIFDocumentParser();
@@ -60,9 +60,9 @@ public class RestService {
 		SmaphConfig.setConfigFile("smaph-config.xml");
 
 		try {
-			entityFilterAnn = SmaphAnnotatorBuilder.getSmaphEF(wikiApi, "models/best_ef", ws);
-			annotationRegressorAnn = SmaphAnnotatorBuilder.getSmaphIndividualAR(wikiApi, "models/best_ar", ws);
-			collectiveAnn = SmaphAnnotatorBuilder.getSmaphCollective(wikiApi, "models/best_coll", ws);
+			entityFilterAnn = SmaphBuilder.getSmaphEF(wikiApi, "models/best_ef", ws);
+			annotationRegressorAnn = SmaphBuilder.getSmaphIndividualAR(wikiApi, "models/best_ar", ws);
+			collectiveAnn = SmaphBuilder.getSmaphCollective(wikiApi, "models/best_coll", ws);
 		} catch (ClassNotFoundException | IOException e) {
 			e.printStackTrace();
 			throw new RuntimeException(e);

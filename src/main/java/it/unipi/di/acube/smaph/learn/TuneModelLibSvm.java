@@ -46,7 +46,7 @@ import it.unipi.di.acube.batframework.systemPlugins.CachedWATAnnotator;
 import it.unipi.di.acube.batframework.utils.Pair;
 import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
 import it.unipi.di.acube.smaph.SmaphAnnotator;
-import it.unipi.di.acube.smaph.SmaphAnnotatorBuilder;
+import it.unipi.di.acube.smaph.SmaphBuilder;
 import it.unipi.di.acube.smaph.SmaphConfig;
 import it.unipi.di.acube.smaph.SmaphUtils;
 import it.unipi.di.acube.smaph.WATRelatednessComputer;
@@ -100,9 +100,9 @@ public class TuneModelLibSvm {
 		if (line.hasOption("threads"))
 			THREADS_NUM = Integer.parseInt(line.getOptionValue("threads"));
 
-		SmaphAnnotatorBuilder.Websearch ws = SmaphAnnotatorBuilder
+		SmaphBuilder.Websearch ws = SmaphBuilder
 		        .websearchFromString(line.getOptionValue("websearch-piggyback"));
-		String wsLabel = SmaphAnnotatorBuilder.websearchToString(ws);
+		String wsLabel = SmaphBuilder.websearchToString(ws);
 
 		Locale.setDefault(Locale.US);
 		SmaphConfig.setConfigFile("smaph-config.xml");
@@ -113,7 +113,7 @@ public class TuneModelLibSvm {
 		OptDataset opt = OptDataset.SMAPH_DATASET;
 		WikipediaToFreebase wikiToFreebase = WikipediaToFreebase.getDefault();
 
-		SmaphAnnotator smaphGatherer = SmaphAnnotatorBuilder.getSmaphGatherer(wikiApi, true, true, true, ws);
+		SmaphAnnotator smaphGatherer = SmaphBuilder.getSmaphGatherer(wikiApi, true, true, true, ws);
 
 		String ftrSelMethod = line.getOptionValue("ftr-sel-method", "ablation");
 		if (!ftrSelMethod.equals("ablation") && !ftrSelMethod.equals("increment") && !ftrSelMethod.equals("oneshot"))

@@ -27,7 +27,7 @@ import it.unipi.di.acube.smaph.linkback.bindingGenerator.BindingGenerator;
 import it.unipi.di.acube.smaph.linkback.bindingGenerator.DefaultBindingGenerator;
 import it.unipi.di.acube.smaph.snippetannotationfilters.FrequencyAnnotationFilter;
 
-public class SmaphAnnotatorBuilder {
+public class SmaphBuilder {
 
 	public static final BindingGenerator DEFAULT_BINDING_GENERATOR = new DefaultBindingGenerator();
 	public static final CachedWATAnnotator DEFAULT_AUX_ANNOTATOR = new CachedWATAnnotator("wikisense.mkapp.it", 80, "base",
@@ -47,9 +47,9 @@ public class SmaphAnnotatorBuilder {
 	public static Websearch websearchFromString(String wsStr) {
 		switch (wsStr) {
 		case "bing":
-			return SmaphAnnotatorBuilder.Websearch.BING;
+			return SmaphBuilder.Websearch.BING;
 		case "google":
-			return SmaphAnnotatorBuilder.Websearch.GOOGLE_CSE;
+			return SmaphBuilder.Websearch.GOOGLE_CSE;
 		}
 		return null;
 	}

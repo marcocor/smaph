@@ -39,7 +39,7 @@ import it.unipi.di.acube.batframework.data.Tag;
 import it.unipi.di.acube.batframework.systemPlugins.CachedWATAnnotator;
 import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
 import it.unipi.di.acube.smaph.SmaphAnnotator;
-import it.unipi.di.acube.smaph.SmaphAnnotatorBuilder;
+import it.unipi.di.acube.smaph.SmaphBuilder;
 import it.unipi.di.acube.smaph.SmaphConfig;
 import it.unipi.di.acube.smaph.WATRelatednessComputer;
 import it.unipi.di.acube.smaph.learn.GenerateTrainingAndTest.OptDataset;
@@ -67,8 +67,8 @@ public class GenerateProblemFiles {
 
 		CommandLine line = parser.parse(options, args);
 
-		SmaphAnnotatorBuilder.Websearch ws = SmaphAnnotatorBuilder.websearchFromString(line.getOptionValue("websearch-piggyback"));
-		String wsLabel = SmaphAnnotatorBuilder.websearchToString(ws);
+		SmaphBuilder.Websearch ws = SmaphBuilder.websearchFromString(line.getOptionValue("websearch-piggyback"));
+		String wsLabel = SmaphBuilder.websearchToString(ws);
 
 		Locale.setDefault(Locale.US);
 		SmaphConfig.setConfigFile("smaph-config.xml");
@@ -88,10 +88,10 @@ public class GenerateProblemFiles {
 		WATRelatednessComputer.flush();
 	}
 
-	public static void generateEFModel(String fileNamePrefix, SmaphAnnotatorBuilder.Websearch ws, String wsLabel) throws Exception {
+	public static void generateEFModel(String fileNamePrefix, SmaphBuilder.Websearch ws, String wsLabel) throws Exception {
 		OptDataset opt = OptDataset.SMAPH_DATASET;
 
-		SmaphAnnotator smaphGatherer = SmaphAnnotatorBuilder.getSmaphGatherer(wikiApi, true, true, true, ws);
+		SmaphAnnotator smaphGatherer = SmaphBuilder.getSmaphGatherer(wikiApi, true, true, true, ws);
 
 		ExampleGatherer<Tag, HashSet<Tag>> trainEntityFilterGatherer = new ExampleGatherer<Tag, HashSet<Tag>>();
 		ExampleGatherer<Tag, HashSet<Tag>> develEntityFilterGatherer = new ExampleGatherer<Tag, HashSet<Tag>>();
@@ -111,9 +111,9 @@ public class GenerateProblemFiles {
 		develEntityFilterGatherer.dumpExamplesLibSvm(String.format("%s_devel_ef_%s.dat", fileNamePrefix, wsLabel), new NoFeatureNormalizer());
 	}
 
-	public static void generateIndividualAdvancedAnnotationModel(String fileNamePrefix, SmaphAnnotatorBuilder.Websearch ws, String wsLabel) throws Exception {
+	public static void generateIndividualAdvancedAnnotationModel(String fileNamePrefix, SmaphBuilder.Websearch ws, String wsLabel) throws Exception {
 		OptDataset opt = OptDataset.SMAPH_DATASET;
-		SmaphAnnotator smaphGatherer = SmaphAnnotatorBuilder.getSmaphGatherer(wikiApi, true, true, true, ws);
+		SmaphAnnotator smaphGatherer = SmaphBuilder.getSmaphGatherer(wikiApi, true, true, true, ws);
 
 		ExampleGatherer<Annotation, HashSet<Annotation>> trainAdvancedAnnotationGatherer = new ExampleGatherer<Annotation, HashSet<Annotation>>();
 		ExampleGatherer<Annotation, HashSet<Annotation>> develAdvancedAnnotationGatherer = new ExampleGatherer<Annotation, HashSet<Annotation>>();
@@ -135,11 +135,11 @@ public class GenerateProblemFiles {
 		develAdvancedAnnotationGatherer.dumpExamplesLibSvm(String.format("%s_devel_ar_%s.dat", fileNamePrefix, wsLabel), new NoFeatureNormalizer());
 	}
 
-	public static void generateCollectiveModel(String fileNamePrefix, SmaphAnnotatorBuilder.Websearch ws, String wsLabel) throws Exception {
+	public static void generateCollectiveModel(String fileNamePrefix, SmaphBuilder.Websearch ws, String wsLabel) throws Exception {
 		OptDataset opt = OptDataset.SMAPH_DATASET;
 		boolean useS2 = true, useS3 = true, useS6 = true;
 
-		SmaphAnnotator smaphGatherer = SmaphAnnotatorBuilder.getSmaphGatherer(wikiApi, useS2, useS3, useS6, ws);
+		SmaphAnnotator smaphGatherer = SmaphBuilder.getSmaphGatherer(wikiApi, useS2, useS3, useS6, ws);
 		CachedWATAnnotator.setCache("wikisense.cache");
 
 		ExampleGatherer<HashSet<Annotation>, HashSet<Annotation>> trainCollectiveGatherer = new ExampleGatherer<HashSet<Annotation>, HashSet<Annotation>>();
