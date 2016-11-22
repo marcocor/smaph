@@ -51,6 +51,7 @@ public class RestService {
 	private static TurtleNIFDocumentParser parser;
 	private static TurtleNIFDocumentCreator creator;
 	private static WikipediaToFreebase wikiToFreeb;
+	private static SmaphAnnotatorBuilder.Websearch ws = SmaphAnnotatorBuilder.Websearch.BING;
 
 	public static void initialize() {
 		parser = new TurtleNIFDocumentParser();
@@ -59,10 +60,9 @@ public class RestService {
 		SmaphConfig.setConfigFile("smaph-config.xml");
 
 		try {
-			entityFilterAnn = SmaphAnnotatorBuilder.getDefaultBingAnnotatorEF(wikiApi, "models/best_ef");
-			annotationRegressorAnn = SmaphAnnotatorBuilder.getDefaultBingAnnotatorIndividualAdvancedAnnotationRegressor(wikiApi, "models/best_ar");
-			collectiveAnn = SmaphAnnotatorBuilder
-			        .getDefaultBingAnnotatorCollectiveLBRanklib(wikiApi, "models/best_coll");
+			entityFilterAnn = SmaphAnnotatorBuilder.getSmaphEF(wikiApi, "models/best_ef", ws);
+			annotationRegressorAnn = SmaphAnnotatorBuilder.getSmaphIndividualAR(wikiApi, "models/best_ar", ws);
+			collectiveAnn = SmaphAnnotatorBuilder.getSmaphCollective(wikiApi, "models/best_coll", ws);
 		} catch (ClassNotFoundException | IOException e) {
 			e.printStackTrace();
 			throw new RuntimeException(e);

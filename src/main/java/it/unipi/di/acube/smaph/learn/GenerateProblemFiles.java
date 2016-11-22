@@ -63,8 +63,12 @@ public class GenerateProblemFiles {
 		        .withDescription("Dump feature file for annotation regressor").create("c"));
 		options.addOption(OptionBuilder.withLongOpt("outfile-base").hasArg().withDescription("Prefix of the output file name.")
 		        .create("f"));
+		options.addOption(OptionBuilder.withLongOpt("websearch-piggyback").hasArg().withArgName("WEBSEARCH").withDescription("What web search engine to piggyback on. Can be either `bing' or `google'.").create("w"));
 
 		CommandLine line = parser.parse(options, args);
+
+		SmaphAnnotatorBuilder.Websearch ws = SmaphAnnotatorBuilder.websearchFromString(line.getOptionValue("websearch-piggyback"));
+		String wsLabel = SmaphAnnotatorBuilder.websearchToString(ws);
 
 		Locale.setDefault(Locale.US);
 		SmaphConfig.setConfigFile("smaph-config.xml");
@@ -74,20 +78,20 @@ public class GenerateProblemFiles {
 		wikiToFreebase = new WikipediaToFreebase("mapdb");
 
 		if (line.hasOption("dump-entity-filter"))
-			generateEFModel(line.getOptionValue("outfile-base", ""));
+			generateEFModel(line.getOptionValue("outfile-base", ""), ws, wsLabel);
 		if (line.hasOption("dump-annotation-regressor"))
-			generateIndividualAdvancedAnnotationModel(line.getOptionValue("outfile-base", ""));
+			generateIndividualAdvancedAnnotationModel(line.getOptionValue("outfile-base", ""), ws, wsLabel);
 		if (line.hasOption("dump-collective-rank"))
-			generateCollectiveModel(line.getOptionValue("outfile-base", ""));
+			generateCollectiveModel(line.getOptionValue("outfile-base", ""), ws, wsLabel);
 
 		CachedWATAnnotator.flush();
 		WATRelatednessComputer.flush();
 	}
 
-	public static void generateEFModel(String fileNamePrefix) throws Exception {
+	public static void generateEFModel(String fileNamePrefix, SmaphAnnotatorBuilder.Websearch ws, String wsLabel) throws Exception {
 		OptDataset opt = OptDataset.SMAPH_DATASET;
 
-		SmaphAnnotator smaphGatherer = SmaphAnnotatorBuilder.getDefaultBingAnnotatorGatherer(wikiApi, true, true, true);
+		SmaphAnnotator smaphGatherer = SmaphAnnotatorBuilder.getSmaphGatherer(wikiApi, true, true, true, ws);
 
 		ExampleGatherer<Tag, HashSet<Tag>> trainEntityFilterGatherer = new ExampleGatherer<Tag, HashSet<Tag>>();
 		ExampleGatherer<Tag, HashSet<Tag>> develEntityFilterGatherer = new ExampleGatherer<Tag, HashSet<Tag>>();
@@ -98,18 +102,18 @@ public class GenerateProblemFiles {
 		ZScoreFeatureNormalizer fNormEF = new ZScoreFeatureNormalizer(trainEntityFilterGatherer);
 		fNormEF.dump("train_ef.zscore");
 		LOG.info("Dumping entity filter training problems (scaled)...");
-		trainEntityFilterGatherer.dumpExamplesLibSvm(fileNamePrefix + "train_ef_zscore.dat", fNormEF);
+		trainEntityFilterGatherer.dumpExamplesLibSvm(String.format("%s_train_ef_zscore_%s.dat", fileNamePrefix, wsLabel), fNormEF);
 		LOG.info("Dumping entity filter training problems (original values)...");
-		trainEntityFilterGatherer.dumpExamplesLibSvm(fileNamePrefix + "train_ef.dat", new NoFeatureNormalizer());
+		trainEntityFilterGatherer.dumpExamplesLibSvm(String.format("%s_train_ef_%s.dat", fileNamePrefix, wsLabel), new NoFeatureNormalizer());
 		LOG.info("Dumping entity filter development problems (scaled)...");
-		develEntityFilterGatherer.dumpExamplesLibSvm(fileNamePrefix + "devel_ef_zscore.dat", fNormEF);
+		develEntityFilterGatherer.dumpExamplesLibSvm(String.format("%s_devel_ef_zscore_%s.dat", fileNamePrefix, wsLabel), fNormEF);
 		LOG.info("Dumping entity filter development problems (original values)...");
-		develEntityFilterGatherer.dumpExamplesLibSvm(fileNamePrefix + "devel_ef.dat", new NoFeatureNormalizer());
+		develEntityFilterGatherer.dumpExamplesLibSvm(String.format("%s_devel_ef_%s.dat", fileNamePrefix, wsLabel), new NoFeatureNormalizer());
 	}
 
-	public static void generateIndividualAdvancedAnnotationModel(String fileNamePrefix) throws Exception {
+	public static void generateIndividualAdvancedAnnotationModel(String fileNamePrefix, SmaphAnnotatorBuilder.Websearch ws, String wsLabel) throws Exception {
 		OptDataset opt = OptDataset.SMAPH_DATASET;
-		SmaphAnnotator smaphGatherer = SmaphAnnotatorBuilder.getDefaultBingAnnotatorGatherer(wikiApi, true, true, true);
+		SmaphAnnotator smaphGatherer = SmaphAnnotatorBuilder.getSmaphGatherer(wikiApi, true, true, true, ws);
 
 		ExampleGatherer<Annotation, HashSet<Annotation>> trainAdvancedAnnotationGatherer = new ExampleGatherer<Annotation, HashSet<Annotation>>();
 		ExampleGatherer<Annotation, HashSet<Annotation>> develAdvancedAnnotationGatherer = new ExampleGatherer<Annotation, HashSet<Annotation>>();
@@ -122,21 +126,20 @@ public class GenerateProblemFiles {
 		ZScoreFeatureNormalizer fNormEF = new ZScoreFeatureNormalizer(trainAdvancedAnnotationGatherer);
 		fNormEF.dump("train_ar.zscore");
 		LOG.info("Dumping annotation regressor training problems (scaled)...");
-		trainAdvancedAnnotationGatherer.dumpExamplesLibSvm(fileNamePrefix + "train_ar_zscore.dat", fNormEF);
+		trainAdvancedAnnotationGatherer.dumpExamplesLibSvm(String.format("%s_train_ar_zscore_%s.dat", fileNamePrefix, wsLabel), fNormEF);
 		LOG.info("Dumping annotation regressor training problems (original values)...");
-		trainAdvancedAnnotationGatherer.dumpExamplesLibSvm(fileNamePrefix + "train_ar.dat", new NoFeatureNormalizer());
+		trainAdvancedAnnotationGatherer.dumpExamplesLibSvm(String.format("%s_train_ar_%s.dat", fileNamePrefix, wsLabel), new NoFeatureNormalizer());
 		LOG.info("Dumping annotation regressor development problems (scaled)...");
-		develAdvancedAnnotationGatherer.dumpExamplesLibSvm(fileNamePrefix + "devel_ar_zscore.dat", fNormEF);
+		develAdvancedAnnotationGatherer.dumpExamplesLibSvm(String.format("%s_devel_ar_zscore_%s.dat", fileNamePrefix, wsLabel), fNormEF);
 		LOG.info("Dumping annotation regressor development problems (original values)...");
-		develAdvancedAnnotationGatherer.dumpExamplesLibSvm(fileNamePrefix + "devel_ar.dat", new NoFeatureNormalizer());
+		develAdvancedAnnotationGatherer.dumpExamplesLibSvm(String.format("%s_devel_ar_%s.dat", fileNamePrefix, wsLabel), new NoFeatureNormalizer());
 	}
 
-	public static void generateCollectiveModel(String fileNamePrefix) throws Exception {
+	public static void generateCollectiveModel(String fileNamePrefix, SmaphAnnotatorBuilder.Websearch ws, String wsLabel) throws Exception {
 		OptDataset opt = OptDataset.SMAPH_DATASET;
 		boolean useS2 = true, useS3 = true, useS6 = true;
 
-		SmaphAnnotator smaphGatherer = SmaphAnnotatorBuilder.getDefaultBingAnnotatorGatherer(wikiApi, useS2, useS3,
-		        useS6);
+		SmaphAnnotator smaphGatherer = SmaphAnnotatorBuilder.getSmaphGatherer(wikiApi, useS2, useS3, useS6, ws);
 		CachedWATAnnotator.setCache("wikisense.cache");
 
 		ExampleGatherer<HashSet<Annotation>, HashSet<Annotation>> trainCollectiveGatherer = new ExampleGatherer<HashSet<Annotation>, HashSet<Annotation>>();
@@ -145,9 +148,9 @@ public class GenerateProblemFiles {
 		        develCollectiveGatherer, null, null, null, null, wikiApi, wikiToFreebase, opt);
 
 		LOG.info("Dumping annotation regressor training problems (original values)...");
-		trainCollectiveGatherer.dumpExamplesRankLib(fileNamePrefix + "train_coll.dat", new NoFeatureNormalizer());
+		trainCollectiveGatherer.dumpExamplesRankLib(String.format("%s_train_coll_%s.dat", fileNamePrefix, wsLabel), new NoFeatureNormalizer());
 		LOG.info("Dumping annotation regressor development problems (original values)...");
-		develCollectiveGatherer.dumpExamplesRankLib(fileNamePrefix + "devel_coll.dat", new NoFeatureNormalizer());
+		develCollectiveGatherer.dumpExamplesRankLib(String.format("%s_devel_coll_%s.dat", fileNamePrefix, wsLabel), new NoFeatureNormalizer());
 	}
 
 	public static String getModelFileNameBaseRL(int[] ftrs) {

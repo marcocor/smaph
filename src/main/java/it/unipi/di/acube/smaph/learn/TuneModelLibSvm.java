@@ -95,11 +95,15 @@ public class TuneModelLibSvm {
 		options.addOption(OptionBuilder.withLongOpt("restrict-ftr-set").hasArgs().withArgName("RESTRICT_FTR_SET").withDescription("Feature restriction set (initial features for `ablation' and `oneshot' methods, pool of selectable features for `increment'), e.g. `1,3,6,7,8'. Multiple sets can be defined (separated by a space). Defaults to all features.").create("f"));
 		options.addOption(OptionBuilder.withLongOpt("initial-ftr-set").hasArgs().withArgName("INIT_FTR_SET").withDescription("Initial feature set. Considered for `increment' method only. Defaults to no features.").create("i"));
 		options.addOption(OptionBuilder.withLongOpt("threads").hasArg().withArgName("N_THREADS").withDescription("Number of threads to launch. Default: number of cores.").create("t"));
+		options.addOption(OptionBuilder.withLongOpt("websearch-piggyback").isRequired().hasArg().withArgName("WEBSEARCH").withDescription("What web search engine to piggyback on. Can be either `bing' or `google'.").create("w"));
 
 		CommandLine line = parser.parse(options, args);
 
 		if (line.hasOption("threads"))
 			THREADS_NUM = Integer.parseInt(line.getOptionValue("threads"));
+
+		SmaphAnnotatorBuilder.Websearch ws = SmaphAnnotatorBuilder.websearchFromString(line.getOptionValue("websearch-piggyback"));
+		String wsLabel = SmaphAnnotatorBuilder.websearchToString(ws);
 
 		Locale.setDefault(Locale.US);
 		SmaphConfig.setConfigFile("smaph-config.xml");
@@ -111,7 +115,7 @@ public class TuneModelLibSvm {
 		WikipediaToFreebase wikiToFreebase = WikipediaToFreebase.getDefault();
 
 		SmaphAnnotator smaphGatherer = SmaphAnnotatorBuilder
-				.getDefaultBingAnnotatorGatherer(wikiApi, true, true, true);
+				.getSmaphGatherer(wikiApi, true, true, true, ws);
 
 		String ftrSelMethod = line.getOptionValue("ftr-sel-method", "ablation");
 		if (!ftrSelMethod.equals("ablation") && !ftrSelMethod.equals("increment") && !ftrSelMethod.equals("oneshot"))
@@ -127,25 +131,32 @@ public class TuneModelLibSvm {
 
 		int[] initialFtrSet = line.hasOption("initial-ftr-set") ? SmaphUtils.strToFeatureVector(line.getOptionValue("initial-ftr-set")) : null;
 
+		String readableEfBestModel = null;
 		if (line.hasOption("opt-entity-filter")) {
 			Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult> modelAndStats = trainIterativeEF(smaphGatherer,
 					opt, wikiToFreebase, OptimizaionProfiles.MAXIMIZE_MACRO_F1, -1.0,
-					ftrSelMethod, ftrRestriction, initialFtrSet, wikiApi);
+					ftrSelMethod, ftrRestriction, initialFtrSet, wikiApi, wsLabel);
 			System.gc();
 			for (ModelConfigurationResult res : modelAndStats.first)
 				LOG.info(res.getReadable());
-			LOG.info("Entity Filter - Overall best model:" + modelAndStats.second.getReadable());
+			readableEfBestModel = modelAndStats.second.getReadable();
 		}
 
+		String readableAfBestModel = null;
 		if (line.hasOption("opt-annotation-regressor")) {
 			Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult> modelAndStats = trainIterativeAR(smaphGatherer, opt,
 					wikiToFreebase, OptimizaionProfiles.MAXIMIZE_MACRO_F1, -1.0, ftrSelMethod,
-					ftrRestriction, initialFtrSet, wikiApi);
+					ftrRestriction, initialFtrSet, wikiApi, wsLabel);
 			System.gc();
 			for (ModelConfigurationResult res : modelAndStats.first)
 				LOG.info(res.getReadable());
-			LOG.info("Annotation Regressor - Overall best model:" + modelAndStats.second.getReadable());
+			readableAfBestModel = modelAndStats.second.getReadable();
 		}
+
+		if (line.hasOption("opt-entity-filter"))
+			LOG.info("Entity Filter - Overall best model: {}", readableEfBestModel);
+		if (line.hasOption("opt-annotation-regressor"))
+			LOG.info("Annotation Regressor - Overall best model: {}", readableAfBestModel);
 
 		LOG.info("Flushing everything...");
 		wikiApi.flush();
@@ -156,7 +167,7 @@ public class TuneModelLibSvm {
 	private static Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult> trainIterativeEF(
 			SmaphAnnotator annotator, OptDataset optDs, WikipediaToFreebase wikiToFreebase,
 			OptimizaionProfiles optProfile, double optProfileThreshold, String ftrSelMethod, int[][] restrictFeatures, int[] initialFeatures,
-			WikipediaApiInterface wikiApi) throws Exception {
+			WikipediaApiInterface wikiApi, String wsLabel) throws Exception {
 
 		Vector<ModelConfigurationResult> globalScoreboard = new Vector<>();
 		int broadStepsWeight = 10;
@@ -294,8 +305,8 @@ public class TuneModelLibSvm {
 		
 		ZScoreFeatureNormalizer scaleFn = new ZScoreFeatureNormalizer(trainGatherer);
 		LibSvmEntityFilter bestEf = ParameterTesterEF.getFilter(trainGatherer, scaleFn, globalBest.getFeatures(), globalBest.getWPos(), globalBest.getWNeg(), globalBest.getGamma(), globalBest.getC());
-		scaleFn.dump("models/best_ef.zscore");
-		bestEf.toFile("models/best_ef.model");
+		scaleFn.dump(String.format("models/best_ef_%s.zscore", wsLabel));
+		bestEf.toFile(String.format("models/best_ef_%s.model", wsLabel));
 		
 		return new Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult>(globalScoreboard, globalBest);
 	}
@@ -303,7 +314,7 @@ public class TuneModelLibSvm {
 	private static Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult> trainIterativeAR(
 			SmaphAnnotator annotator, OptDataset optDs, WikipediaToFreebase wikiToFreebase,
 			OptimizaionProfiles optProfile, double optProfileThreshold, String ftrSelMethod, int[][] restrictFeatures, int[] initFeatures,
-			WikipediaApiInterface wikiApi) throws Exception {
+			WikipediaApiInterface wikiApi, String wsLabel) throws Exception {
 		Vector<ModelConfigurationResult> globalScoreboard = new Vector<>();
 		int stepsCGamma = 6;
 		int fineStepsCGamma = 6;
@@ -435,8 +446,8 @@ public class TuneModelLibSvm {
 		
 		ZScoreFeatureNormalizer scaleFn = new ZScoreFeatureNormalizer(trainGatherer);
 		LibSvmAnnotationRegressor bestAR = ParameterTesterAR.getRegressor(trainGatherer, scaleFn, globalBest.getFeatures(), globalBest.getGamma(), globalBest.getC(), globalBest.getThreshold());
-		scaleFn.dump("models/best_ar.zscore");
-		bestAR.toFile("models/best_ar.model");
+		scaleFn.dump(String.format("models/best_ar_%s.zscore", wsLabel));
+		bestAR.toFile(String.format("models/best_ar_%s.model", wsLabel));
 		
 		return new Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult>(
 				globalScoreboard, globalBest);
