@@ -45,8 +45,6 @@ import it.unipi.di.acube.batframework.data.Tag;
 import it.unipi.di.acube.batframework.systemPlugins.CachedWATAnnotator;
 import it.unipi.di.acube.batframework.utils.Pair;
 import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
-import it.unipi.di.acube.searchapi.CachedWebsearchApi;
-import it.unipi.di.acube.searchapi.callers.BingSearchApiCaller;
 import it.unipi.di.acube.smaph.SmaphAnnotator;
 import it.unipi.di.acube.smaph.SmaphAnnotatorBuilder;
 import it.unipi.di.acube.smaph.SmaphConfig;
@@ -105,8 +103,6 @@ public class TuneModelLibSvm {
 
 		Locale.setDefault(Locale.US);
 		SmaphConfig.setConfigFile("smaph-config.xml");
-		CachedWebsearchApi searchApiCache = new CachedWebsearchApi(new BingSearchApiCaller(SmaphConfig.getDefaultBingKey()),
-		        SmaphConfig.getDefaultWebsearchCache());
 		CachedWATAnnotator.setCache("wikisense.cache");
 		WATRelatednessComputer.setCache("relatedness.cache");
 		WikipediaApiInterface wikiApi = new WikipediaApiInterface("wid.cache", "redirect.cache");
@@ -115,9 +111,7 @@ public class TuneModelLibSvm {
 		WikipediaToFreebase wikiToFreebase = WikipediaToFreebase.getDefault();
 
 		SmaphAnnotator smaphGatherer = SmaphAnnotatorBuilder
-				.getDefaultBingAnnotatorGatherer(wikiApi, searchApiCache, true, true, true);
-
-		double maxAnchorSegmentED = 0.7;
+				.getDefaultBingAnnotatorGatherer(wikiApi, true, true, true);
 
 		String ftrSelMethod = line.getOptionValue("ftr-sel-method", "ablation");
 		if (!ftrSelMethod.equals("ablation") && !ftrSelMethod.equals("increment") && !ftrSelMethod.equals("oneshot"))
@@ -145,7 +139,7 @@ public class TuneModelLibSvm {
 
 		if (line.hasOption("opt-annotation-regressor")) {
 			Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult> modelAndStats = trainIterativeAR(smaphGatherer, opt,
-					wikiToFreebase, maxAnchorSegmentED, OptimizaionProfiles.MAXIMIZE_MACRO_F1, -1.0, ftrSelMethod,
+					wikiToFreebase, OptimizaionProfiles.MAXIMIZE_MACRO_F1, -1.0, ftrSelMethod,
 					ftrRestriction, initialFtrSet, wikiApi);
 			System.gc();
 			for (ModelConfigurationResult res : modelAndStats.first)
@@ -154,7 +148,6 @@ public class TuneModelLibSvm {
 		}
 
 		LOG.info("Flushing everything...");
-		searchApiCache.close();
 		wikiApi.flush();
 		CachedWATAnnotator.flush();
 		WATRelatednessComputer.flush();
@@ -175,7 +168,7 @@ public class TuneModelLibSvm {
 		ExampleGatherer<Tag, HashSet<Tag>> develGatherer = new ExampleGatherer<Tag, HashSet<Tag>>();
 
 		GenerateTrainingAndTest.gatherExamplesTrainingAndDevel(annotator, trainGatherer, develGatherer, null, null, null, null,
-				null, null, wikiApi, wikiToFreebase, optDs, -1);
+				null, null, wikiApi, wikiToFreebase, optDs);
 
 		int[] allFtrs = SmaphUtils.getAllFtrVect(new EntityFeaturePack().getFeatureCount());
 
@@ -308,7 +301,7 @@ public class TuneModelLibSvm {
 	}
 
 	private static Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult> trainIterativeAR(
-			SmaphAnnotator annotator, OptDataset optDs, WikipediaToFreebase wikiToFreebase, double maxAnchorSegmentED,
+			SmaphAnnotator annotator, OptDataset optDs, WikipediaToFreebase wikiToFreebase,
 			OptimizaionProfiles optProfile, double optProfileThreshold, String ftrSelMethod, int[][] restrictFeatures, int[] initFeatures,
 			WikipediaApiInterface wikiApi) throws Exception {
 		Vector<ModelConfigurationResult> globalScoreboard = new Vector<>();
@@ -323,7 +316,7 @@ public class TuneModelLibSvm {
 
 		GenerateTrainingAndTest.gatherExamplesTrainingAndDevel(
 				annotator, null, null, null, null, trainGatherer,
-				develGatherer, null, null, wikiApi, wikiToFreebase, optDs, maxAnchorSegmentED);
+				develGatherer, null, null, wikiApi, wikiToFreebase, optDs);
 
 		int[] allFtrs = SmaphUtils.getAllFtrVect(new AdvancedAnnotationFeaturePack().getFeatureCount());
 

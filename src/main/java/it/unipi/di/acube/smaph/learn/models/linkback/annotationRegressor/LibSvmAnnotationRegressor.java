@@ -52,11 +52,6 @@ public class LibSvmAnnotationRegressor extends LibSvmModel<Annotation> implement
 		}
 	}
 	
-	public LibSvmAnnotationRegressor(String modelFile, double threshold) throws IOException {
-		super(modelFile);
-		this.threshold = threshold;
-	}
-
 	public LibSvmAnnotationRegressor(svm_model model, double threshold) {
 		super(model);
 		this.threshold = threshold;

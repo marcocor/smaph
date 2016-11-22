@@ -93,6 +93,8 @@ public class SmaphAnnotator implements Sa2WSystem {
 	private String appendName = "";
 	private SnippetAnnotationFilter snippetAnnotationFilter;
 	private boolean tagTitles;
+	private double anchorMaxED;
+	private BindingGenerator bg;
 
 	/**
 	 * Constructs a SMAPH annotator.
@@ -122,14 +124,11 @@ public class SmaphAnnotator implements Sa2WSystem {
 	 * @param searchApi
 	 *            the key to the search engine API.
 	 */
-	public SmaphAnnotator(EntityFilter entityFilter, FeatureNormalizer entityFilterNormalizer,
-			LinkBack linkBack,
-			boolean includeSourceNormalSearch,
-			boolean includeSourceWikiSearch, int wikiSearchPages,
-			boolean includeSourceSnippets, int topKAnnotateSnippet, int topKWikiResults,
-			boolean tagTitles, CachedWATAnnotator snippetAnnotator,
-			SnippetAnnotationFilter snippetAnnotationFilter,
-			WikipediaApiInterface wikiApi, WebsearchApi searchApi) {
+	public SmaphAnnotator(EntityFilter entityFilter, FeatureNormalizer entityFilterNormalizer, LinkBack linkBack,
+	        boolean includeSourceNormalSearch, boolean includeSourceWikiSearch, int wikiSearchPages,
+	        boolean includeSourceSnippets, int topKAnnotateSnippet, int topKWikiResults, boolean tagTitles,
+	        CachedWATAnnotator snippetAnnotator, SnippetAnnotationFilter snippetAnnotationFilter, WikipediaApiInterface wikiApi,
+	        WebsearchApi searchApi, double anchorMaxED, BindingGenerator bg) {
 		this.entityFilter = entityFilter;
 		this.entityFilterNormalizer = entityFilterNormalizer;
 		this.linkBack = linkBack;
@@ -144,6 +143,8 @@ public class SmaphAnnotator implements Sa2WSystem {
 		this.topKWikiResults = topKWikiResults;
 		this.tagTitles = tagTitles;
 		this.snippetAnnotator = snippetAnnotator;
+		this.anchorMaxED = anchorMaxED;
+		this.bg = bg;
 	}
 
 	public void setPredictNEOnly(boolean predictNEonly) {
@@ -671,7 +672,7 @@ public class SmaphAnnotator implements Sa2WSystem {
 			List<HashSet<Annotation>> BRCandidates,
 			List<Pair<FeaturePack<Annotation>, Boolean>> advancedAnnVectorsToPresence,
 			List<Annotation> ARCandidates, boolean keepNEOnly,
-			BindingGenerator bg, double anchorMaxED, SmaphAnnotatorDebugger debugger)
+			SmaphAnnotatorDebugger debugger)
 					throws Exception {
 
 		QueryInformation qi = getQueryInformation(query, debugger);
@@ -705,7 +706,7 @@ public class SmaphAnnotator implements Sa2WSystem {
 				acceptedEntities = qi.allCandidates();
 			}
 			List<Triple<HashSet<Annotation>, BindingFeaturePack, Double>> bindingsToFtrAndF1 = getLBBindingToFtrsAndF1(
-					query, qi, bg, goldStandardAnn, new StrongAnnotationMatch(
+					query, qi, goldStandardAnn, new StrongAnnotationMatch(
 							wikiApi), acceptedEntities, debugger);
 			for (Triple<HashSet<Annotation>, BindingFeaturePack, Double> bindingAndFtrsAndF1 : bindingsToFtrAndF1) {
 				BindingFeaturePack features = bindingAndFtrsAndF1.getMiddle();
@@ -723,7 +724,7 @@ public class SmaphAnnotator implements Sa2WSystem {
 		if (advancedAnnVectorsToPresence != null) {
 
 			List<Triple<Annotation, AdvancedAnnotationFeaturePack, Boolean>> annotationsAndFtrAndPresences = getAdvancedARToFtrsAndPresence(
-					query, qi, goldStandardAnn, new StrongAnnotationMatch(wikiApi), anchorMaxED);
+					query, qi, goldStandardAnn, new StrongAnnotationMatch(wikiApi));
 			for (Triple<Annotation, AdvancedAnnotationFeaturePack, Boolean> annotationsAndFtrAndPresence : annotationsAndFtrAndPresences) {
 				AdvancedAnnotationFeaturePack features = annotationsAndFtrAndPresence.getMiddle();
 				Annotation ann = annotationsAndFtrAndPresence.getLeft();
@@ -742,7 +743,7 @@ public class SmaphAnnotator implements Sa2WSystem {
 	private List<Triple<Annotation, AdvancedAnnotationFeaturePack, Boolean>> getAdvancedARToFtrsAndPresence(
 			String query, QueryInformation qi,
 			HashSet<Annotation> goldStandardAnn,
-			MatchRelation<Annotation> annotationMatch, double anchorMaxED) {
+			MatchRelation<Annotation> annotationMatch) {
 
 		List<Triple<Annotation, AdvancedAnnotationFeaturePack, Boolean>> annAndFtrsAndPresence = new Vector<>();
 		for (Annotation a : AdvancedIndividualLinkback.getAnnotations(query,
@@ -764,7 +765,7 @@ public class SmaphAnnotator implements Sa2WSystem {
 	}
 
 	private List<Triple<HashSet<Annotation>, BindingFeaturePack, Double>> getLBBindingToFtrsAndF1(String query,
-	        QueryInformation qi, BindingGenerator bg, HashSet<Annotation> goldStandardAnn, MatchRelation<Annotation> match,
+	        QueryInformation qi, HashSet<Annotation> goldStandardAnn, MatchRelation<Annotation> match,
 	        Set<Tag> acceptedEntities, SmaphAnnotatorDebugger debugger) {
 
 		Collection<Pair<HashSet<Annotation>, BindingFeaturePack>> bindingAndFeaturePacks = CollectiveLinkBack.getBindingFeaturePacks(query, acceptedEntities, qi, bg, wikiApi, debugger);
@@ -805,7 +806,7 @@ public class SmaphAnnotator implements Sa2WSystem {
 					throws Exception {
 		QueryInformation qi = getQueryInformation(query, debugger);
 		List<Triple<HashSet<Annotation>, BindingFeaturePack, Double>> bindingToFtrsAndF1 = getLBBindingToFtrsAndF1(
-				query, qi, bg, goldStandardAnn, new StrongAnnotationMatch(
+				query, qi, goldStandardAnn, new StrongAnnotationMatch(
 						wikiApi), qi.allCandidates(), debugger);
 		HashSet<Annotation> bestBinding = null;
 		double bestF1 = Double.NEGATIVE_INFINITY;
@@ -859,7 +860,7 @@ public class SmaphAnnotator implements Sa2WSystem {
 					throws Exception {
 		QueryInformation qi = getQueryInformation(query, debugger);
 		List<Triple<HashSet<Annotation>, BindingFeaturePack, Double>> bindingToFtrsAndF1 = getLBBindingToFtrsAndF1(
-				query, qi, bg, goldStandardAnn,
+				query, qi, goldStandardAnn,
 				new StrongMentionAnnotationMatch(), qi.allCandidates(), debugger);
 		HashSet<Annotation> bestBinding = null;
 		double bestF1 = Double.NEGATIVE_INFINITY;

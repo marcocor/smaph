@@ -1,18 +1,5 @@
 package it.unipi.di.acube.smaph.server.rest;
 
-import it.unipi.di.acube.batframework.data.ScoredAnnotation;
-import it.unipi.di.acube.batframework.problems.Sa2WSystem;
-import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
-import it.unipi.di.acube.searchapi.CachedWebsearchApi;
-import it.unipi.di.acube.searchapi.callers.BingSearchApiCaller;
-import it.unipi.di.acube.smaph.SmaphAnnotator;
-import it.unipi.di.acube.smaph.SmaphAnnotatorBuilder;
-import it.unipi.di.acube.smaph.SmaphAnnotatorDebugger;
-import it.unipi.di.acube.smaph.SmaphConfig;
-import it.unipi.di.acube.smaph.SmaphUtils;
-import it.cnr.isti.hpc.erd.Annotation;
-import it.cnr.isti.hpc.erd.WikipediaToFreebase;
-
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -21,7 +8,13 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Vector;
 
-import javax.ws.rs.*;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.FormParam;
+import javax.ws.rs.GET;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 
 import org.aksw.gerbil.transfer.nif.Document;
@@ -29,9 +22,22 @@ import org.aksw.gerbil.transfer.nif.Marking;
 import org.aksw.gerbil.transfer.nif.TurtleNIFDocumentCreator;
 import org.aksw.gerbil.transfer.nif.TurtleNIFDocumentParser;
 import org.aksw.gerbil.transfer.nif.data.ScoredNamedEntity;
-import org.codehaus.jettison.json.*;
+import org.codehaus.jettison.json.JSONArray;
+import org.codehaus.jettison.json.JSONException;
+import org.codehaus.jettison.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import it.cnr.isti.hpc.erd.Annotation;
+import it.cnr.isti.hpc.erd.WikipediaToFreebase;
+import it.unipi.di.acube.batframework.data.ScoredAnnotation;
+import it.unipi.di.acube.batframework.problems.Sa2WSystem;
+import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
+import it.unipi.di.acube.smaph.SmaphAnnotator;
+import it.unipi.di.acube.smaph.SmaphAnnotatorBuilder;
+import it.unipi.di.acube.smaph.SmaphAnnotatorDebugger;
+import it.unipi.di.acube.smaph.SmaphConfig;
+import it.unipi.di.acube.smaph.SmaphUtils;
 
 /**
  * @author Marco Cornolti
@@ -53,12 +59,10 @@ public class RestService {
 		SmaphConfig.setConfigFile("smaph-config.xml");
 
 		try {
-			CachedWebsearchApi searchApiCache = new CachedWebsearchApi(new BingSearchApiCaller(SmaphConfig.getDefaultBingKey()), SmaphConfig.getDefaultWebsearchCache());
-			entityFilterAnn = SmaphAnnotatorBuilder.getDefaultBingAnnotatorEF(wikiApi, searchApiCache, "models/best_ef");
-			annotationRegressorAnn = SmaphAnnotatorBuilder.getDefaultBingAnnotatorIndividualAdvancedAnnotationRegressor(wikiApi,
-					searchApiCache, "models/best_ar", 0.7);
+			entityFilterAnn = SmaphAnnotatorBuilder.getDefaultBingAnnotatorEF(wikiApi, "models/best_ef");
+			annotationRegressorAnn = SmaphAnnotatorBuilder.getDefaultBingAnnotatorIndividualAdvancedAnnotationRegressor(wikiApi, "models/best_ar");
 			collectiveAnn = SmaphAnnotatorBuilder
-			        .getDefaultBingAnnotatorCollectiveLBRanklib(wikiApi, searchApiCache, "models/best_coll");
+			        .getDefaultBingAnnotatorCollectiveLBRanklib(wikiApi, "models/best_coll");
 		} catch (ClassNotFoundException | IOException e) {
 			e.printStackTrace();
 			throw new RuntimeException(e);

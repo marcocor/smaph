@@ -34,7 +34,6 @@ import it.unipi.di.acube.batframework.utils.Pair;
 import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
 import it.unipi.di.acube.smaph.SmaphAnnotator;
 import it.unipi.di.acube.smaph.learn.featurePacks.FeaturePack;
-import it.unipi.di.acube.smaph.linkback.bindingGenerator.DefaultBindingGenerator;
 import it.unipi.di.acube.smaph.main.ERDDatasetFilter;
 
 public class GenerateTrainingAndTest {
@@ -44,13 +43,13 @@ public class GenerateTrainingAndTest {
 	public enum OptDataset {ERD_CHALLENGE, SMAPH_DATASET}
 	public static void gatherExamples(SmaphAnnotator smaph,
 			A2WDataset ds, ExampleGatherer<Tag, HashSet<Tag>> entityFilterGatherer, ExampleGatherer<HashSet<Annotation>, HashSet<Annotation>> linkBackCollectiveGatherer, ExampleGatherer<Annotation, HashSet<Annotation>> advancedIndividualAnnotationGatherer,
-			WikipediaToFreebase wikiToFreeb, boolean keepNEOnly, double anchorMaxED) throws Exception {
+			WikipediaToFreebase wikiToFreeb, boolean keepNEOnly) throws Exception {
 		gatherExamples(smaph, ds, entityFilterGatherer,
-				linkBackCollectiveGatherer, advancedIndividualAnnotationGatherer, keepNEOnly, -1, anchorMaxED);
+				linkBackCollectiveGatherer, advancedIndividualAnnotationGatherer, keepNEOnly, -1);
 	}
 	public static void gatherExamples(SmaphAnnotator smaph,
 			A2WDataset ds, ExampleGatherer<Tag, HashSet<Tag>> entityFilterGatherer, ExampleGatherer<HashSet<Annotation>, HashSet<Annotation>> linkBackCollectiveGatherer, ExampleGatherer<Annotation, HashSet<Annotation>> advancedAnnotationRegressorGatherer,
-			boolean keepNEOnly, int limit, double anchorMaxED) throws Exception {
+			boolean keepNEOnly, int limit) throws Exception {
 		limit = limit ==-1? ds.getSize() : Math.min(limit, ds.getSize());
 		ProgressLogger plog = new ProgressLogger(logger, "document");
 		plog.start("Collecting examples.");
@@ -78,9 +77,8 @@ public class GenerateTrainingAndTest {
 				advAnnVectorsToPresence = new Vector<>();
 			}
 
-			smaph.generateExamples(query, goldStandard, goldStandardAnn, EFVectorsToPresence, EFCandidates,
-					LbVectorsToF1, BRCandidates, advAnnVectorsToPresence, ARCandidates, keepNEOnly,
-					new DefaultBindingGenerator(), anchorMaxED, null);
+			smaph.generateExamples(query, goldStandard, goldStandardAnn, EFVectorsToPresence, EFCandidates, LbVectorsToF1,
+			        BRCandidates, advAnnVectorsToPresence, ARCandidates, keepNEOnly, null);
 
 			if (entityFilterGatherer != null)
 				entityFilterGatherer.addExample(goldBoolToDouble(EFVectorsToPresence), EFCandidates, goldStandard);
@@ -112,7 +110,7 @@ public class GenerateTrainingAndTest {
 			ExampleGatherer<Annotation, HashSet<Annotation>> develIndividualAdvancedAnnotationGatherer,
 			List<String> trainInstances, List<String> develInstances,
 			WikipediaApiInterface wikiApi, WikipediaToFreebase wikiToFreebase,
-			OptDataset opt, double anchorMaxED) throws Exception {
+			OptDataset opt) throws Exception {
 		if (trainEntityFilterGatherer != null || trainLinkBackCollectiveGatherer != null || trainIndividualAdvancedAnnotationGatherer != null) {
 
 			if (opt == OptDataset.ERD_CHALLENGE) {
@@ -121,29 +119,29 @@ public class GenerateTrainingAndTest {
 				A2WDataset smaphTrainA = new ERDDatasetFilter(DatasetBuilder.getGerdaqTrainA(), wikiApi);
 				gatherExamples(smaph, smaphTrainA,
 						trainEntityFilterGatherer, trainLinkBackCollectiveGatherer,
-						trainIndividualAdvancedAnnotationGatherer, wikiToFreebase, keepNEOnly, anchorMaxED);
+						trainIndividualAdvancedAnnotationGatherer, wikiToFreebase, keepNEOnly);
 
 				A2WDataset smaphTrainB = new ERDDatasetFilter(DatasetBuilder.getGerdaqTrainB(), wikiApi);
 				gatherExamples(smaph, smaphTrainB,
 						trainEntityFilterGatherer, trainLinkBackCollectiveGatherer,
-						trainIndividualAdvancedAnnotationGatherer, wikiToFreebase, keepNEOnly, anchorMaxED);
+						trainIndividualAdvancedAnnotationGatherer, wikiToFreebase, keepNEOnly);
 
 				A2WDataset smaphTest = new ERDDatasetFilter(DatasetBuilder.getGerdaqTest(), wikiApi);
 				gatherExamples(smaph, smaphTest,
 						trainEntityFilterGatherer, trainLinkBackCollectiveGatherer,
-						trainIndividualAdvancedAnnotationGatherer, wikiToFreebase, keepNEOnly, anchorMaxED);
+						trainIndividualAdvancedAnnotationGatherer, wikiToFreebase, keepNEOnly);
 
 				A2WDataset smaphDevel = new ERDDatasetFilter(DatasetBuilder.getGerdaqDevel(), wikiApi);
 				gatherExamples(smaph, smaphDevel,
 						trainEntityFilterGatherer, trainLinkBackCollectiveGatherer,
-						trainIndividualAdvancedAnnotationGatherer, wikiToFreebase, keepNEOnly, anchorMaxED);
+						trainIndividualAdvancedAnnotationGatherer, wikiToFreebase, keepNEOnly);
 
 				A2WDataset yahoo = new ERDDatasetFilter(
 						new YahooWebscopeL24Dataset(
 								classLoader.getResource("datasets/yahoo_webscope_L24/ydata-search-query-log-to-entities-v1_0.xml").getFile()),
 								wikiApi);
 				gatherExamples(smaph, yahoo, trainEntityFilterGatherer, trainLinkBackCollectiveGatherer,
-						trainIndividualAdvancedAnnotationGatherer, wikiToFreebase, keepNEOnly, anchorMaxED);
+						trainIndividualAdvancedAnnotationGatherer, wikiToFreebase, keepNEOnly);
 
 				if (trainInstances != null){
 					trainInstances.addAll(smaphTrainA.getTextInstanceList());
@@ -158,12 +156,12 @@ public class GenerateTrainingAndTest {
 				A2WDataset smaphTrainA = DatasetBuilder.getGerdaqTrainA();
 				gatherExamples(smaph, smaphTrainA,
 						trainEntityFilterGatherer, trainLinkBackCollectiveGatherer,
-						trainIndividualAdvancedAnnotationGatherer, wikiToFreebase, keepNEOnly, anchorMaxED);
+						trainIndividualAdvancedAnnotationGatherer, wikiToFreebase, keepNEOnly);
 
 				A2WDataset smaphTrainB = DatasetBuilder.getGerdaqTrainB();
 				gatherExamples(smaph, smaphTrainB,
 						trainEntityFilterGatherer, trainLinkBackCollectiveGatherer,
-						trainIndividualAdvancedAnnotationGatherer, wikiToFreebase, keepNEOnly, anchorMaxED);
+						trainIndividualAdvancedAnnotationGatherer, wikiToFreebase, keepNEOnly);
 
 				if (trainInstances != null){
 					trainInstances.addAll(smaphTrainA.getTextInstanceList());
@@ -179,7 +177,7 @@ public class GenerateTrainingAndTest {
 						develEntityFilterGatherer,
 						develLinkBackCollectiveGatherer,
 						develIndividualAdvancedAnnotationGatherer, wikiToFreebase,
-						keepNEOnly, anchorMaxED);
+						keepNEOnly);
 				if (develInstances != null){
 					develInstances.addAll(smaphDevel.getTextInstanceList());
 				}
@@ -189,7 +187,7 @@ public class GenerateTrainingAndTest {
 				A2WDataset smaphDevel = DatasetBuilder.getGerdaqDevel();
 				gatherExamples(smaph, smaphDevel,
 						develEntityFilterGatherer, develLinkBackCollectiveGatherer,
-						develIndividualAdvancedAnnotationGatherer,  wikiToFreebase, keepNEOnly, anchorMaxED);
+						develIndividualAdvancedAnnotationGatherer,  wikiToFreebase, keepNEOnly);
 				if (develInstances != null){
 					develInstances.addAll(smaphDevel.getTextInstanceList());
 				}
