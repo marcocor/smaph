@@ -108,7 +108,7 @@ public class TuneModelLibSvm {
 		SmaphConfig.setConfigFile("smaph-config.xml");
 		CachedWATAnnotator.setCache("wikisense.cache");
 		WATRelatednessComputer.setCache("relatedness.cache");
-		WikipediaApiInterface wikiApi = new WikipediaApiInterface("wid.cache", "redirect.cache");
+		WikipediaApiInterface wikiApi = WikipediaApiInterface.api();
 
 		OptDataset opt = OptDataset.SMAPH_DATASET;
 		WikipediaToFreebase wikiToFreebase = WikipediaToFreebase.getDefault();
