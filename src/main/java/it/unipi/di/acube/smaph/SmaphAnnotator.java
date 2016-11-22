@@ -880,8 +880,9 @@ public class SmaphAnnotator implements Sa2WSystem {
 		return bestBindingScored;
 	}
 
-	public void appendName(String appendName) {
+	public SmaphAnnotator appendName(String appendName) {
 		this.appendName = appendName;
+		return this;
 	}
 
 }
