@@ -66,13 +66,13 @@ public class SmaphAnnotatorBuilder {
 
 	public static WebsearchApi getWebsearch(Websearch ws) throws FileNotFoundException, ClassNotFoundException, IOException {
 		switch (ws) {
-		case BING:
+		case GOOGLE_CSE:
 			if (GOOGLE_WEBSEARCH_API == null)
 				GOOGLE_WEBSEARCH_API = new CachedWebsearchApi(
 				        new GoogleSearchApiCaller(SmaphConfig.getDefaultGoogleCseId(), SmaphConfig.getDefaultGoogleApiKey()),
 				        SmaphConfig.getDefaultWebsearchCache());
 			return GOOGLE_WEBSEARCH_API;
-		case GOOGLE_CSE:
+		case BING:
 
 			if (BING_WEBSEARCH_API == null)
 				BING_WEBSEARCH_API = new CachedWebsearchApi(new BingSearchApiCaller(SmaphConfig.getDefaultBingKey()),
