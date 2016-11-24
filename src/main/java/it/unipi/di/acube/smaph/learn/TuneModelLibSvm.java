@@ -102,7 +102,7 @@ public class TuneModelLibSvm {
 
 		SmaphBuilder.Websearch ws = SmaphBuilder
 		        .websearchFromString(line.getOptionValue("websearch-piggyback"));
-		String wsLabel = SmaphBuilder.websearchToString(ws);
+		String wsLabel = ws.toString();
 
 		Locale.setDefault(Locale.US);
 		SmaphConfig.setConfigFile("smaph-config.xml");
@@ -112,8 +112,6 @@ public class TuneModelLibSvm {
 
 		OptDataset opt = OptDataset.SMAPH_DATASET;
 		WikipediaToFreebase wikiToFreebase = WikipediaToFreebase.getDefault();
-
-		SmaphAnnotator smaphGatherer = SmaphBuilder.getSmaphGatherer(wikiApi, true, true, true, ws);
 
 		String ftrSelMethod = line.getOptionValue("ftr-sel-method", "ablation");
 		if (!ftrSelMethod.equals("ablation") && !ftrSelMethod.equals("increment") && !ftrSelMethod.equals("oneshot"))
@@ -130,32 +128,31 @@ public class TuneModelLibSvm {
 		int[] initialFtrSet = line.hasOption("initial-ftr-set")
 		        ? SmaphUtils.strToFeatureVector(line.getOptionValue("initial-ftr-set")) : null;
 
-		String readableEfBestModel = null;
+		List<String> readableBestModels = new Vector<>();
 		if (line.hasOption("opt-entity-filter")) {
+			SmaphAnnotator smaphGatherer = SmaphBuilder.getSmaphGatherer(wikiApi, true, true, true, ws).appendName("-EF");
 			Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult> modelAndStats = trainIterativeEF(smaphGatherer, opt,
 			        wikiToFreebase, OptimizaionProfiles.MAXIMIZE_MACRO_F1, -1.0, ftrSelMethod, ftrRestriction, initialFtrSet,
 			        wikiApi, wsLabel);
 			System.gc();
 			for (ModelConfigurationResult res : modelAndStats.first)
 				LOG.info(res.getReadable());
-			readableEfBestModel = modelAndStats.second.getReadable();
+			readableBestModels.add(smaphGatherer.getName() + modelAndStats.second.getReadable());
 		}
 
-		String readableAfBestModel = null;
 		if (line.hasOption("opt-annotation-regressor")) {
+			SmaphAnnotator smaphGatherer = SmaphBuilder.getSmaphGatherer(wikiApi, true, true, true, ws).appendName("-AR");
 			Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult> modelAndStats = trainIterativeAR(smaphGatherer, opt,
 			        wikiToFreebase, OptimizaionProfiles.MAXIMIZE_MACRO_F1, -1.0, ftrSelMethod, ftrRestriction, initialFtrSet,
 			        wikiApi, wsLabel);
 			System.gc();
 			for (ModelConfigurationResult res : modelAndStats.first)
 				LOG.info(res.getReadable());
-			readableAfBestModel = modelAndStats.second.getReadable();
+			readableBestModels.add(smaphGatherer.getName() + modelAndStats.second.getReadable());
 		}
 
-		if (line.hasOption("opt-entity-filter"))
-			LOG.info("Entity Filter - Overall best model: {}", readableEfBestModel);
-		if (line.hasOption("opt-annotation-regressor"))
-			LOG.info("Annotation Regressor - Overall best model: {}", readableAfBestModel);
+		for (String readable : readableBestModels)
+			LOG.info("Overall best model: {}", readable);
 
 		LOG.info("Flushing everything...");
 		wikiApi.flush();

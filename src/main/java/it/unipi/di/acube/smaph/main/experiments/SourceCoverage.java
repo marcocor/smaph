@@ -61,11 +61,14 @@ public class SourceCoverage {
 		annotators.add(SmaphBuilder.getSmaphGatherer(wikiApi, true, true, true, ws).appendName("-" + wsStr + "-S236-def"));
 
 		for (int topKS2 : new int[] { 0, 1, 2, 3, 4, 5, 10, 20, 30 })
-			annotators.add(getAnnotator(true, topKS2, false, 0, false, 0, ws).appendName("-" + wsStr + "-S2-top" + topKS2));
+			annotators.add(SmaphBuilder.getSmaphGatherer(wikiApi, true, topKS2, false, 0, false, 0, ws)
+			        .appendName("-" + wsStr + "-S2-top" + topKS2));
 		for (int topKS3 : new int[] { 0, 1, 2, 3, 4, 6, 8, 10 })
-			annotators.add(getAnnotator(false, 0, true, topKS3, false, 0, ws).appendName("-" + wsStr + "-S3-top" + topKS3));
+			annotators.add(SmaphBuilder.getSmaphGatherer(wikiApi, false, 0, true, topKS3, false, 0, ws)
+			        .appendName("-" + wsStr + "-S3-top" + topKS3));
 		for (int topKS6 : new int[] { 0, 1, 2, 3, 4, 5, 10, 20, 30 })
-			annotators.add(getAnnotator(false, 0, false, 0, true, topKS6, ws).appendName("-" + wsStr + "-S6-top" + topKS6));
+			annotators.add(SmaphBuilder.getSmaphGatherer(wikiApi, false, 0, false, 0, true, topKS6, ws)
+			        .appendName("-" + wsStr + "-S6-top" + topKS6));
 
 		HashMap<C2WSystem, MetricsResultSet> C2WRes = new HashMap<>();
 		HashMap<C2WSystem, MetricsResultSet> C2WResNEOnly = new HashMap<>();
@@ -94,12 +97,4 @@ public class SourceCoverage {
 		        rs.getMacroPrecision(), rs.getMacroRecall(), rs.getMicroPrecision(), rs.getMicroRecall(), rs.getGlobalTp(),
 		        rs.getGlobalFp(), rs.getGlobalFn(), annName);
 	}
-
-	private static SmaphAnnotator getAnnotator(boolean s2, int topKS2, boolean s3, int topKS3, boolean s6, int topKS6,
-	        Websearch ws) throws FileNotFoundException, ClassNotFoundException, IOException {
-		return new SmaphAnnotator(new NoEntityFilter(), null, new DummyLinkBack(), s2, s3, topKS3, s6, topKS6, topKS2, false,
-		        SmaphBuilder.DEFAULT_AUX_ANNOTATOR, new FrequencyAnnotationFilter(SmaphBuilder.DEFAULT_ANNOTATIONFILTER_RATIO),
-		        WikipediaApiInterface.api(), SmaphBuilder.getWebsearch(ws), SmaphBuilder.DEFAULT_ANCHOR_MENTION_ED, null);
-	}
-
 }

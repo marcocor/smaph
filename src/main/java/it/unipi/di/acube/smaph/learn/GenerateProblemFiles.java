@@ -68,7 +68,7 @@ public class GenerateProblemFiles {
 		CommandLine line = parser.parse(options, args);
 
 		SmaphBuilder.Websearch ws = SmaphBuilder.websearchFromString(line.getOptionValue("websearch-piggyback"));
-		String wsLabel = SmaphBuilder.websearchToString(ws);
+		String wsLabel = ws.toString();
 
 		Locale.setDefault(Locale.US);
 		SmaphConfig.setConfigFile("smaph-config.xml");

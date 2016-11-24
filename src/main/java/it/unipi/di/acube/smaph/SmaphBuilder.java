@@ -35,7 +35,7 @@ public class SmaphBuilder {
 	public static WebsearchApi BING_WEBSEARCH_API = null;
 	public static WebsearchApi GOOGLE_WEBSEARCH_API = null;
 	public static final int DEFAULT_WIKISEARCH_PAGES = 10;
-	public static final int DEFAULT_ANNOTATED_PAGES = 25;
+	public static final int DEFAULT_ANNOTATED_RESULTS = 25;
 	public static final int DEFAULT_NORMALSEARCH_PAGES = 25;
 	public static final double DEFAULT_ANNOTATIONFILTER_RATIO = 0.03;
 	public static final double DEFAULT_ANCHOR_MENTION_ED = 0.7;
@@ -50,16 +50,6 @@ public class SmaphBuilder {
 			return SmaphBuilder.Websearch.BING;
 		case "google":
 			return SmaphBuilder.Websearch.GOOGLE_CSE;
-		}
-		return null;
-	}
-
-	public static String websearchToString(Websearch ws) {
-		switch (ws) {
-		case BING:
-			return "bing";
-		case GOOGLE_CSE:
-			return "google";
 		}
 		return null;
 	}
@@ -83,18 +73,30 @@ public class SmaphBuilder {
 		}
 	}
 
+	private static SmaphAnnotator getDefaultSmaphParamTopk(WikipediaApiInterface wikiApi, EntityFilter entityFilter,
+	        FeatureNormalizer efNorm, LinkBack lb, boolean s2, int topkS2, boolean s3, int topkS3, boolean s6, int topkS6,
+	        Websearch ws) throws FileNotFoundException, ClassNotFoundException, IOException {
+		return new SmaphAnnotator(entityFilter, efNorm, lb, s2, s3, topkS3, s6, topkS6, topkS2, false, DEFAULT_AUX_ANNOTATOR,
+		        new FrequencyAnnotationFilter(DEFAULT_ANNOTATIONFILTER_RATIO), wikiApi, getWebsearch(ws),
+		        DEFAULT_ANCHOR_MENTION_ED, DEFAULT_BINDING_GENERATOR);
+	}
+
 	private static SmaphAnnotator getDefaultSmaphParam(WikipediaApiInterface wikiApi, EntityFilter entityFilter,
 	        FeatureNormalizer efNorm, LinkBack lb, boolean s2, boolean s3, boolean s6, Websearch ws)
 	                throws FileNotFoundException, ClassNotFoundException, IOException {
-		return new SmaphAnnotator(entityFilter, efNorm, lb, s2, s3, DEFAULT_WIKISEARCH_PAGES, s6, DEFAULT_ANNOTATED_PAGES,
-		        DEFAULT_NORMALSEARCH_PAGES, false, DEFAULT_AUX_ANNOTATOR,
-		        new FrequencyAnnotationFilter(DEFAULT_ANNOTATIONFILTER_RATIO), wikiApi, getWebsearch(ws),
-		        DEFAULT_ANCHOR_MENTION_ED, DEFAULT_BINDING_GENERATOR);
+		return getDefaultSmaphParamTopk(wikiApi, entityFilter, efNorm, lb, s2, DEFAULT_NORMALSEARCH_PAGES, s3,
+		        DEFAULT_WIKISEARCH_PAGES, s6, DEFAULT_ANNOTATED_RESULTS, ws);
 	}
 
 	public static SmaphAnnotator getSmaphGatherer(WikipediaApiInterface wikiApi, boolean s2, boolean s3, boolean s6, Websearch ws)
 	        throws FileNotFoundException, ClassNotFoundException, IOException {
 		return getDefaultSmaphParam(wikiApi, new NoEntityFilter(), null, new DummyLinkBack(), s2, s3, s6, ws);
+	}
+
+	public static SmaphAnnotator getSmaphGatherer(WikipediaApiInterface wikiApi, boolean s2, int topkS2, boolean s3, int topkS3,
+	        boolean s6, int topkS6, Websearch ws) throws FileNotFoundException, ClassNotFoundException, IOException {
+		return getDefaultSmaphParamTopk(wikiApi, new NoEntityFilter(), null, new DummyLinkBack(), s2, topkS2, s3, topkS3, s6,
+		        topkS6, ws);
 	}
 
 	public static SmaphAnnotator getSmaphEF(WikipediaApiInterface wikiApi, String EFModelFileBase, Websearch ws)
