@@ -70,7 +70,7 @@
 		<div class="row">
 			<div class="col-lg-10 col-lg-offset-1">
 				<div>
-					<h1>Source 6 - Snippets</h1>
+					<h1>Source 3 - Snippets</h1>
 				</div>
 				<div class="panel panel-primary">
 					<div class="panel-heading">
@@ -109,12 +109,12 @@
 				<div class="panel panel-primary">
 					<div class="panel-heading">
 						<h4 class="panel-title">
-							<a data-toggle="collapse" href="#collapseEntitiesSource6"><span
+							<a data-toggle="collapse" href="#collapseEntitiesSource3"><span
 								class="activate-tooltip" data-toggle="tooltip"
-								title="Entities found by Source 6">Entities</span></a>
+								title="Entities found by Source 3">Entities</span></a>
 						</h4>
 					</div>
-					<div id="collapseEntitiesSource6" class="panel-collapse collapse">
+					<div id="collapseEntitiesSource3" class="panel-collapse collapse">
 						<div class="panel-body">
 							<p>Entities found by annotating snippets</p>
 						</div>
@@ -134,7 +134,7 @@
 													title="Has the entity been included in the final result?">Accepted</span></th>
 											</tr>
 										</thead>
-										<tbody class="clear-data" id="entitiesSource6Table">
+										<tbody class="clear-data" id="entitiesSource3Table">
 										</tbody>
 									</table>
 								</div>
@@ -151,14 +151,61 @@
 		<div class="row">
 			<div class="col-lg-10 col-lg-offset-1">
 				<div>
-					<h1>Source 2 - NormalSearch</h1>
+					<h1>Source 1 - NormalSearch</h1>
+				</div>
+				<div class="panel panel-primary">
+					<div class="panel-heading">
+						<h4 class="panel-title">
+							<a data-toggle="collapse" href="#collapsePagesSource1"><span
+								class="activate-tooltip" data-toggle="tooltip"
+								title="The input query is issued to the search engine, results are fetched, if they contain Wikipedia urls, the corresponding entity becomes a candidate for Source 1.">Pages</span></a>
+						</h4>
+					</div>
+					<div id="collapsePagesSource1" class="panel-collapse collapse">
+						<div class="panel-body">
+							<p>Pages found by the Search Engine</p>
+						</div>
+						<div class="container-fluid">
+							<div class="row">
+								<div class="col-lg-10 col-lg-offset-1">
+									<table class="table">
+										<thead>
+											<tr>
+												<th><span class="activate-tooltip"
+													data-toggle="tooltip" title="Result rank">Rank</span></th>
+												<th>URL</th>
+												<th>Wid</th>
+												<th>Entity</th>
+												<th><span class="activate-tooltip"
+													data-toggle="tooltip"
+													title="These are the features used by the entity pruner (and SVM binary classifier) to decide whether to accept or reject the entity.">Features</span></th>
+												<th><span class="activate-tooltip"
+													data-toggle="tooltip"
+													title="Has the entity been accepted or discarded by the pruner?">Accepted</span></th>
+											</tr>
+										</thead>
+										<tbody class="clear-data" id="pagesSource1Table">
+										</tbody>
+									</table>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div class="row">
+			<div class="col-lg-10 col-lg-offset-1">
+				<div>
+					<h1>Source 2 - WikiSearch</h1>
 				</div>
 				<div class="panel panel-primary">
 					<div class="panel-heading">
 						<h4 class="panel-title">
 							<a data-toggle="collapse" href="#collapsePagesSource2"><span
 								class="activate-tooltip" data-toggle="tooltip"
-								title="The input query is issued to the search engine, results are fetched, if they contain Wikipedia urls, the corresponding entity becomes a candidate for Source 2.">Pages</span></a>
+								title="The input query is concatenated with the word 'wikipedia' and issued to the search engine, results are fetched, if they contain Wikipedia urls, the corresponding entity becomes a candidate for Source 2.">Pages</span></a>
 						</h4>
 					</div>
 					<div id="collapsePagesSource2" class="panel-collapse collapse">
@@ -185,53 +232,6 @@
 											</tr>
 										</thead>
 										<tbody class="clear-data" id="pagesSource2Table">
-										</tbody>
-									</table>
-								</div>
-							</div>
-						</div>
-					</div>
-				</div>
-			</div>
-		</div>
-
-		<div class="row">
-			<div class="col-lg-10 col-lg-offset-1">
-				<div>
-					<h1>Source 3 - WikiSearch</h1>
-				</div>
-				<div class="panel panel-primary">
-					<div class="panel-heading">
-						<h4 class="panel-title">
-							<a data-toggle="collapse" href="#collapsePagesSource3"><span
-								class="activate-tooltip" data-toggle="tooltip"
-								title="The input query is concatenated with the word 'wikipedia' and issued to the search engine, results are fetched, if they contain Wikipedia urls, the corresponding entity becomes a candidate for Source 3.">Pages</span></a>
-						</h4>
-					</div>
-					<div id="collapsePagesSource3" class="panel-collapse collapse">
-						<div class="panel-body">
-							<p>Pages found by the Search Engine</p>
-						</div>
-						<div class="container-fluid">
-							<div class="row">
-								<div class="col-lg-10 col-lg-offset-1">
-									<table class="table">
-										<thead>
-											<tr>
-												<th><span class="activate-tooltip"
-													data-toggle="tooltip" title="Result rank">Rank</span></th>
-												<th>URL</th>
-												<th>Wid</th>
-												<th>Entity</th>
-												<th><span class="activate-tooltip"
-													data-toggle="tooltip"
-													title="These are the features used by the entity pruner (and SVM binary classifier) to decide whether to accept or reject the entity.">Features</span></th>
-												<th><span class="activate-tooltip"
-													data-toggle="tooltip"
-													title="Has the entity been accepted or discarded by the pruner?">Accepted</span></th>
-											</tr>
-										</thead>
-										<tbody class="clear-data" id="pagesSource3Table">
 										</tbody>
 									</table>
 								</div>

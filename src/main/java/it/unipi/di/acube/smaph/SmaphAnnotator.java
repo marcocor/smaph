@@ -98,9 +98,9 @@ public class SmaphAnnotator implements Sa2WSystem {
 	/**
 	 * Constructs a SMAPH annotator.
 	 * @param includeSourceWikiResults
-	 *            true iff Source 2 has to be enabled.
+	 *            true iff Source 1 has to be enabled.
 	 * @param includeSourceWikiSearchResults
-	 *            true iff Source 3 has to be enabled.
+	 *            true iff Source 2 has to be enabled.
 	 * @param topKwikiSearch
 	 *            Source 3 results limit.
 	 * @param entityFilter
@@ -116,14 +116,12 @@ public class SmaphAnnotator implements Sa2WSystem {
 	 * @param boldFilter
 	 *            the filter of the bolds used in Source 1.
 	 * @param includeSourceAnnotator
-	 *            true iff Source 1 has to be enabled.
-	 * @param includeRelatedSearch
-	 *            true iff Source 4 has to be enabled.
+	 *            true iff Source 3 has to be enabled.
 	 * @param topKRelatedSearch
 	 *            Source 4 results limit.
 	 */
-	public SmaphAnnotator(boolean includeSourceSnippets, int topKSnippets, boolean includeSourceWikiResults,
-	        int topKWikiResults, boolean includeSourceWikiSearchResults, int topKwikiSearch,
+	public SmaphAnnotator(boolean includeSourceWikiResults, int topKWikiResults, boolean includeSourceWikiSearchResults,
+	        int topKwikiSearch, boolean includeSourceSnippets, int topKSnippets,
 	        double anchorMaxED, boolean tagTitles, LinkBack linkBack, EntityFilter entityFilter,
 	        FeatureNormalizer entityFilterNormalizer, BindingGenerator bg, CachedWATAnnotator snippetAnnotator,
 	        SnippetAnnotationFilter snippetAnnotationFilter, WikipediaApiInterface wikiApi, WebsearchApi searchApi) {
@@ -213,13 +211,13 @@ public class SmaphAnnotator implements Sa2WSystem {
 				Set<Tag> resultsTag = annotations.stream().map(a -> new Tag(a.getConcept())).collect(Collectors.toSet());
 
 				for (Tag candidate : qi.candidatesNS)
-					debugger.addEntityFeaturesS2(query, candidate.getConcept(), EntityFeaturePack.getFeatures(candidate, query, qi, wikiApi), resultsTag.contains(candidate));
+					debugger.addEntityFeaturesS1(query, candidate.getConcept(), EntityFeaturePack.getFeatures(candidate, query, qi, wikiApi), resultsTag.contains(candidate));
 				
 				for (Tag candidate : qi.candidatesWS)
-					debugger.addEntityFeaturesS3(query, candidate.getConcept(), EntityFeaturePack.getFeatures(candidate, query, qi, wikiApi), resultsTag.contains(candidate));
+					debugger.addEntityFeaturesS2(query, candidate.getConcept(), EntityFeaturePack.getFeatures(candidate, query, qi, wikiApi), resultsTag.contains(candidate));
 				
 				for (Tag candidate : qi.candidatesSA)
-					debugger.addEntityFeaturesS6(query, candidate.getConcept(), EntityFeaturePack.getFeatures(candidate, query, qi, wikiApi), resultsTag.contains(candidate));
+					debugger.addEntityFeaturesS3(query, candidate.getConcept(), EntityFeaturePack.getFeatures(candidate, query, qi, wikiApi), resultsTag.contains(candidate));
 			}
 
 		} catch (Exception e) {
@@ -446,7 +444,7 @@ public class SmaphAnnotator implements Sa2WSystem {
 			}
 
 			if (debugger != null) {
-				debugger.addSource2SearchResult(query, rankToIdNS, urlsNS);
+				debugger.addSource1SearchResult(query, rankToIdNS, urlsNS);
 				debugger.addWebsearchResponseNormalSearch(query,
 						resCountAndWebTotalNS.getRight());
 			}
@@ -473,7 +471,7 @@ public class SmaphAnnotator implements Sa2WSystem {
 			rankToBoldsWS = new HashMap<>();
 			SmaphUtils.mapRankToBoldsLC(boldsAndRankWS, rankToBoldsWS, null);
 			if (debugger != null) {
-				debugger.addSource3SearchResult(query, rankToIdWS,
+				debugger.addSource2SearchResult(query, rankToIdWS,
 						wikiSearchUrls);
 				debugger.addWebsearchResponseWikiSearch(query,
 						resCountAndWebTotalWS.getRight());
@@ -628,7 +626,7 @@ public class SmaphAnnotator implements Sa2WSystem {
 						break;
 					}
 			if (debugger != null){
-				debugger.addAnnotatedSnippetS6(query, snippet, filtered, boldMentions);
+				debugger.addAnnotatedSnippetS3(query, snippet, filtered, boldMentions);
 			}
 		}
 		return;

@@ -486,11 +486,11 @@ public class SmaphUtils {
 	}
 
 	public static HashMap<Tag, String[]> getEntitiesToBoldsList(
-			HashMap<Tag, List<String>> tagToBoldsS6, Set<Tag> entityToKeep) {
+			HashMap<Tag, List<String>> tagToBolds, Set<Tag> entityToKeep) {
 		HashMap<Tag, String[]> res = new HashMap<>();
-		for (Tag t : tagToBoldsS6.keySet())
+		for (Tag t : tagToBolds.keySet())
 			if (entityToKeep == null || entityToKeep.contains(t))
-				res.put(t, tagToBoldsS6.get(t).toArray(new String[]{}));
+				res.put(t, tagToBolds.get(t).toArray(new String[]{}));
 		return res;
 	}
 

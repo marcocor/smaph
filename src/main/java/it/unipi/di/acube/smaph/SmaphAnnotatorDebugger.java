@@ -32,12 +32,12 @@ public class SmaphAnnotatorDebugger {
 	private List<String> processedQueries = new Vector<>();
 	private HashMap<String, List<JSONObject>> websearchResponsesNS = new HashMap<String, List<JSONObject>>();
 	private HashMap<String, List<JSONObject>> websearchResponsesWS = new HashMap<String, List<JSONObject>>();
-	private HashMap<String, List<Triple<String, HashSet<Annotation>, HashSet<Mention>>>> annotatedSnippetsAndBoldsS6 = new HashMap<>();
+	private HashMap<String, List<Triple<String, HashSet<Annotation>, HashSet<Mention>>>> annotatedSnippetsAndBoldsS3 = new HashMap<>();
+	private HashMap<String, List<Triple<Integer, HashMap<String, Double>, Boolean>>> entityFeaturesS1 = new HashMap<>();
 	private HashMap<String, List<Triple<Integer, HashMap<String, Double>, Boolean>>> entityFeaturesS2 = new HashMap<>();
 	private HashMap<String, List<Triple<Integer, HashMap<String, Double>, Boolean>>> entityFeaturesS3 = new HashMap<>();
-	private HashMap<String, List<Triple<Integer, HashMap<String, Double>, Boolean>>> entityFeaturesS6 = new HashMap<>();
+	private HashMap<String, List<Triple<Integer, String, Integer>>> source1SearchResult = new HashMap<>();
 	private HashMap<String, List<Triple<Integer, String, Integer>>> source2SearchResult = new HashMap<>();
-	private HashMap<String, List<Triple<Integer, String, Integer>>> source3SearchResult = new HashMap<>();
 	private HashMap<String, Set<ScoredAnnotation>> result = new HashMap<>();
 	private HashMap<String, Set<Integer>> candidateEntities = new HashMap<String, Set<Integer>>(); 
 	private HashMap<String, HashMap<HashSet<Annotation>, Pair<HashMap<Annotation, HashMap<String, Double>>, HashMap<String, Double>>>> linkBackAnnotationFeaturesAndBindingFeatures = new HashMap<>();
@@ -81,10 +81,10 @@ public class SmaphAnnotatorDebugger {
 		return responses;
 	}
 
-	public void addAnnotatedSnippetS6(String query, String snippet, HashSet<Annotation> annotations, HashSet<Mention> bolds) {
-		if (!this.annotatedSnippetsAndBoldsS6.containsKey(query))
-			this.annotatedSnippetsAndBoldsS6.put(query, new Vector<>());
-		this.annotatedSnippetsAndBoldsS6.get(query).add(new ImmutableTriple<>(snippet, annotations, bolds));
+	public void addAnnotatedSnippetS3(String query, String snippet, HashSet<Annotation> annotations, HashSet<Mention> bolds) {
+		if (!this.annotatedSnippetsAndBoldsS3.containsKey(query))
+			this.annotatedSnippetsAndBoldsS3.put(query, new Vector<>());
+		this.annotatedSnippetsAndBoldsS3.get(query).add(new ImmutableTriple<>(snippet, annotations, bolds));
 	}
 
 	private JSONObject getTextPartJson(String text, int begin, int end, Collection<Mention> bolds) throws JSONException{
@@ -102,10 +102,10 @@ public class SmaphAnnotatorDebugger {
 		return textJs;
 	}
 
-	private JSONArray getAnnotatedSnippetS6(String query, WikipediaApiInterface wikiApi) throws JSONException, IOException {
+	private JSONArray getAnnotatedSnippetS3(String query, WikipediaApiInterface wikiApi) throws JSONException, IOException {
 		JSONArray res = new JSONArray();
-		if (this.annotatedSnippetsAndBoldsS6.containsKey(query))
-			for (Triple<String, HashSet<Annotation>, HashSet<Mention>> p : this.annotatedSnippetsAndBoldsS6.get(query)) {
+		if (this.annotatedSnippetsAndBoldsS3.containsKey(query))
+			for (Triple<String, HashSet<Annotation>, HashSet<Mention>> p : this.annotatedSnippetsAndBoldsS3.get(query)) {
 				JSONObject pairJs = new JSONObject();
 				res.put(pairJs);
 				pairJs.put("snippet", p.getLeft());
@@ -128,6 +128,11 @@ public class SmaphAnnotatorDebugger {
 		return res;
 	}
 
+	public void addEntityFeaturesS1(String query, int wid,
+			HashMap<String, Double> features, boolean accepted) {
+		addEntityFeatures(this.entityFeaturesS1, query, wid, features, accepted);
+	}
+
 	public void addEntityFeaturesS2(String query, int wid,
 			HashMap<String, Double> features, boolean accepted) {
 		addEntityFeatures(this.entityFeaturesS2, query, wid, features, accepted);
@@ -136,11 +141,6 @@ public class SmaphAnnotatorDebugger {
 	public void addEntityFeaturesS3(String query, int wid,
 			HashMap<String, Double> features, boolean accepted) {
 		addEntityFeatures(this.entityFeaturesS3, query, wid, features, accepted);
-	}
-
-	public void addEntityFeaturesS6(String query, int wid,
-			HashMap<String, Double> features, boolean accepted) {
-		addEntityFeatures(this.entityFeaturesS6, query, wid, features, accepted);
 	}
 
 	private ImmutableTriple<Integer, HashMap<String, Double>, Boolean> addEntityFeatures(
@@ -169,14 +169,14 @@ public class SmaphAnnotatorDebugger {
 							.containsKey(i) ? rankToIdNS.get(i) : -1));
 	}
 
-	public void addSource2SearchResult(String query,
+	public void addSource1SearchResult(String query,
 			HashMap<Integer, Integer> rankToIdNS, List<String> urls) {
-		addSourceSearchResult(source2SearchResult, query, rankToIdNS, urls);
+		addSourceSearchResult(source1SearchResult, query, rankToIdNS, urls);
 	}
 
-	public void addSource3SearchResult(String query,
+	public void addSource2SearchResult(String query,
 			HashMap<Integer, Integer> rankToIdWS, List<String> urls) {
-		addSourceSearchResult(source3SearchResult, query, rankToIdWS, urls);
+		addSourceSearchResult(source2SearchResult, query, rankToIdWS, urls);
 	}
 
 	public void addResult(String query, HashSet<ScoredAnnotation> annotations) {
@@ -249,15 +249,21 @@ public class SmaphAnnotatorDebugger {
 			JSONObject queryData = new JSONObject();
 			dump.put(query, queryData);
 			JSONObject phase1 = new JSONObject();
+			JSONObject phase1S1 = new JSONObject();
 			JSONObject phase1S2 = new JSONObject();
 			JSONObject phase1S3 = new JSONObject();
-			JSONObject phase1S6 = new JSONObject();
 			queryData.put("websearchResponseNS", getWebsearchResponseNormalSearch(query));
 			queryData.put("websearchResponseWS", getWebsearchResponseWikiSearch(query));
 			queryData.put("phase1", phase1);
+			phase1.put("source1", phase1S1);
 			phase1.put("source2", phase1S2);
 			phase1.put("source3", phase1S3);
-			phase1.put("source6", phase1S6);
+
+			/** Populate phase1 - source1 */
+			phase1S1.put("pages",
+					getSourceSearchResultJson(source1SearchResult, query, wikiApi));
+			phase1S1.put("entityFeatures",
+					getEntityFeaturesJson(this.entityFeaturesS1, query, wikiApi));
 
 			/** Populate phase1 - source2 */
 			phase1S2.put("pages",
@@ -266,16 +272,10 @@ public class SmaphAnnotatorDebugger {
 					getEntityFeaturesJson(this.entityFeaturesS2, query, wikiApi));
 
 			/** Populate phase1 - source3 */
-			phase1S3.put("pages",
-					getSourceSearchResultJson(source3SearchResult, query, wikiApi));
+			phase1S3.put("annotatedSnippets",
+					getAnnotatedSnippetS3(query, wikiApi));
 			phase1S3.put("entityFeatures",
 					getEntityFeaturesJson(this.entityFeaturesS3, query, wikiApi));
-
-			/** Populate phase1 - source6 */
-			phase1S6.put("annotatedSnippets",
-					getAnnotatedSnippetS6(query, wikiApi));
-			phase1S6.put("entityFeatures",
-					getEntityFeaturesJson(this.entityFeaturesS6, query, wikiApi));
 
 			/** Populate results */
 			queryData.put("results", getResultsJson(query, wikiApi));

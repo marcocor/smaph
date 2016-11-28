@@ -47,7 +47,7 @@ function fillIn(query) {
 	       function (query, qdata){
 		 $( "#query" ).html( query );
 		 $( ".clear-data" ).empty()
-		 $.each(qdata.phase1.source6.annotatedSnippets,
+		 $.each(qdata.phase1.source3.annotatedSnippets,
 			function (rank){
 			  var tr = $( "<tr>" );
 			  tr.appendTo($("#annotatedSnippetsTable"));
@@ -72,10 +72,10 @@ function fillIn(query) {
 			  );
 		 }
 		 );
-		$.each(qdata.phase1.source6.entityFeatures,
+		$.each(qdata.phase1.source3.entityFeatures,
 			function (){
 			  var tr = $( "<tr>" );
-			  tr.appendTo("#entitiesSource6Table");
+			  tr.appendTo("#entitiesSource3Table");
 			  $( "<td>" ).html(this.wid).appendTo(tr);
 			  var linkTd = $( "<td>" );
 			  linkTd.appendTo(tr);
@@ -92,6 +92,40 @@ function fillIn(query) {
 			  // setup popover for feature button
 			  setupPopoverContent(buttonTd, this.wid, this.features);
 			});
+		 var widToFtrsS1 = {};
+		 var widToAcceptedS1 = {};
+		 $.each(qdata.phase1.source1.entityFeatures,
+			function (){
+			  widToFtrsS1[this.wid] = this.features;
+			  widToAcceptedS1[this.wid] = this.accepted;
+			});
+		
+		 $.each(qdata.phase1.source1.pages,
+			function (){
+			  var tr = $( "<tr>" );
+			  tr.appendTo("#pagesSource1Table");
+			  $( "<td>" ).html(this.rank).appendTo(tr);
+			  var urlTd = $( "<td>" ).appendTo(tr);
+			  urlTd.append($("<a>").attr("href",this.url).attr("target", "_blank").html((this.url.length < 45) ? this.url : this.url.substring(0,45)+"..."));
+			  $( "<td>" ).html(this.wid).appendTo(tr);
+			  var linkTd = $( "<td>" );
+			  linkTd.appendTo(tr);
+			  $( "<a>" ).attr("href", this.url).attr("target", "_blank").html(this.title).appendTo(linkTd);
+			  var buttonTd = $( "<td>" );
+			  buttonTd.appendTo(tr);
+			  var acceptedTd = $( "<td>" );
+			  acceptedTd.appendTo(tr);
+			  if (this.wid in widToAcceptedS1)
+			    if (widToAcceptedS1[this.wid])
+			      $("<span>").attr("class", "glyphicon glyphicon-ok green").appendTo(acceptedTd);
+			    else
+			      $("<span>").attr("class", "glyphicon glyphicon-remove red").appendTo(acceptedTd);
+			  
+			  // setup popover for feature button
+			  if (this.wid in widToFtrsS1)
+			    setupPopoverContent(buttonTd, this.wid, widToFtrsS1[this.wid]);
+			});
+
 		 var widToFtrsS2 = {};
 		 var widToAcceptedS2 = {};
 		 $.each(qdata.phase1.source2.entityFeatures,
@@ -108,7 +142,7 @@ function fillIn(query) {
 			  var urlTd = $( "<td>" ).appendTo(tr);
 			  urlTd.append($("<a>").attr("href",this.url).attr("target", "_blank").html((this.url.length < 45) ? this.url : this.url.substring(0,45)+"..."));
 			  $( "<td>" ).html(this.wid).appendTo(tr);
-			  var linkTd = $( "<td>" );
+			  linkTd = $( "<td>" );
 			  linkTd.appendTo(tr);
 			  $( "<a>" ).attr("href", this.url).attr("target", "_blank").html(this.title).appendTo(linkTd);
 			  var buttonTd = $( "<td>" );
@@ -124,40 +158,6 @@ function fillIn(query) {
 			  // setup popover for feature button
 			  if (this.wid in widToFtrsS2)
 			    setupPopoverContent(buttonTd, this.wid, widToFtrsS2[this.wid]);
-			});
-
-		 var widToFtrsS3 = {};
-		 var widToAcceptedS3 = {};
-		 $.each(qdata.phase1.source3.entityFeatures,
-			function (){
-			  widToFtrsS3[this.wid] = this.features;
-			  widToAcceptedS3[this.wid] = this.accepted;
-			});
-		
-		 $.each(qdata.phase1.source3.pages,
-			function (){
-			  var tr = $( "<tr>" );
-			  tr.appendTo("#pagesSource3Table");
-			  $( "<td>" ).html(this.rank).appendTo(tr);
-			  var urlTd = $( "<td>" ).appendTo(tr);
-			  urlTd.append($("<a>").attr("href",this.url).attr("target", "_blank").html((this.url.length < 45) ? this.url : this.url.substring(0,45)+"..."));
-			  $( "<td>" ).html(this.wid).appendTo(tr);
-			  linkTd = $( "<td>" );
-			  linkTd.appendTo(tr);
-			  $( "<a>" ).attr("href", this.url).attr("target", "_blank").html(this.title).appendTo(linkTd);
-			  var buttonTd = $( "<td>" );
-			  buttonTd.appendTo(tr);
-			  var acceptedTd = $( "<td>" );
-			  acceptedTd.appendTo(tr);
-			  if (this.wid in widToAcceptedS3)
-			    if (widToAcceptedS3[this.wid])
-			      $("<span>").attr("class", "glyphicon glyphicon-ok green").appendTo(acceptedTd);
-			    else
-			      $("<span>").attr("class", "glyphicon glyphicon-remove red").appendTo(acceptedTd);
-			  
-			  // setup popover for feature button
-			  if (this.wid in widToFtrsS3)
-			    setupPopoverContent(buttonTd, this.wid, widToFtrsS3[this.wid]);
 			});
 		 var span = $("<span>").append($("<strong>Found: </strong> "))
 		 $.each(qdata.results,
