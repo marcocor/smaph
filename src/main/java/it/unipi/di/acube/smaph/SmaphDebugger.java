@@ -28,7 +28,7 @@ import it.unipi.di.acube.batframework.metrics.StrongAnnotationMatch;
 import it.unipi.di.acube.batframework.utils.Pair;
 import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
 
-public class SmaphAnnotatorDebugger {
+public class SmaphDebugger {
 	private List<String> processedQueries = new Vector<>();
 	private HashMap<String, List<JSONObject>> websearchResponsesNS = new HashMap<String, List<JSONObject>>();
 	private HashMap<String, List<JSONObject>> websearchResponsesWS = new HashMap<String, List<JSONObject>>();

@@ -35,7 +35,7 @@ import it.unipi.di.acube.batframework.problems.Sa2WSystem;
 import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
 import it.unipi.di.acube.smaph.SmaphAnnotator;
 import it.unipi.di.acube.smaph.SmaphBuilder;
-import it.unipi.di.acube.smaph.SmaphAnnotatorDebugger;
+import it.unipi.di.acube.smaph.SmaphDebugger;
 import it.unipi.di.acube.smaph.SmaphConfig;
 import it.unipi.di.acube.smaph.SmaphUtils;
 
@@ -99,7 +99,7 @@ public class RestService {
 	@Path("/debug")
 	@Produces({ MediaType.APPLICATION_JSON })
 	public String debugSmaph(@QueryParam("Text") String text) {
-		SmaphAnnotatorDebugger debugger = new SmaphAnnotatorDebugger();
+		SmaphDebugger debugger = new SmaphDebugger();
 		defaultAnn.solveSa2W(text, debugger);
 
 		try {

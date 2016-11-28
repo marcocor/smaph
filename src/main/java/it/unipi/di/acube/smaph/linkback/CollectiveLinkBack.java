@@ -6,7 +6,7 @@ import it.unipi.di.acube.batframework.data.Tag;
 import it.unipi.di.acube.batframework.utils.Pair;
 import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
 import it.unipi.di.acube.smaph.QueryInformation;
-import it.unipi.di.acube.smaph.SmaphAnnotatorDebugger;
+import it.unipi.di.acube.smaph.SmaphDebugger;
 import it.unipi.di.acube.smaph.SmaphUtils;
 import it.unipi.di.acube.smaph.learn.featurePacks.BindingFeaturePack;
 import it.unipi.di.acube.smaph.learn.featurePacks.FeaturePack;
@@ -33,7 +33,7 @@ public class CollectiveLinkBack implements LinkBack {
 	private WikipediaApiInterface wikiApi;
 	private BindingGenerator bg;
 	private FeatureNormalizer brFn;
-	private SmaphAnnotatorDebugger debugger;
+	private SmaphDebugger debugger;
 	
 	public CollectiveLinkBack(WikipediaApiInterface wikiApi,
 			BindingGenerator bg, BindingRegressor lbReg, FeatureNormalizer brFn) throws IOException {
@@ -44,7 +44,7 @@ public class CollectiveLinkBack implements LinkBack {
 	}
 	
 	public static List<Pair<HashSet<Annotation>,BindingFeaturePack>> getBindingFeaturePacks(String query,
-			Set<Tag> acceptedEntities, QueryInformation qi, BindingGenerator bg, WikipediaApiInterface wikiApi, SmaphAnnotatorDebugger debugger){
+			Set<Tag> acceptedEntities, QueryInformation qi, BindingGenerator bg, WikipediaApiInterface wikiApi, SmaphDebugger debugger){
 		List<Pair<HashSet<Annotation>,BindingFeaturePack>> featurePacks = new Vector<>();
 		//TODO: don't like.
 		acceptedEntities = acceptedEntities.stream().filter(e -> EntityToAnchors.e2a().containsId(e.getConcept())).collect(Collectors.toCollection(HashSet::new));
@@ -163,7 +163,7 @@ public class CollectiveLinkBack implements LinkBack {
 	}
 */
 	@Override
-	public void setDebugger(SmaphAnnotatorDebugger debugger) {
+	public void setDebugger(SmaphDebugger debugger) {
 		this.debugger = debugger;
 	}
 }

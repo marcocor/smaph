@@ -6,7 +6,7 @@ import it.unipi.di.acube.batframework.data.Tag;
 import it.unipi.di.acube.batframework.utils.Pair;
 import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
 import it.unipi.di.acube.smaph.QueryInformation;
-import it.unipi.di.acube.smaph.SmaphAnnotatorDebugger;
+import it.unipi.di.acube.smaph.SmaphDebugger;
 import it.unipi.di.acube.smaph.SmaphUtils;
 import it.unipi.di.acube.smaph.learn.featurePacks.AnnotationFeaturePack;
 import it.unipi.di.acube.smaph.learn.models.linkback.annotationRegressor.AnnotationRegressor;
@@ -64,7 +64,7 @@ public class AdvancedIndividualLinkback implements LinkBack {
 	}
 
 	@Override
-	public void setDebugger(SmaphAnnotatorDebugger debugger) {
+	public void setDebugger(SmaphDebugger debugger) {
 	}
 
 }
