@@ -34,9 +34,9 @@ public class SmaphBuilder {
 	        "COMMONNESS", "mw", "0.2", "0.0");
 	public static WebsearchApi BING_WEBSEARCH_API = null;
 	public static WebsearchApi GOOGLE_WEBSEARCH_API = null;
-	public static final int DEFAULT_WIKISEARCH_PAGES = 10;
-	public static final int DEFAULT_ANNOTATED_RESULTS = 25;
-	public static final int DEFAULT_NORMALSEARCH_PAGES = 25;
+	public static final int DEFAULT_WIKISEARCH_RESULTS = 10;
+	public static final int DEFAULT_ANNOTATED_SNIPPETS = 25;
+	public static final int DEFAULT_NORMALSEARCH_RESULTS = 25;
 	public static final double DEFAULT_ANNOTATIONFILTER_RATIO = 0.03;
 	public static final double DEFAULT_ANCHOR_MENTION_ED = 0.7;
 
@@ -84,8 +84,8 @@ public class SmaphBuilder {
 	private static SmaphAnnotator getDefaultSmaphParam(WikipediaApiInterface wikiApi, EntityFilter entityFilter,
 	        FeatureNormalizer efNorm, LinkBack lb, boolean s2, boolean s3, boolean s6, Websearch ws)
 	                throws FileNotFoundException, ClassNotFoundException, IOException {
-		return getDefaultSmaphParamTopk(wikiApi, entityFilter, efNorm, lb, s2, DEFAULT_NORMALSEARCH_PAGES, s3,
-		        DEFAULT_WIKISEARCH_PAGES, s6, DEFAULT_ANNOTATED_RESULTS, ws);
+		return getDefaultSmaphParamTopk(wikiApi, entityFilter, efNorm, lb, s2, DEFAULT_NORMALSEARCH_RESULTS, s3,
+		        DEFAULT_WIKISEARCH_RESULTS, s6, DEFAULT_ANNOTATED_SNIPPETS, ws);
 	}
 
 	public static SmaphAnnotator getSmaphGatherer(WikipediaApiInterface wikiApi, boolean s2, boolean s3, boolean s6, Websearch ws)

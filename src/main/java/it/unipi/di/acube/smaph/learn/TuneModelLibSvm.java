@@ -94,14 +94,28 @@ public class TuneModelLibSvm {
 		options.addOption(OptionBuilder.withLongOpt("initial-ftr-set").hasArgs().withArgName("INIT_FTR_SET").withDescription("Initial feature set. Considered for `increment' method only. Defaults to no features.").create("i"));
 		options.addOption(OptionBuilder.withLongOpt("threads").hasArg().withArgName("N_THREADS").withDescription("Number of threads to launch. Default: number of cores.").create("t"));
 		options.addOption(OptionBuilder.withLongOpt("websearch-piggyback").isRequired().hasArg().withArgName("WEBSEARCH").withDescription("What web search engine to piggyback on. Can be either `bing' or `google'.").create("w"));
+		options.addOption(OptionBuilder.withLongOpt("topk-S2").hasArg().withDescription("Comma-separated limits K for Source 2. Only top-K results are analyzed. Applies to EF tuning only. Defaults to "+SmaphBuilder.DEFAULT_NORMALSEARCH_RESULTS).create());
+		options.addOption(OptionBuilder.withLongOpt("topk-S3").hasArg().withDescription("Comma-separated limits K for Source 3. Only top-K results are analyzed. Applies to EF tuning only. Defaults to "+SmaphBuilder.DEFAULT_WIKISEARCH_RESULTS).create());
+		options.addOption(OptionBuilder.withLongOpt("topk-S6").hasArg().withDescription("Comma-separated limits K for Source 6. Only top-K results are analyzed. Applies to EF tuning only. Defaults to "+SmaphBuilder.DEFAULT_ANNOTATED_SNIPPETS).create());
 
 		CommandLine line = parser.parse(options, args);
 
 		if (line.hasOption("threads"))
 			THREADS_NUM = Integer.parseInt(line.getOptionValue("threads"));
 
-		SmaphBuilder.Websearch ws = SmaphBuilder
-		        .websearchFromString(line.getOptionValue("websearch-piggyback"));
+		int[] topKS2 = new int[] { SmaphBuilder.DEFAULT_NORMALSEARCH_RESULTS };
+		if (line.hasOption("topk-S2"))
+			topKS2 = parseIntList(line.getOptionValue("topk-S2"));
+
+		int[] topKS3 = new int[] { SmaphBuilder.DEFAULT_WIKISEARCH_RESULTS };
+		if (line.hasOption("topk-S3"))
+			topKS3 = parseIntList(line.getOptionValue("topk-S3"));
+
+		int[] topKS6 = new int[] { SmaphBuilder.DEFAULT_ANNOTATED_SNIPPETS };
+		if (line.hasOption("topk-S6"))
+			topKS6 = parseIntList(line.getOptionValue("topk-S6"));
+
+		SmaphBuilder.Websearch ws = SmaphBuilder.websearchFromString(line.getOptionValue("websearch-piggyback"));
 		String wsLabel = ws.toString();
 
 		Locale.setDefault(Locale.US);
@@ -130,14 +144,20 @@ public class TuneModelLibSvm {
 
 		List<String> readableBestModels = new Vector<>();
 		if (line.hasOption("opt-entity-filter")) {
-			SmaphAnnotator smaphGatherer = SmaphBuilder.getSmaphGatherer(wikiApi, true, true, true, ws).appendName("-EF");
-			Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult> modelAndStats = trainIterativeEF(smaphGatherer, opt,
-			        wikiToFreebase, OptimizaionProfiles.MAXIMIZE_MACRO_F1, -1.0, ftrSelMethod, ftrRestriction, initialFtrSet,
-			        wikiApi, wsLabel);
-			System.gc();
-			for (ModelConfigurationResult res : modelAndStats.first)
-				LOG.info(res.getReadable());
-			readableBestModels.add(smaphGatherer.getName() + modelAndStats.second.getReadable());
+			for (int topKS2i : topKS2)
+				for (int topKS3i : topKS3)
+					for (int topKS6i : topKS6) {
+						SmaphAnnotator smaphGatherer = SmaphBuilder
+						        .getSmaphGatherer(wikiApi, true, topKS2i, true, topKS3i, true, topKS6i, ws)
+						        .appendName(String.format("-EF-S2=%s-S3=%s-S6=%s", topKS2i, topKS3i, topKS6i));
+						Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult> modelAndStats = trainIterativeEF(
+						        smaphGatherer, opt, wikiToFreebase, OptimizaionProfiles.MAXIMIZE_MACRO_F1, -1.0, ftrSelMethod,
+						        ftrRestriction, initialFtrSet, wikiApi, wsLabel);
+						System.gc();
+						for (ModelConfigurationResult res : modelAndStats.first)
+							LOG.info(res.getReadable());
+						readableBestModels.add(smaphGatherer.getName() + modelAndStats.second.getReadable());
+					}
 		}
 
 		if (line.hasOption("opt-annotation-regressor")) {
@@ -158,6 +178,10 @@ public class TuneModelLibSvm {
 		wikiApi.flush();
 		CachedWATAnnotator.flush();
 		WATRelatednessComputer.flush();
+	}
+
+	private static int[] parseIntList(String intList) {
+		return Arrays.stream(intList.split("\\D")).mapToInt(n -> Integer.parseInt(n)).toArray();
 	}
 
 	private static Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult> trainIterativeEF(SmaphAnnotator annotator,
