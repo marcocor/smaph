@@ -83,65 +83,62 @@ public class SmaphAnnotator implements Sa2WSystem {
 	private EntityFilter entityFilter;
 	private FeatureNormalizer entityFilterNormalizer;
 	private LinkBack linkBack;
-	private boolean includeSourceNormalSearch;
+	private boolean includeSourceWikiResults;
 	private boolean includeSourceSnippets;
 	private int topKAnnotateSnippet;
 	private int topKWikiResults;
-	private boolean includeSourceWikiSearch;
-	private int topKWikiSearch = 0;
+	private boolean includeSourceWikiSearchResults;
+	private int topKWikiSearch;
 	private boolean predictNEonly;
 	private String appendName = "";
 	private SnippetAnnotationFilter snippetAnnotationFilter;
-	private boolean tagTitles;
 	private double anchorMaxED;
 	private BindingGenerator bg;
 
 	/**
 	 * Constructs a SMAPH annotator.
-	 * 
-	 * @param auxDisambiguator
-	 *            the disambiguator used in Source 1.
-	 * @param boldFilter
-	 *            the filter of the bolds used in Source 1.
+	 * @param includeSourceWikiResults
+	 *            true iff Source 2 has to be enabled.
+	 * @param includeSourceWikiSearchResults
+	 *            true iff Source 3 has to be enabled.
+	 * @param topKwikiSearch
+	 *            Source 3 results limit.
 	 * @param entityFilter
 	 *            the entity filter used in the second stage.
 	 * @param entityFilterNormalizer
 	 *            the entity filter feature normalizer.
-	 * @param includeSourceAnnotator
-	 *            true iff Source 1 has to be enabled.
-	 * @param includeSourceNormalSearch
-	 *            true iff Source 2 has to be enabled.
-	 * @param includeSourceWikiSearch
-	 *            true iff Source 3 has to be enabled.
-	 * @param wikiSearchPages
-	 *            Source 3 results limit.
-	 * @param includeRelatedSearch
-	 *            true iff Source 4 has to be enabled.
-	 * @param topKRelatedSearch
-	 *            Source 4 results limit.
 	 * @param wikiApi
 	 *            an API to Wikipedia.
 	 * @param searchApi
 	 *            the key to the search engine API.
+	 * @param auxDisambiguator
+	 *            the disambiguator used in Source 1.
+	 * @param boldFilter
+	 *            the filter of the bolds used in Source 1.
+	 * @param includeSourceAnnotator
+	 *            true iff Source 1 has to be enabled.
+	 * @param includeRelatedSearch
+	 *            true iff Source 4 has to be enabled.
+	 * @param topKRelatedSearch
+	 *            Source 4 results limit.
 	 */
-	public SmaphAnnotator(EntityFilter entityFilter, FeatureNormalizer entityFilterNormalizer, LinkBack linkBack,
-	        boolean includeSourceNormalSearch, boolean includeSourceWikiSearch, int wikiSearchPages,
-	        boolean includeSourceSnippets, int topKAnnotateSnippet, int topKWikiResults, boolean tagTitles,
-	        CachedWATAnnotator snippetAnnotator, SnippetAnnotationFilter snippetAnnotationFilter, WikipediaApiInterface wikiApi,
-	        WebsearchApi searchApi, double anchorMaxED, BindingGenerator bg) {
+	public SmaphAnnotator(boolean includeSourceSnippets, int topKSnippets, boolean includeSourceWikiResults,
+	        int topKWikiResults, boolean includeSourceWikiSearchResults, int topKwikiSearch,
+	        double anchorMaxED, boolean tagTitles, LinkBack linkBack, EntityFilter entityFilter,
+	        FeatureNormalizer entityFilterNormalizer, BindingGenerator bg, CachedWATAnnotator snippetAnnotator,
+	        SnippetAnnotationFilter snippetAnnotationFilter, WikipediaApiInterface wikiApi, WebsearchApi searchApi) {
 		this.entityFilter = entityFilter;
 		this.entityFilterNormalizer = entityFilterNormalizer;
 		this.linkBack = linkBack;
 		this.wikiApi = wikiApi;
-		this.includeSourceNormalSearch = includeSourceNormalSearch;
-		this.includeSourceWikiSearch = includeSourceWikiSearch;
-		this.topKWikiSearch = wikiSearchPages;
+		this.includeSourceWikiResults = includeSourceWikiResults;
+		this.includeSourceWikiSearchResults = includeSourceWikiSearchResults;
+		this.topKWikiSearch = topKwikiSearch;
 		this.websearchApi =  searchApi;
 		this.includeSourceSnippets = includeSourceSnippets;
 		this.snippetAnnotationFilter = snippetAnnotationFilter;
-		this.topKAnnotateSnippet = topKAnnotateSnippet;
+		this.topKAnnotateSnippet = topKSnippets;
 		this.topKWikiResults = topKWikiResults;
-		this.tagTitles = tagTitles;
 		this.snippetAnnotator = snippetAnnotator;
 		this.anchorMaxED = anchorMaxED;
 		this.bg = bg;
@@ -297,7 +294,7 @@ public class SmaphAnnotator implements Sa2WSystem {
 		WebsearchResponse websearchReply = websearchApi.query(query, topk);
 		double webTotal = websearchReply.getTotalResults();
 
-		getBoldsAndUrls(websearchReply, topk, boldsAndRanks, urls, snippetsToBolds, tagTitles);
+		getBoldsAndUrls(websearchReply, topk, boldsAndRanks, urls, snippetsToBolds);
 
 		return new ImmutableTriple<Integer, Double, List<JSONObject>>(
 				websearchReply.getWebEntries().size(), webTotal, websearchReply.getJsonResponses());
@@ -324,16 +321,15 @@ public class SmaphAnnotator implements Sa2WSystem {
 	 */
 	private static void getBoldsAndUrls(WebsearchResponse websearchResult, int topk,
 			List<Pair<String, Integer>> boldsAndRanks, List<String> urls,
-			List<Pair<String, Vector<Pair<Integer, Integer>>>> snippetsToBolds, boolean tagTitles)
+			List<Pair<String, Vector<Pair<Integer, Integer>>>> snippetsToBolds)
 					throws JSONException {
 		List<WebsearchResponseEntry> webEntries = websearchResult.getWebEntries();
 		for (int i = 0; i < Math.min(webEntries.size(), topk); i++) {
 			WebsearchResponseEntry entry = webEntries.get(i);
-			String titleI = entry.getName();
 			String descI = entry.getSnippet();
 			String url = entry.getDisplayUrl();
 			urls.add(url);
-			getBolds((tagTitles ? titleI + " " : "") + descI, i, snippetsToBolds, boldsAndRanks);
+			getBolds(descI, i, snippetsToBolds, boldsAndRanks);
 		}
 	}
 
@@ -426,7 +422,7 @@ public class SmaphAnnotator implements Sa2WSystem {
 		List<String> allBoldsNS = null;
 		Set<Tag> candidatesNS = null;
 		HashMap<Integer, Integer> idToRankNS = null;
-		if (includeSourceWikiSearch || includeSourceNormalSearch || includeSourceSnippets) {
+		if (includeSourceWikiSearchResults || includeSourceWikiResults || includeSourceSnippets) {
 			boldsAndRankNS = new Vector<>();
 			urlsNS = new Vector<>();
 			snippetsToBoldsNS = new Vector<>();
@@ -465,7 +461,7 @@ public class SmaphAnnotator implements Sa2WSystem {
 		double webTotalWS = Double.NaN;
 		HashMap<Integer, Integer> rankToIdWS = null;
 		HashMap<Integer, Integer> idToRankWS = null;
-		if (includeSourceWikiSearch | includeSourceNormalSearch) {
+		if (includeSourceWikiSearchResults | includeSourceWikiResults) {
 			resCountAndWebTotalWS = takeWebsearchData(query, boldsAndRankWS,
 					wikiSearchUrls, null, topKWikiSearch, true);
 			webTotalWS = resCountAndWebTotalWS.getMiddle();
@@ -502,8 +498,8 @@ public class SmaphAnnotator implements Sa2WSystem {
 		}
 
 		QueryInformation qi = new QueryInformation();
-		qi.includeSourceNormalSearch = includeSourceNormalSearch;
-		qi.includeSourceWikiSearch = includeSourceWikiSearch;
+		qi.includeSourceNormalSearch = includeSourceWikiResults;
+		qi.includeSourceWikiSearch = includeSourceWikiSearchResults;
 		qi.includeSourceSnippets = includeSourceSnippets;
 
 		qi.idToRankNS = idToRankNS;

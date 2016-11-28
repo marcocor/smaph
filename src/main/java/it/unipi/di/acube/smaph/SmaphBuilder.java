@@ -76,9 +76,9 @@ public class SmaphBuilder {
 	private static SmaphAnnotator getDefaultSmaphParamTopk(WikipediaApiInterface wikiApi, EntityFilter entityFilter,
 	        FeatureNormalizer efNorm, LinkBack lb, boolean s2, int topkS2, boolean s3, int topkS3, boolean s6, int topkS6,
 	        Websearch ws) throws FileNotFoundException, ClassNotFoundException, IOException {
-		return new SmaphAnnotator(entityFilter, efNorm, lb, s2, s3, topkS3, s6, topkS6, topkS2, false, DEFAULT_AUX_ANNOTATOR,
-		        new FrequencyAnnotationFilter(DEFAULT_ANNOTATIONFILTER_RATIO), wikiApi, getWebsearch(ws),
-		        DEFAULT_ANCHOR_MENTION_ED, DEFAULT_BINDING_GENERATOR);
+		return new SmaphAnnotator(s6, topkS6, s2, topkS2, s3, topkS3, DEFAULT_ANCHOR_MENTION_ED, false, lb, entityFilter, efNorm,
+		        DEFAULT_BINDING_GENERATOR, DEFAULT_AUX_ANNOTATOR, new FrequencyAnnotationFilter(DEFAULT_ANNOTATIONFILTER_RATIO),
+		        wikiApi, getWebsearch(ws));
 	}
 
 	private static SmaphAnnotator getDefaultSmaphParam(WikipediaApiInterface wikiApi, EntityFilter entityFilter,
