@@ -99,27 +99,27 @@ public class SmaphBuilder {
 		        topkS3, ws);
 	}
 
-	public static SmaphAnnotator getSmaphEF(WikipediaApiInterface wikiApi, String EFModelFileBase, Websearch ws)
-	        throws FileNotFoundException, ClassNotFoundException, IOException {
+	public static SmaphAnnotator getSmaphEF(WikipediaApiInterface wikiApi, String EFModelFileBase, boolean includeS2,
+	        Websearch ws) throws FileNotFoundException, ClassNotFoundException, IOException {
 		return getDefaultSmaphParam(wikiApi, LibSvmEntityFilter.fromFile(EFModelFileBase + ".model"),
 		        new ZScoreFeatureNormalizer(EFModelFileBase + ".zscore", new EntityFeaturePack()), new DummyLinkBack(), true,
-		        true, true, ws);
+		        includeS2, true, ws);
 	}
 
-	public static SmaphAnnotator getSmaphIndividualAR(WikipediaApiInterface wikiApi, String AFFileBase, Websearch ws)
-	        throws FileNotFoundException, ClassNotFoundException, IOException {
+	public static SmaphAnnotator getSmaphIndividualAR(WikipediaApiInterface wikiApi, String AFFileBase, boolean includeS2,
+	        Websearch ws) throws FileNotFoundException, ClassNotFoundException, IOException {
 		return getDefaultSmaphParam(wikiApi, new NoEntityFilter(), null,
 		        new AdvancedIndividualLinkback(LibSvmAnnotationRegressor.fromFile(AFFileBase + ".model"),
 		                new ZScoreFeatureNormalizer(AFFileBase + ".zscore", new AnnotationFeaturePack()), wikiApi,
 		                DEFAULT_ANCHOR_MENTION_ED),
-		        true, true, true, ws);
+		        true, includeS2, true, ws);
 	}
 
-	public static SmaphAnnotator getSmaphCollective(WikipediaApiInterface wikiApi, String collModelBase, Websearch ws)
-	        throws FileNotFoundException, ClassNotFoundException, IOException {
+	public static SmaphAnnotator getSmaphCollective(WikipediaApiInterface wikiApi, String collModelBase, boolean includeS2,
+	        Websearch ws) throws FileNotFoundException, ClassNotFoundException, IOException {
 		CollectiveLinkBack lb = new CollectiveLinkBack(wikiApi, new DefaultBindingGenerator(),
 		        new RankLibBindingRegressor(collModelBase + ".model"), new NoFeatureNormalizer());
-		return getDefaultSmaphParam(wikiApi, new NoEntityFilter(), null, lb, true, true, true, ws);
+		return getDefaultSmaphParam(wikiApi, new NoEntityFilter(), null, lb, true, includeS2, true, ws);
 	}
 
 }
