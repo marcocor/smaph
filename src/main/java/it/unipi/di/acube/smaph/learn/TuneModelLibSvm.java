@@ -94,9 +94,9 @@ public class TuneModelLibSvm {
 		options.addOption(OptionBuilder.withLongOpt("initial-ftr-set").hasArgs().withArgName("INIT_FTR_SET").withDescription("Initial feature set. Considered for `increment' method only. Defaults to no features.").create("i"));
 		options.addOption(OptionBuilder.withLongOpt("threads").hasArg().withArgName("N_THREADS").withDescription("Number of threads to launch. Default: number of cores.").create("t"));
 		options.addOption(OptionBuilder.withLongOpt("websearch-piggyback").isRequired().hasArg().withArgName("WEBSEARCH").withDescription("What web search engine to piggyback on. Can be either `bing' or `google'.").create("w"));
-		options.addOption(OptionBuilder.withLongOpt("topk-S1").hasArg().withDescription("Comma-separated limits K for Source 1. Only top-K results are analyzed. Applies to EF tuning only. Defaults to "+SmaphBuilder.DEFAULT_NORMALSEARCH_RESULTS).create());
-		options.addOption(OptionBuilder.withLongOpt("topk-S2").hasArg().withDescription("Comma-separated limits K for Source 2. Only top-K results are analyzed. Applies to EF tuning only. Defaults to "+SmaphBuilder.DEFAULT_WIKISEARCH_RESULTS).create());
-		options.addOption(OptionBuilder.withLongOpt("topk-S3").hasArg().withDescription("Comma-separated limits K for Source 3. Only top-K results are analyzed. Applies to EF tuning only. Defaults to "+SmaphBuilder.DEFAULT_ANNOTATED_SNIPPETS).create());
+		options.addOption(OptionBuilder.withLongOpt("topk-S1").hasArg().withDescription("Comma-separated limits K for Source 1. Only top-K results are analyzed. Defaults to "+SmaphBuilder.DEFAULT_NORMALSEARCH_RESULTS).create());
+		options.addOption(OptionBuilder.withLongOpt("topk-S2").hasArg().withDescription("Comma-separated limits K for Source 2. Only top-K results are analyzed. Defaults to "+SmaphBuilder.DEFAULT_WIKISEARCH_RESULTS).create());
+		options.addOption(OptionBuilder.withLongOpt("topk-S3").hasArg().withDescription("Comma-separated limits K for Source 3. Only top-K results are analyzed. Defaults to "+SmaphBuilder.DEFAULT_ANNOTATED_SNIPPETS).create());
 
 		CommandLine line = parser.parse(options, args);
 
@@ -147,12 +147,13 @@ public class TuneModelLibSvm {
 			for (int topKS1i : topKS1)
 				for (int topKS2i : topKS2)
 					for (int topKS3i : topKS3) {
+						String sourcesLabel = String.format("S1=%d_S2=%d_S3=%d", topKS1i, topKS2i, topKS3i);
 						SmaphAnnotator smaphGatherer = SmaphBuilder
 						        .getSmaphGatherer(wikiApi, true, topKS1i, true, topKS2i, true, topKS3i, ws)
-						        .appendName(String.format("-EF-S1=%s-S2=%s-S3=%s", topKS1i, topKS2i, topKS3i));
+						        .appendName("-EF-" + sourcesLabel);
 						Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult> modelAndStats = trainIterativeEF(
 						        smaphGatherer, opt, wikiToFreebase, OptimizaionProfiles.MAXIMIZE_MACRO_F1, -1.0, ftrSelMethod,
-						        ftrRestriction, initialFtrSet, wikiApi, wsLabel);
+						        ftrRestriction, initialFtrSet, wikiApi, String.format("%s-%s", wsLabel, sourcesLabel));
 						System.gc();
 						for (ModelConfigurationResult res : modelAndStats.first)
 							LOG.info(res.getReadable());
@@ -161,16 +162,21 @@ public class TuneModelLibSvm {
 		}
 
 		if (line.hasOption("opt-annotation-regressor")) {
-			SmaphAnnotator smaphGatherer = SmaphBuilder.getSmaphGatherer(wikiApi, true, true, true, ws).appendName("-AR");
-			Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult> modelAndStats = trainIterativeAR(smaphGatherer, opt,
-			        wikiToFreebase, OptimizaionProfiles.MAXIMIZE_MACRO_F1, -1.0, ftrSelMethod, ftrRestriction, initialFtrSet,
-			        wikiApi, wsLabel);
-			System.gc();
-			for (ModelConfigurationResult res : modelAndStats.first)
-				LOG.info(res.getReadable());
-			readableBestModels.add(smaphGatherer.getName() + modelAndStats.second.getReadable());
+			for (int topKS1i : topKS1)
+				for (int topKS2i : topKS2)
+					for (int topKS3i : topKS3) {
+						String sourcesLabel = String.format("S1=%d_S2=%d_S3=%d", topKS1i, topKS2i, topKS3i);
+						SmaphAnnotator smaphGatherer = SmaphBuilder.getSmaphGatherer(wikiApi, true, true, true, ws)
+						        .appendName("-AR-" + sourcesLabel);
+						Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult> modelAndStats = trainIterativeAR(
+						        smaphGatherer, opt, wikiToFreebase, OptimizaionProfiles.MAXIMIZE_MACRO_F1, -1.0, ftrSelMethod,
+						        ftrRestriction, initialFtrSet, wikiApi, String.format("%s-%s", wsLabel, sourcesLabel));
+						System.gc();
+						for (ModelConfigurationResult res : modelAndStats.first)
+							LOG.info(res.getReadable());
+						readableBestModels.add(smaphGatherer.getName() + modelAndStats.second.getReadable());
+					}
 		}
-
 		for (String readable : readableBestModels)
 			LOG.info("Overall best model: {}", readable);
 
@@ -334,7 +340,7 @@ public class TuneModelLibSvm {
 
 	private static Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult> trainIterativeAR(SmaphAnnotator annotator,
 	        OptDataset optDs, WikipediaToFreebase wikiToFreebase, OptimizaionProfiles optProfile, double optProfileThreshold,
-	        String ftrSelMethod, int[][] restrictFeatures, int[] initFeatures, WikipediaApiInterface wikiApi, String wsLabel)
+	        String ftrSelMethod, int[][] restrictFeatures, int[] initFeatures, WikipediaApiInterface wikiApi, String sourceLabel)
 	                throws Exception {
 		Vector<ModelConfigurationResult> globalScoreboard = new Vector<>();
 		int stepsCGamma = 6;
@@ -470,8 +476,8 @@ public class TuneModelLibSvm {
 		ZScoreFeatureNormalizer scaleFn = new ZScoreFeatureNormalizer(trainGatherer);
 		LibSvmAnnotationRegressor bestAR = ParameterTesterAR.getRegressor(trainGatherer, scaleFn, globalBest.getFeatures(),
 		        globalBest.getGamma(), globalBest.getC(), globalBest.getThreshold());
-		scaleFn.dump(String.format("models/best_ar_%s.zscore", wsLabel));
-		bestAR.toFile(String.format("models/best_ar_%s.model", wsLabel));
+		scaleFn.dump(String.format("models/best_ar_%s.zscore", sourceLabel));
+		bestAR.toFile(String.format("models/best_ar_%s.model", sourceLabel));
 
 		return new Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult>(globalScoreboard, globalBest);
 	}
