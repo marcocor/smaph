@@ -38,7 +38,7 @@ public class BindingFeaturePack extends FeaturePack<HashSet<Annotation>> {
 		if (ftrNames == null) {
 			List<String> ftrNamesVect = new Vector<>();
 
-			for (String ftrName : AdvancedAnnotationFeaturePack
+			for (String ftrName : AnnotationFeaturePack
 					.getFeatureNamesStatic())
 				if (ftrName.startsWith("found_")) {
 					ftrNamesVect.add("count_" + ftrName);
@@ -144,7 +144,7 @@ public class BindingFeaturePack extends FeaturePack<HashSet<Annotation>> {
 		List<HashMap<String, Double>> allAnnotationsFeatures = new Vector<>();
 		
 		for (Annotation ann : binding) {
-			HashMap<String, Double> annFeatures = AdvancedAnnotationFeaturePack
+			HashMap<String, Double> annFeatures = AnnotationFeaturePack
 					.getFeaturesStatic(ann, query, qi, wikiApi);
 			allAnnotationsFeatures.add(annFeatures);
 			if (debugAnnotationFeatures != null)

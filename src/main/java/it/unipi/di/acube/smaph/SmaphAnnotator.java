@@ -60,7 +60,7 @@ import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
 import it.unipi.di.acube.searchapi.WebsearchApi;
 import it.unipi.di.acube.searchapi.model.WebsearchResponse;
 import it.unipi.di.acube.searchapi.model.WebsearchResponseEntry;
-import it.unipi.di.acube.smaph.learn.featurePacks.AdvancedAnnotationFeaturePack;
+import it.unipi.di.acube.smaph.learn.featurePacks.AnnotationFeaturePack;
 import it.unipi.di.acube.smaph.learn.featurePacks.BindingFeaturePack;
 import it.unipi.di.acube.smaph.learn.featurePacks.EntityFeaturePack;
 import it.unipi.di.acube.smaph.learn.featurePacks.FeaturePack;
@@ -717,10 +717,10 @@ public class SmaphAnnotator implements Sa2WSystem {
 		// Generate examples for advanced annotation filter
 		if (advancedAnnVectorsToPresence != null) {
 
-			List<Triple<Annotation, AdvancedAnnotationFeaturePack, Boolean>> annotationsAndFtrAndPresences = getAdvancedARToFtrsAndPresence(
+			List<Triple<Annotation, AnnotationFeaturePack, Boolean>> annotationsAndFtrAndPresences = getAdvancedARToFtrsAndPresence(
 					query, qi, goldStandardAnn, new StrongAnnotationMatch(wikiApi));
-			for (Triple<Annotation, AdvancedAnnotationFeaturePack, Boolean> annotationsAndFtrAndPresence : annotationsAndFtrAndPresences) {
-				AdvancedAnnotationFeaturePack features = annotationsAndFtrAndPresence.getMiddle();
+			for (Triple<Annotation, AnnotationFeaturePack, Boolean> annotationsAndFtrAndPresence : annotationsAndFtrAndPresences) {
+				AnnotationFeaturePack features = annotationsAndFtrAndPresence.getMiddle();
 				Annotation ann = annotationsAndFtrAndPresence.getLeft();
 				advancedAnnVectorsToPresence.add(new Pair<FeaturePack<Annotation>, Boolean>(features, annotationsAndFtrAndPresence
 						.getRight()));
@@ -734,12 +734,12 @@ public class SmaphAnnotator implements Sa2WSystem {
 		}
 	}
 
-	private List<Triple<Annotation, AdvancedAnnotationFeaturePack, Boolean>> getAdvancedARToFtrsAndPresence(
+	private List<Triple<Annotation, AnnotationFeaturePack, Boolean>> getAdvancedARToFtrsAndPresence(
 			String query, QueryInformation qi,
 			HashSet<Annotation> goldStandardAnn,
 			MatchRelation<Annotation> annotationMatch) {
 
-		List<Triple<Annotation, AdvancedAnnotationFeaturePack, Boolean>> annAndFtrsAndPresence = new Vector<>();
+		List<Triple<Annotation, AnnotationFeaturePack, Boolean>> annAndFtrsAndPresence = new Vector<>();
 		for (Annotation a : AdvancedIndividualLinkback.getAnnotations(query,
 				qi.allCandidates(), anchorMaxED)) {
 			boolean inGold = false;
@@ -749,8 +749,8 @@ public class SmaphAnnotator implements Sa2WSystem {
 					break;
 				}
 			if (EntityToAnchors.e2a().containsId(a.getConcept())) {
-				AdvancedAnnotationFeaturePack features = new AdvancedAnnotationFeaturePack(a, query, qi, wikiApi);
-				annAndFtrsAndPresence.add(new ImmutableTriple<Annotation, AdvancedAnnotationFeaturePack, Boolean>(a, features, inGold));
+				AnnotationFeaturePack features = new AnnotationFeaturePack(a, query, qi, wikiApi);
+				annAndFtrsAndPresence.add(new ImmutableTriple<Annotation, AnnotationFeaturePack, Boolean>(a, features, inGold));
 			} else
 				LOG.warn("No anchors found for id={}", a.getConcept());
 		}

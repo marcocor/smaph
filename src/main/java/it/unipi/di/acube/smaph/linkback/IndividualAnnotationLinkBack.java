@@ -8,7 +8,7 @@ import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
 import it.unipi.di.acube.smaph.QueryInformation;
 import it.unipi.di.acube.smaph.SmaphAnnotatorDebugger;
 import it.unipi.di.acube.smaph.SmaphUtils;
-import it.unipi.di.acube.smaph.learn.featurePacks.AdvancedAnnotationFeaturePack;
+import it.unipi.di.acube.smaph.learn.featurePacks.AnnotationFeaturePack;
 import it.unipi.di.acube.smaph.learn.models.linkback.annotationRegressor.AnnotationRegressor;
 import it.unipi.di.acube.smaph.learn.normalizer.FeatureNormalizer;
 
@@ -51,7 +51,7 @@ public class IndividualAnnotationLinkBack implements LinkBack {
 		List<Pair<Annotation, Double>> scoreAndAnnotations = new Vector<>();
 		for (Annotation a : getAnnotations(query, acceptedEntities, qi)) {
 			double score = ar.predictScore(
-					new AdvancedAnnotationFeaturePack(a, query, qi, wikiApi), annFn);
+					new AnnotationFeaturePack(a, query, qi, wikiApi), annFn);
 			scoreAndAnnotations.add(new Pair<Annotation, Double>(a, score));
 		}
 

@@ -17,17 +17,17 @@ import java.util.*;
  * number of tokens covered and the edit distance towards bolds and anchors.
  *
  */
-public class AdvancedAnnotationFeaturePack extends FeaturePack<Annotation> {
+public class AnnotationFeaturePack extends FeaturePack<Annotation> {
 	private static String[] ftrNames = null;
 	
 	private static final long serialVersionUID = 1L;
 
-	public AdvancedAnnotationFeaturePack(Annotation a, String query,
+	public AnnotationFeaturePack(Annotation a, String query,
 			QueryInformation qi, WikipediaApiInterface wikiApi) {
 		super(getFeaturesStatic(a, query, qi, wikiApi));
 	}
 	
-	public AdvancedAnnotationFeaturePack() {
+	public AnnotationFeaturePack() {
 		super(null);
 	}
 	

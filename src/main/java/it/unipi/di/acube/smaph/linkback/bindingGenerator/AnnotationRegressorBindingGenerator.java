@@ -6,7 +6,7 @@ import it.unipi.di.acube.batframework.utils.Pair;
 import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
 import it.unipi.di.acube.smaph.QueryInformation;
 import it.unipi.di.acube.smaph.SmaphUtils;
-import it.unipi.di.acube.smaph.learn.featurePacks.AdvancedAnnotationFeaturePack;
+import it.unipi.di.acube.smaph.learn.featurePacks.AnnotationFeaturePack;
 import it.unipi.di.acube.smaph.learn.models.linkback.annotationRegressor.AnnotationRegressor;
 import it.unipi.di.acube.smaph.learn.normalizer.FeatureNormalizer;
 import it.unipi.di.acube.smaph.linkback.AdvancedIndividualLinkback;
@@ -42,7 +42,7 @@ public class AnnotationRegressorBindingGenerator implements BindingGenerator {
 				acceptedEntities, anchorMaxED);
 
 		for (Annotation a : annotations){
-			double score = ar.predictScore(new AdvancedAnnotationFeaturePack(a, query, qi, wikiApi), fn);
+			double score = ar.predictScore(new AnnotationFeaturePack(a, query, qi, wikiApi), fn);
 			if (score > threshold){
 				validAnnsAndScore.add(new Pair<Annotation, Double>(a,score));
 			}

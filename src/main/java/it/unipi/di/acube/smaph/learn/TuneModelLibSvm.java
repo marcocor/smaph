@@ -53,7 +53,7 @@ import it.unipi.di.acube.smaph.WATRelatednessComputer;
 import it.unipi.di.acube.smaph.learn.GenerateTrainingAndTest.OptDataset;
 import it.unipi.di.acube.smaph.learn.ParameterTester.ParameterTesterAR;
 import it.unipi.di.acube.smaph.learn.ParameterTester.ParameterTesterEF;
-import it.unipi.di.acube.smaph.learn.featurePacks.AdvancedAnnotationFeaturePack;
+import it.unipi.di.acube.smaph.learn.featurePacks.AnnotationFeaturePack;
 import it.unipi.di.acube.smaph.learn.featurePacks.EntityFeaturePack;
 import it.unipi.di.acube.smaph.learn.models.entityfilters.LibSvmEntityFilter;
 import it.unipi.di.acube.smaph.learn.models.linkback.annotationRegressor.LibSvmAnnotationRegressor;
@@ -349,7 +349,7 @@ public class TuneModelLibSvm {
 		GenerateTrainingAndTest.gatherExamplesTrainingAndDevel(annotator, null, null, null, null, trainGatherer, develGatherer,
 		        null, null, wikiApi, wikiToFreebase, optDs);
 
-		int[] allFtrs = SmaphUtils.getAllFtrVect(new AdvancedAnnotationFeaturePack().getFeatureCount());
+		int[] allFtrs = SmaphUtils.getAllFtrVect(new AnnotationFeaturePack().getFeatureCount());
 
 		if (restrictFeatures == null)
 			restrictFeatures = new int[][] { allFtrs };

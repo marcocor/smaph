@@ -9,7 +9,7 @@ import it.unipi.di.acube.searchapi.CachedWebsearchApi;
 import it.unipi.di.acube.searchapi.WebsearchApi;
 import it.unipi.di.acube.searchapi.callers.BingSearchApiCaller;
 import it.unipi.di.acube.searchapi.callers.GoogleSearchApiCaller;
-import it.unipi.di.acube.smaph.learn.featurePacks.AdvancedAnnotationFeaturePack;
+import it.unipi.di.acube.smaph.learn.featurePacks.AnnotationFeaturePack;
 import it.unipi.di.acube.smaph.learn.featurePacks.EntityFeaturePack;
 import it.unipi.di.acube.smaph.learn.models.entityfilters.EntityFilter;
 import it.unipi.di.acube.smaph.learn.models.entityfilters.LibSvmEntityFilter;
@@ -110,7 +110,7 @@ public class SmaphBuilder {
 	        throws FileNotFoundException, ClassNotFoundException, IOException {
 		return getDefaultSmaphParam(wikiApi, new NoEntityFilter(), null,
 		        new AdvancedIndividualLinkback(LibSvmAnnotationRegressor.fromFile(AFFileBase + ".model"),
-		                new ZScoreFeatureNormalizer(AFFileBase + ".zscore", new AdvancedAnnotationFeaturePack()), wikiApi,
+		                new ZScoreFeatureNormalizer(AFFileBase + ".zscore", new AnnotationFeaturePack()), wikiApi,
 		                DEFAULT_ANCHOR_MENTION_ED),
 		        true, true, true, ws);
 	}
