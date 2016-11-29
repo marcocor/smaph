@@ -10,33 +10,33 @@
 	<properties>
 		<jersey.version>2.5.2</jersey.version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <smaph.port>8080</smaph.port>
-        <smaph.host>localhost</smaph.host>
+		<smaph.port>8080</smaph.port>
+		<smaph.host>localhost</smaph.host>
 	</properties>
 
-    <profiles>
-        <profile>
-            <id>server</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.codehaus.mojo</groupId>
-                        <artifactId>exec-maven-plugin</artifactId>
-                        <version>1.4.0</version>
-                        <configuration>
-                            <mainClass>it.unipi.di.acube.smaph.server.ServerMain</mainClass>
-                            <arguments>
-                                <argument>--host</argument>
-                                <argument>${smaph.host}</argument>
-                                <argument>--port</argument>
-                                <argument>${smaph.port}</argument>
-                            </arguments>
-                        </configuration>
+	<profiles>
+		<profile>
+			<id>server</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.codehaus.mojo</groupId>
+						<artifactId>exec-maven-plugin</artifactId>
+						<version>1.4.0</version>
+						<configuration>
+							<mainClass>it.unipi.di.acube.smaph.server.ServerMain</mainClass>
+							<arguments>
+								<argument>--host</argument>
+								<argument>${smaph.host}</argument>
+								<argument>--port</argument>
+								<argument>${smaph.port}</argument>
+							</arguments>
+						</configuration>
 
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
 
 		<profile>
 			<id>tune</id>
