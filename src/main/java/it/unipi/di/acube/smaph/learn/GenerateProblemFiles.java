@@ -42,6 +42,7 @@ import it.unipi.di.acube.smaph.SmaphAnnotator;
 import it.unipi.di.acube.smaph.SmaphBuilder;
 import it.unipi.di.acube.smaph.SmaphConfig;
 import it.unipi.di.acube.smaph.WATRelatednessComputer;
+import it.unipi.di.acube.smaph.SmaphBuilder.SmaphVersion;
 import it.unipi.di.acube.smaph.learn.GenerateTrainingAndTest.OptDataset;
 import it.unipi.di.acube.smaph.learn.normalizer.NoFeatureNormalizer;
 import it.unipi.di.acube.smaph.learn.normalizer.ZScoreFeatureNormalizer;
@@ -49,7 +50,6 @@ import it.unipi.di.acube.smaph.learn.normalizer.ZScoreFeatureNormalizer;
 public class GenerateProblemFiles {
 	private final static Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 	private static WikipediaApiInterface wikiApi;
-	private static WikipediaToFreebase wikiToFreebase;
 
 	public static void main(String[] args) throws Exception {
 		CommandLineParser parser = new GnuParser();
@@ -65,66 +65,64 @@ public class GenerateProblemFiles {
 		        .create("f"));
 		options.addOption(OptionBuilder.withLongOpt("websearch-piggyback").hasArg().withArgName("WEBSEARCH")
 		        .withDescription("What web search engine to piggyback on. Can be either `bing' or `google'.").create("w"));
-		options.addOption("exclude-s1", false, "Exclude entity source 1.");
-		options.addOption("exclude-s2", false, "Exclude entity source 2.");
-		options.addOption("exclude-s3", false, "Exclude entity source 3.");
+		options.addOption("exclude_s1", false, "Exclude entity source 1.");
+		options.addOption("exclude_s2", false, "Exclude entity source 2.");
+		options.addOption("exclude_s3", false, "Exclude entity source 3.");
 
 		CommandLine line = parser.parse(options, args);
 
-		boolean s1 = line.hasOption("exclude-s1");
-		boolean s2 = line.hasOption("exclude-s2");
-		boolean s3 = line.hasOption("exclude-s3");
+		boolean s1 = !line.hasOption("exclude_s1");
+		boolean s2 = !line.hasOption("exclude_s2");
+		boolean s3 = !line.hasOption("exclude_s3");
 
 		SmaphBuilder.Websearch ws = SmaphBuilder.websearchFromString(line.getOptionValue("websearch-piggyback"));
-		String wsLabel = ws.toString();
 
 		Locale.setDefault(Locale.US);
 		SmaphConfig.setConfigFile("smaph-config.xml");
 		wikiApi = WikipediaApiInterface.api();
 		WATRelatednessComputer.setCache("relatedness.cache");
 		CachedWATAnnotator.setCache("wikisense.cache");
-		wikiToFreebase = new WikipediaToFreebase("mapdb");
 
 		if (line.hasOption("dump-entity-filter"))
-			generateEFModel(line.getOptionValue("outfile-base", ""), ws, wsLabel, s1, s2, s3);
+			generateEFModel(line.getOptionValue("outfile-base", ""), ws, s1, s2, s3);
 		if (line.hasOption("dump-annotation-regressor"))
-			generateIndividualAdvancedAnnotationModel(line.getOptionValue("outfile-base", ""), ws, wsLabel, s1, s2, s3);
+			generateIndividualAdvancedAnnotationModel(line.getOptionValue("outfile-base", ""), ws, s1, s2, s3);
 		if (line.hasOption("dump-collective-rank"))
-			generateCollectiveModel(line.getOptionValue("outfile-base", ""), ws, wsLabel, s1, s2, s3);
+			generateCollectiveModel(line.getOptionValue("outfile-base", ""), ws, s1, s2, s3);
 
 		CachedWATAnnotator.flush();
 		WATRelatednessComputer.flush();
 	}
 
-	public static void generateEFModel(String fileNamePrefix, SmaphBuilder.Websearch ws, String wsLabel, boolean s1, boolean s2,
+	public static void generateEFModel(String fileNamePrefix, SmaphBuilder.Websearch ws, boolean s1, boolean s2,
 	        boolean s3) throws Exception {
 		OptDataset opt = OptDataset.SMAPH_DATASET;
-
 		SmaphAnnotator smaphGatherer = SmaphBuilder.getSmaphGatherer(wikiApi, s1, s2, s3, ws);
 
 		ExampleGatherer<Tag, HashSet<Tag>> trainEntityFilterGatherer = new ExampleGatherer<Tag, HashSet<Tag>>();
 		ExampleGatherer<Tag, HashSet<Tag>> develEntityFilterGatherer = new ExampleGatherer<Tag, HashSet<Tag>>();
 		GenerateTrainingAndTest.gatherExamplesTrainingAndDevel(smaphGatherer, trainEntityFilterGatherer,
-		        develEntityFilterGatherer, null, null, null, null, null, null, wikiApi, wikiToFreebase, opt);
+		        develEntityFilterGatherer, null, null, null, null, null, null, wikiApi, opt);
 
+		String label = SmaphBuilder.getDefaultModelBase(SmaphVersion.ENTITY_FILTER, ws, s1, s2, s3);
 		LOG.info("Building Z-score normalizer over training set...");
 		ZScoreFeatureNormalizer fNormEF = new ZScoreFeatureNormalizer(trainEntityFilterGatherer);
-		fNormEF.dump("train_ef.zscore");
+		fNormEF.dump(String.format("train_%s.zscore", label));
 		LOG.info("Dumping entity filter training problems (scaled)...");
-		trainEntityFilterGatherer.dumpExamplesLibSvm(String.format("%s_train_ef_zscore_%s.dat", fileNamePrefix, wsLabel),
+		trainEntityFilterGatherer.dumpExamplesLibSvm(String.format("%s_train_zscore_%s.dat", fileNamePrefix, label),
 		        fNormEF);
 		LOG.info("Dumping entity filter training problems (original values)...");
-		trainEntityFilterGatherer.dumpExamplesLibSvm(String.format("%s_train_ef_%s.dat", fileNamePrefix, wsLabel),
+		trainEntityFilterGatherer.dumpExamplesLibSvm(String.format("%s_train_%s.dat", fileNamePrefix, label),
 		        new NoFeatureNormalizer());
 		LOG.info("Dumping entity filter development problems (scaled)...");
-		develEntityFilterGatherer.dumpExamplesLibSvm(String.format("%s_devel_ef_zscore_%s.dat", fileNamePrefix, wsLabel),
+		develEntityFilterGatherer.dumpExamplesLibSvm(String.format("%s_devel_zscore_%s.dat", fileNamePrefix, label),
 		        fNormEF);
 		LOG.info("Dumping entity filter development problems (original values)...");
-		develEntityFilterGatherer.dumpExamplesLibSvm(String.format("%s_devel_ef_%s.dat", fileNamePrefix, wsLabel),
+		develEntityFilterGatherer.dumpExamplesLibSvm(String.format("%s_devel_%s.dat", fileNamePrefix, label),
 		        new NoFeatureNormalizer());
 	}
 
-	public static void generateIndividualAdvancedAnnotationModel(String fileNamePrefix, SmaphBuilder.Websearch ws, String wsLabel,
+	public static void generateIndividualAdvancedAnnotationModel(String fileNamePrefix, SmaphBuilder.Websearch ws,
 	        boolean s1, boolean s2, boolean s3) throws Exception {
 		OptDataset opt = OptDataset.SMAPH_DATASET;
 		SmaphAnnotator smaphGatherer = SmaphBuilder.getSmaphGatherer(wikiApi, s1, s2, s3, ws);
@@ -133,27 +131,28 @@ public class GenerateProblemFiles {
 		ExampleGatherer<Annotation, HashSet<Annotation>> develAdvancedAnnotationGatherer = new ExampleGatherer<Annotation, HashSet<Annotation>>();
 		List<String> develInstances = new Vector<>();
 		GenerateTrainingAndTest.gatherExamplesTrainingAndDevel(smaphGatherer, null, null, null, null,
-		        trainAdvancedAnnotationGatherer, develAdvancedAnnotationGatherer, null, develInstances, wikiApi, wikiToFreebase,
+		        trainAdvancedAnnotationGatherer, develAdvancedAnnotationGatherer, null, develInstances, wikiApi,
 		        opt);
 
+		String label = SmaphBuilder.getDefaultModelBase(SmaphVersion.ANNOTATION_REGRESSOR, ws, s1, s2, s3);
 		LOG.info("Building Z-score normalizer over training set...");
-		ZScoreFeatureNormalizer fNormEF = new ZScoreFeatureNormalizer(trainAdvancedAnnotationGatherer);
-		fNormEF.dump("train_ar.zscore");
+		ZScoreFeatureNormalizer fNormAR = new ZScoreFeatureNormalizer(trainAdvancedAnnotationGatherer);
+		fNormAR.dump(String.format("train_%s.zscore", label));
 		LOG.info("Dumping annotation regressor training problems (scaled)...");
-		trainAdvancedAnnotationGatherer.dumpExamplesLibSvm(String.format("%s_train_ar_zscore_%s.dat", fileNamePrefix, wsLabel),
-		        fNormEF);
+		trainAdvancedAnnotationGatherer.dumpExamplesLibSvm(String.format("%s_train_zscore_%s.dat", fileNamePrefix, label),
+		        fNormAR);
 		LOG.info("Dumping annotation regressor training problems (original values)...");
-		trainAdvancedAnnotationGatherer.dumpExamplesLibSvm(String.format("%s_train_ar_%s.dat", fileNamePrefix, wsLabel),
+		trainAdvancedAnnotationGatherer.dumpExamplesLibSvm(String.format("%s_train_%s.dat", fileNamePrefix, label),
 		        new NoFeatureNormalizer());
 		LOG.info("Dumping annotation regressor development problems (scaled)...");
-		develAdvancedAnnotationGatherer.dumpExamplesLibSvm(String.format("%s_devel_ar_zscore_%s.dat", fileNamePrefix, wsLabel),
-		        fNormEF);
+		develAdvancedAnnotationGatherer.dumpExamplesLibSvm(String.format("%s_devel_zscore_%s.dat", fileNamePrefix, label),
+		        fNormAR);
 		LOG.info("Dumping annotation regressor development problems (original values)...");
-		develAdvancedAnnotationGatherer.dumpExamplesLibSvm(String.format("%s_devel_ar_%s.dat", fileNamePrefix, wsLabel),
+		develAdvancedAnnotationGatherer.dumpExamplesLibSvm(String.format("%s_devel_%s.dat", fileNamePrefix, label),
 		        new NoFeatureNormalizer());
 	}
 
-	public static void generateCollectiveModel(String fileNamePrefix, SmaphBuilder.Websearch ws, String wsLabel, boolean s1,
+	public static void generateCollectiveModel(String fileNamePrefix, SmaphBuilder.Websearch ws, boolean s1,
 	        boolean s2, boolean s3) throws Exception {
 		OptDataset opt = OptDataset.SMAPH_DATASET;
 
@@ -163,13 +162,14 @@ public class GenerateProblemFiles {
 		ExampleGatherer<HashSet<Annotation>, HashSet<Annotation>> trainCollectiveGatherer = new ExampleGatherer<HashSet<Annotation>, HashSet<Annotation>>();
 		ExampleGatherer<HashSet<Annotation>, HashSet<Annotation>> develCollectiveGatherer = new ExampleGatherer<HashSet<Annotation>, HashSet<Annotation>>();
 		GenerateTrainingAndTest.gatherExamplesTrainingAndDevel(smaphGatherer, null, null, trainCollectiveGatherer,
-		        develCollectiveGatherer, null, null, null, null, wikiApi, wikiToFreebase, opt);
+		        develCollectiveGatherer, null, null, null, null, wikiApi, opt);
 
+		String label = SmaphBuilder.getDefaultModelBase(SmaphVersion.COLLECTIVE, ws, s1, s2, s3);
 		LOG.info("Dumping annotation regressor training problems (original values)...");
-		trainCollectiveGatherer.dumpExamplesRankLib(String.format("%s_train_coll_%s.dat", fileNamePrefix, wsLabel),
+		trainCollectiveGatherer.dumpExamplesRankLib(String.format("%s_train_%s.dat", fileNamePrefix, label),
 		        new NoFeatureNormalizer());
 		LOG.info("Dumping annotation regressor development problems (original values)...");
-		develCollectiveGatherer.dumpExamplesRankLib(String.format("%s_devel_coll_%s.dat", fileNamePrefix, wsLabel),
+		develCollectiveGatherer.dumpExamplesRankLib(String.format("%s_devel_%s.dat", fileNamePrefix, label),
 		        new NoFeatureNormalizer());
 	}
 

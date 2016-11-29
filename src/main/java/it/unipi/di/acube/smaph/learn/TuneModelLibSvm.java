@@ -39,7 +39,6 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import it.cnr.isti.hpc.erd.WikipediaToFreebase;
 import it.unipi.di.acube.batframework.data.Annotation;
 import it.unipi.di.acube.batframework.data.Tag;
 import it.unipi.di.acube.batframework.systemPlugins.CachedWATAnnotator;
@@ -50,6 +49,7 @@ import it.unipi.di.acube.smaph.SmaphBuilder;
 import it.unipi.di.acube.smaph.SmaphConfig;
 import it.unipi.di.acube.smaph.SmaphUtils;
 import it.unipi.di.acube.smaph.WATRelatednessComputer;
+import it.unipi.di.acube.smaph.SmaphBuilder.SmaphVersion;
 import it.unipi.di.acube.smaph.learn.GenerateTrainingAndTest.OptDataset;
 import it.unipi.di.acube.smaph.learn.ParameterTester.ParameterTesterAR;
 import it.unipi.di.acube.smaph.learn.ParameterTester.ParameterTesterEF;
@@ -116,7 +116,6 @@ public class TuneModelLibSvm {
 			topKS3 = parseIntList(line.getOptionValue("topk-S3"));
 
 		SmaphBuilder.Websearch ws = SmaphBuilder.websearchFromString(line.getOptionValue("websearch-piggyback"));
-		String wsLabel = ws.toString();
 
 		Locale.setDefault(Locale.US);
 		SmaphConfig.setConfigFile("smaph-config.xml");
@@ -125,7 +124,6 @@ public class TuneModelLibSvm {
 		WikipediaApiInterface wikiApi = WikipediaApiInterface.api();
 
 		OptDataset opt = OptDataset.SMAPH_DATASET;
-		WikipediaToFreebase wikiToFreebase = WikipediaToFreebase.getDefault();
 
 		String ftrSelMethod = line.getOptionValue("ftr-sel-method", "ablation");
 		if (!ftrSelMethod.equals("ablation") && !ftrSelMethod.equals("increment") && !ftrSelMethod.equals("oneshot"))
@@ -147,13 +145,13 @@ public class TuneModelLibSvm {
 			for (int topKS1i : topKS1)
 				for (int topKS2i : topKS2)
 					for (int topKS3i : topKS3) {
-						String sourcesLabel = String.format("S1=%d_S2=%d_S3=%d", topKS1i, topKS2i, topKS3i);
+						String modelBase = SmaphBuilder.getBestModelFileBase(SmaphVersion.ENTITY_FILTER, ws, topKS1i, topKS2i, topKS3i);
 						SmaphAnnotator smaphGatherer = SmaphBuilder
 						        .getSmaphGatherer(wikiApi, true, topKS1i, true, topKS2i, true, topKS3i, ws)
-						        .appendName("-EF-" + sourcesLabel);
+						        .appendName(modelBase);
 						Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult> modelAndStats = trainIterativeEF(
-						        smaphGatherer, opt, wikiToFreebase, OptimizaionProfiles.MAXIMIZE_MACRO_F1, -1.0, ftrSelMethod,
-						        ftrRestriction, initialFtrSet, wikiApi, String.format("%s-%s", wsLabel, sourcesLabel));
+						        smaphGatherer, opt, OptimizaionProfiles.MAXIMIZE_MACRO_F1, -1.0, ftrSelMethod,
+						        ftrRestriction, initialFtrSet, wikiApi, modelBase);
 						System.gc();
 						for (ModelConfigurationResult res : modelAndStats.first)
 							LOG.info(res.getReadable());
@@ -165,12 +163,12 @@ public class TuneModelLibSvm {
 			for (int topKS1i : topKS1)
 				for (int topKS2i : topKS2)
 					for (int topKS3i : topKS3) {
-						String sourcesLabel = String.format("S1=%d_S2=%d_S3=%d", topKS1i, topKS2i, topKS3i);
+						String modelBase = SmaphBuilder.getBestModelFileBase(SmaphVersion.ENTITY_FILTER, ws, topKS1i, topKS2i, topKS3i);
 						SmaphAnnotator smaphGatherer = SmaphBuilder.getSmaphGatherer(wikiApi, true, true, true, ws)
-						        .appendName("-AR-" + sourcesLabel);
+						        .appendName(modelBase);
 						Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult> modelAndStats = trainIterativeAR(
-						        smaphGatherer, opt, wikiToFreebase, OptimizaionProfiles.MAXIMIZE_MACRO_F1, -1.0, ftrSelMethod,
-						        ftrRestriction, initialFtrSet, wikiApi, String.format("%s-%s", wsLabel, sourcesLabel));
+						        smaphGatherer, opt, OptimizaionProfiles.MAXIMIZE_MACRO_F1, -1.0, ftrSelMethod,
+						        ftrRestriction, initialFtrSet, wikiApi, modelBase);
 						System.gc();
 						for (ModelConfigurationResult res : modelAndStats.first)
 							LOG.info(res.getReadable());
@@ -191,8 +189,8 @@ public class TuneModelLibSvm {
 	}
 
 	private static Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult> trainIterativeEF(SmaphAnnotator annotator,
-	        OptDataset optDs, WikipediaToFreebase wikiToFreebase, OptimizaionProfiles optProfile, double optProfileThreshold,
-	        String ftrSelMethod, int[][] restrictFeatures, int[] initialFeatures, WikipediaApiInterface wikiApi, String wsLabel)
+	        OptDataset optDs, OptimizaionProfiles optProfile, double optProfileThreshold,
+	        String ftrSelMethod, int[][] restrictFeatures, int[] initialFeatures, WikipediaApiInterface wikiApi, String modelBase)
 	                throws Exception {
 
 		Vector<ModelConfigurationResult> globalScoreboard = new Vector<>();
@@ -205,7 +203,7 @@ public class TuneModelLibSvm {
 		ExampleGatherer<Tag, HashSet<Tag>> develGatherer = new ExampleGatherer<Tag, HashSet<Tag>>();
 
 		GenerateTrainingAndTest.gatherExamplesTrainingAndDevel(annotator, trainGatherer, develGatherer, null, null, null, null,
-		        null, null, wikiApi, wikiToFreebase, optDs);
+		        null, null, wikiApi, optDs);
 
 		int[] allFtrs = SmaphUtils.getAllFtrVect(new EntityFeaturePack().getFeatureCount());
 
@@ -332,14 +330,14 @@ public class TuneModelLibSvm {
 		ZScoreFeatureNormalizer scaleFn = new ZScoreFeatureNormalizer(trainGatherer);
 		LibSvmEntityFilter bestEf = ParameterTesterEF.getFilter(trainGatherer, scaleFn, globalBest.getFeatures(),
 		        globalBest.getWPos(), globalBest.getWNeg(), globalBest.getGamma(), globalBest.getC());
-		scaleFn.dump(String.format("models/best_ef_%s.zscore", wsLabel));
-		bestEf.toFile(String.format("models/best_ef_%s.model", wsLabel));
+		scaleFn.dump(modelBase + ".zscore");
+		bestEf.toFile(modelBase + ".model");
 
 		return new Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult>(globalScoreboard, globalBest);
 	}
 
 	private static Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult> trainIterativeAR(SmaphAnnotator annotator,
-	        OptDataset optDs, WikipediaToFreebase wikiToFreebase, OptimizaionProfiles optProfile, double optProfileThreshold,
+	        OptDataset optDs, OptimizaionProfiles optProfile, double optProfileThreshold,
 	        String ftrSelMethod, int[][] restrictFeatures, int[] initFeatures, WikipediaApiInterface wikiApi, String sourceLabel)
 	                throws Exception {
 		Vector<ModelConfigurationResult> globalScoreboard = new Vector<>();
@@ -353,7 +351,7 @@ public class TuneModelLibSvm {
 		ExampleGatherer<Annotation, HashSet<Annotation>> develGatherer = new ExampleGatherer<>();
 
 		GenerateTrainingAndTest.gatherExamplesTrainingAndDevel(annotator, null, null, null, null, trainGatherer, develGatherer,
-		        null, null, wikiApi, wikiToFreebase, optDs);
+		        null, null, wikiApi, optDs);
 
 		int[] allFtrs = SmaphUtils.getAllFtrVect(new AnnotationFeaturePack().getFeatureCount());
 
