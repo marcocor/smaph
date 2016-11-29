@@ -1,8 +1,8 @@
 package it.unipi.di.acube.smaph;
 
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.Paths;
 
 import org.apache.commons.lang.NotImplementedException;
 
@@ -42,6 +42,7 @@ public class SmaphBuilder {
 	public static final int DEFAULT_ANNOTATED_SNIPPETS = 15;
 	public static final double DEFAULT_ANNOTATIONFILTER_RATIO = 0.03;
 	public static final double DEFAULT_ANCHOR_MENTION_ED = 0.7;
+	public static final Websearch DEFAULT_WEBSEARCH = Websearch.GOOGLE_CSE;
 
 	public enum SmaphVersion {
 		ENTITY_FILTER("ef"), ANNOTATION_REGRESSOR("ar"), COLLECTIVE("coll");
@@ -119,25 +120,24 @@ public class SmaphBuilder {
 
 	public static SmaphAnnotator getSmaph(SmaphVersion v, WikipediaApiInterface wikiApi, boolean includeS2, Websearch ws)
 	        throws FileNotFoundException, ClassNotFoundException, IOException {
-		String modelBase = getDefaultModelBase(v, ws, true, includeS2, true);
+		String model = getDefaultModel(v, ws, true, includeS2, true);
+		String zscore = getDefaultZscoreNormalizer(v, ws, true, includeS2, true);
 
 		SmaphAnnotator a = null;
 		switch (v) {
 		case ANNOTATION_REGRESSOR:
 			a = getDefaultSmaphParam(wikiApi, new NoEntityFilter(), null,
-			        new AdvancedIndividualLinkback(LibSvmAnnotationRegressor.fromFile(modelBase + ".model"),
-			                new ZScoreFeatureNormalizer(modelBase + ".zscore", new AnnotationFeaturePack()), wikiApi,
-			                DEFAULT_ANCHOR_MENTION_ED),
+			        new AdvancedIndividualLinkback(LibSvmAnnotationRegressor.fromFile(model),
+			                new ZScoreFeatureNormalizer(zscore, new AnnotationFeaturePack()), wikiApi, DEFAULT_ANCHOR_MENTION_ED),
 			        true, includeS2, true, ws);
 			break;
 		case ENTITY_FILTER:
-			a = getDefaultSmaphParam(wikiApi, LibSvmEntityFilter.fromFile(modelBase + ".model"),
-			        new ZScoreFeatureNormalizer(modelBase + ".zscore", new EntityFeaturePack()), new DummyLinkBack(), true,
-			        includeS2, true, ws);
+			a = getDefaultSmaphParam(wikiApi, LibSvmEntityFilter.fromFile(model),
+			        new ZScoreFeatureNormalizer(zscore, new EntityFeaturePack()), new DummyLinkBack(), true, includeS2, true, ws);
 			break;
 		case COLLECTIVE:
 			CollectiveLinkBack lb = new CollectiveLinkBack(wikiApi, new DefaultBindingGenerator(),
-			        new RankLibBindingRegressor(modelBase + ".model"), new NoFeatureNormalizer());
+			        new RankLibBindingRegressor(model), new NoFeatureNormalizer());
 			a = getDefaultSmaphParam(wikiApi, new NoEntityFilter(), null, lb, true, includeS2, true, ws);
 			break;
 		default:
@@ -148,26 +148,39 @@ public class SmaphBuilder {
 		return a;
 	}
 
+	public static SmaphAnnotator getSmaph(SmaphVersion v, WikipediaApiInterface wikiApi)
+	        throws FileNotFoundException, ClassNotFoundException, IOException {
+		return getSmaph(v, wikiApi, false, DEFAULT_WEBSEARCH);
+	}
+
 	public static String getDefaultLabel(SmaphVersion v, Websearch ws, boolean s1, boolean s2, boolean s3) {
 		return getSourceLabel(v, ws, s1 ? DEFAULT_NORMALSEARCH_RESULTS : 0, s2 ? DEFAULT_WIKISEARCH_RESULTS : 0,
 		        s3 ? DEFAULT_ANNOTATED_SNIPPETS : 0);
 	}
 
+	public static String getBestModelFileBase(String label, String extension) {
+		String filename = String.format("best_%s.%s", label, extension);
+		return Paths.get("src", "main", "resources", "models", filename).toFile().getAbsolutePath();
+	}
+
+	public static String getDefaultModel(SmaphVersion v, Websearch ws, boolean s1, boolean s2, boolean s3) {
+		return getBestModelFileBase(getDefaultLabel(v, ws, s1, s2, s3), "model");
+	}
+
+	public static String getDefaultZscoreNormalizer(SmaphVersion v, Websearch ws, boolean s1, boolean s2, boolean s3) {
+		return getBestModelFileBase(getDefaultLabel(v, ws, s1, s2, s3), "zscore");
+	}
+
+	public static String getModel(SmaphVersion v, Websearch ws, int topKS1, int topKS2, int topKS3) {
+		return getBestModelFileBase(getSourceLabel(v, ws, topKS1, topKS2, topKS3), "model");
+	}
+
+	public static String getZscoreNormalizer(SmaphVersion v, Websearch ws, int topKS1, int topKS2, int topKS3) {
+		return getBestModelFileBase(getSourceLabel(v, ws, topKS1, topKS2, topKS3), "zscore");
+	}
+
 	public static String getSourceLabel(SmaphVersion v, Websearch ws, int topKS1, int topKS2, int topKS3) {
-		return String.format("%s_%s-S1=%d_S2=%d_S3=%d", ws, topKS1, topKS2, topKS3);
-	}
-
-	public static String getDefaultModelBase(SmaphVersion v, Websearch ws, boolean s1, boolean s2, boolean s3) {
-		return getBestModelFileBase(getDefaultLabel(v, ws, s1, s2, s3));
-	}
-
-	public static String getBestModelFileBase(String label) {
-		String filename = String.format("best_%s", label);
-		return new File("models", filename).getAbsolutePath();
-	}
-
-	public static String getBestModelFileBase(SmaphVersion v, Websearch ws, int topKS1, int topKS2, int topKS3) {
-		return getBestModelFileBase(getSourceLabel(v, ws, topKS1, topKS2, topKS3));
+		return String.format("%s_%s-S1=%d_S2=%d_S3=%d", v, ws, topKS1, topKS2, topKS3);
 	}
 
 }
