@@ -148,20 +148,26 @@ public class SmaphBuilder {
 		return a;
 	}
 
-	public static String getSourcesLabel(Websearch ws, int topKS1, int topKS2, int topKS3) {
-		return String.format("%s-S1=%d_S2=%d_S3=%d", ws, topKS1, topKS2, topKS3);
-	}
-
-	public static String getDefaultModelBase(SmaphVersion v, Websearch ws, boolean s1, boolean s2, boolean s3) {
-		return getBestModelFileBase(v, ws,
-				s1 ? DEFAULT_NORMALSEARCH_RESULTS : 0,
-				s2 ? DEFAULT_WIKISEARCH_RESULTS : 0,
+	public static String getDefaultLabel(SmaphVersion v, Websearch ws, boolean s1, boolean s2, boolean s3) {
+		return getSourceLabel(v, ws, s1 ? DEFAULT_NORMALSEARCH_RESULTS : 0, s2 ? DEFAULT_WIKISEARCH_RESULTS : 0,
 		        s3 ? DEFAULT_ANNOTATED_SNIPPETS : 0);
 	}
 
-	public static String getBestModelFileBase(SmaphVersion v, Websearch ws, int topKS1, int topKS2, int topKS3) {
-		String filename = String.format("best_%s_%s", v, getSourcesLabel(ws, topKS1, topKS2, topKS3));
+	public static String getSourceLabel(SmaphVersion v, Websearch ws, int topKS1, int topKS2, int topKS3) {
+		return String.format("%s_%s-S1=%d_S2=%d_S3=%d", ws, topKS1, topKS2, topKS3);
+	}
+
+	public static String getDefaultModelBase(SmaphVersion v, Websearch ws, boolean s1, boolean s2, boolean s3) {
+		return getBestModelFileBase(getDefaultLabel(v, ws, s1, s2, s3));
+	}
+
+	public static String getBestModelFileBase(String label) {
+		String filename = String.format("best_%s", label);
 		return new File("models", filename).getAbsolutePath();
+	}
+
+	public static String getBestModelFileBase(SmaphVersion v, Websearch ws, int topKS1, int topKS2, int topKS3) {
+		return getBestModelFileBase(getSourceLabel(v, ws, topKS1, topKS2, topKS3));
 	}
 
 }

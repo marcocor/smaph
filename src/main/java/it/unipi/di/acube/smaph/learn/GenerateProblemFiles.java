@@ -104,7 +104,7 @@ public class GenerateProblemFiles {
 		GenerateTrainingAndTest.gatherExamplesTrainingAndDevel(smaphGatherer, trainEntityFilterGatherer,
 		        develEntityFilterGatherer, null, null, null, null, null, null, wikiApi, opt);
 
-		String label = SmaphBuilder.getDefaultModelBase(SmaphVersion.ENTITY_FILTER, ws, s1, s2, s3);
+		String label = SmaphBuilder.getDefaultLabel(SmaphVersion.ENTITY_FILTER, ws, s1, s2, s3);
 		LOG.info("Building Z-score normalizer over training set...");
 		ZScoreFeatureNormalizer fNormEF = new ZScoreFeatureNormalizer(trainEntityFilterGatherer);
 		fNormEF.dump(String.format("train_%s.zscore", label));
@@ -134,7 +134,7 @@ public class GenerateProblemFiles {
 		        trainAdvancedAnnotationGatherer, develAdvancedAnnotationGatherer, null, develInstances, wikiApi,
 		        opt);
 
-		String label = SmaphBuilder.getDefaultModelBase(SmaphVersion.ANNOTATION_REGRESSOR, ws, s1, s2, s3);
+		String label = SmaphBuilder.getDefaultLabel(SmaphVersion.ANNOTATION_REGRESSOR, ws, s1, s2, s3);
 		LOG.info("Building Z-score normalizer over training set...");
 		ZScoreFeatureNormalizer fNormAR = new ZScoreFeatureNormalizer(trainAdvancedAnnotationGatherer);
 		fNormAR.dump(String.format("train_%s.zscore", label));
@@ -164,7 +164,7 @@ public class GenerateProblemFiles {
 		GenerateTrainingAndTest.gatherExamplesTrainingAndDevel(smaphGatherer, null, null, trainCollectiveGatherer,
 		        develCollectiveGatherer, null, null, null, null, wikiApi, opt);
 
-		String label = SmaphBuilder.getDefaultModelBase(SmaphVersion.COLLECTIVE, ws, s1, s2, s3);
+		String label = SmaphBuilder.getDefaultLabel(SmaphVersion.COLLECTIVE, ws, s1, s2, s3);
 		LOG.info("Dumping annotation regressor training problems (original values)...");
 		trainCollectiveGatherer.dumpExamplesRankLib(String.format("%s_train_%s.dat", fileNamePrefix, label),
 		        new NoFeatureNormalizer());
