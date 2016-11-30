@@ -164,11 +164,14 @@ public class TuneModelLibSvm {
 			for (int topKS1i : topKS1)
 				for (int topKS2i : topKS2)
 					for (int topKS3i : topKS3) {
-						String label = SmaphBuilder.getSourceLabel(SmaphVersion.ANNOTATION_REGRESSOR, ws, topKS1i, topKS2i, topKS3i);
-						String modelFile = SmaphBuilder.getModel(SmaphVersion.ANNOTATION_REGRESSOR, ws, topKS1i, topKS2i, topKS3i);
-						String normFile = SmaphBuilder.getZscoreNormalizer(SmaphVersion.ANNOTATION_REGRESSOR, ws, topKS1i, topKS2i, topKS3i);
-						SmaphAnnotator smaphGatherer = SmaphBuilder.getSmaphGatherer(wikiApi, true, true, true, ws)
-						        .appendName(label);
+						String label = SmaphBuilder.getSourceLabel(SmaphVersion.ANNOTATION_REGRESSOR, ws, topKS1i, topKS2i,
+						        topKS3i);
+						String modelFile = SmaphBuilder.getModel(SmaphVersion.ANNOTATION_REGRESSOR, ws, topKS1i, topKS2i,
+						        topKS3i);
+						String normFile = SmaphBuilder.getZscoreNormalizer(SmaphVersion.ANNOTATION_REGRESSOR, ws, topKS1i,
+						        topKS2i, topKS3i);
+						SmaphAnnotator smaphGatherer = SmaphBuilder
+						        .getSmaphGatherer(wikiApi, true, topKS1i, true, topKS2i, true, topKS3i, ws).appendName(label);
 						Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult> modelAndStats = trainIterativeAR(
 						        smaphGatherer, opt, OptimizaionProfiles.MAXIMIZE_MACRO_F1, -1.0, ftrSelMethod,
 						        ftrRestriction, initialFtrSet, wikiApi, modelFile, normFile);
