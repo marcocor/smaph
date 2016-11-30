@@ -81,7 +81,7 @@ def is_improvement(new_f1, new_ftrs, old_f1, old_ftrs):
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser(description='Do feature selections')
 	parser.add_argument('--method', help="Method used in feature selection iterations", choices=['ablation', 'increment', 'oneshot'], required=True)
-	parser.add_argument('--dataset', help="Dataset code (e.g. ERD-S1S2S3)", required=True)
+	parser.add_argument('--dataset', help="Dataset code (e.g. GOOGLE_CSE-S1=5_S2=0_S3=15)", required=True)
 	parser.add_argument('--startset', help="Feature set to start with (e.g. 1,3,5-10,24). Default: use all features (no features for 'increment' method)", required=False, default="")
 	parser.add_argument('--candidate_features', help="Feature set to try to add (increment) or remove (ablation) (e.g. 1,3,5-10,24). Default: use all features of the start set (ablation) or all valid features not in startset (increment)", required=False, default="")
 	parser.add_argument('--leaves', help="Number of tree leaves (e.g. 5,7,10-20). Default: 10.", required=False, default="10")
@@ -93,8 +93,8 @@ if __name__ == '__main__':
 	OPT_VALS = ftr_string_set(args.opt_vals)
 	cpus = None if not args.cpus else int(args.cpus)
 
-	TRAIN_DATA = "../train_binding_ranking_{}.dat".format(args.dataset)
-	VALIDATE_DATA = "../devel_binding_ranking_{}.dat".format(args.dataset)
+	TRAIN_DATA = "../train_coll_{}.dat".format(args.dataset)
+	VALIDATE_DATA = "../devel_coll_{}.dat".format(args.dataset)
 	
 	print("Loading solutions F1...", file=sys.stderr)
 	qid_cand_to_score = load_f1s(VALIDATE_DATA)
