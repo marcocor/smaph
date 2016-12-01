@@ -77,15 +77,14 @@ public class SmaphBuilder {
 		switch (ws) {
 		case GOOGLE_CSE:
 			if (GOOGLE_WEBSEARCH_API == null)
-				GOOGLE_WEBSEARCH_API = new CachedWebsearchApi(
-				        new GoogleSearchApiCaller(SmaphConfig.getDefaultGoogleCseId(), SmaphConfig.getDefaultGoogleApiKey()),
-				        SmaphConfig.getDefaultWebsearchCache());
+				GOOGLE_WEBSEARCH_API = CachedWebsearchApi.builder()
+				        .api(new GoogleSearchApiCaller(SmaphConfig.getDefaultGoogleCseId(), SmaphConfig.getDefaultGoogleApiKey()))
+				        .dbFrom((CachedWebsearchApi) BING_WEBSEARCH_API).path(SmaphConfig.getDefaultWebsearchCache()).create();
 			return GOOGLE_WEBSEARCH_API;
 		case BING:
-
 			if (BING_WEBSEARCH_API == null)
-				BING_WEBSEARCH_API = new CachedWebsearchApi(new BingSearchApiCaller(SmaphConfig.getDefaultBingKey()),
-				        SmaphConfig.getDefaultWebsearchCache());
+				BING_WEBSEARCH_API = CachedWebsearchApi.builder().api(new BingSearchApiCaller(SmaphConfig.getDefaultBingKey()))
+				        .dbFrom((CachedWebsearchApi) GOOGLE_WEBSEARCH_API).path(SmaphConfig.getDefaultWebsearchCache()).create();
 			return BING_WEBSEARCH_API;
 		default:
 			return null;
