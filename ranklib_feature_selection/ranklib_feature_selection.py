@@ -135,7 +135,7 @@ if __name__ == '__main__':
 	print("Parameter tuning", file=sys.stderr)
 	overall_best_f1, overall_best_model = -1, None
 	for l in leaves:
-		model, best_f1, employed_ftrs = generate_and_test_model(good_ftr, qid_cand_to_score, OPT_VALS, RANKER, TRAIN_DATA, VALIDATE_DATA, leaf=[l], cpus=cpus)
+		model, best_f1, employed_ftrs = generate_and_test_model(good_ftr, qid_cand_to_score, OPT_VALS, RANKER, TRAIN_DATA, VALIDATE_DATA, args.dataset, leaf=[l], cpus=cpus)
 		if best_f1 > overall_best_f1:
 			overall_best_f1, overall_best_model = best_f1, model
 		print("Tuning - Overall best model: {}".format(model), file=sys.stderr)
