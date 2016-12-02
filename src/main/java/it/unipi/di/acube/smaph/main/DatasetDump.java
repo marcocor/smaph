@@ -18,10 +18,10 @@ public class DatasetDump {
 	private final static Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
 	public static void main(String[] args) throws Exception {
-    	SmaphConfig.setConfigFile("smaph-config.xml");
-    	String tokenId = SmaphConfig.getDefaultStands4TokenId();
-    	String uid = SmaphConfig.getDefaultStands4UserId();
-    	String cache = SmaphConfig.getDefaultStands4Cache();
+		SmaphConfig c = SmaphConfig.fromConfigFile("smaph-config.xml");
+    	String tokenId = c.getDefaultStands4TokenId();
+    	String uid = c.getDefaultStands4UserId();
+    	String cache = c.getDefaultStands4Cache();
 		Stands4AbbreviationExpansion ae = new Stands4AbbreviationExpansion(
 				tokenId, uid);
 		Stands4AbbreviationExpansion.setCache(cache);

@@ -75,18 +75,19 @@ public class SmaphBuilder {
 		return null;
 	}
 
-	public static WebsearchApi getWebsearch(Websearch ws) throws FileNotFoundException, ClassNotFoundException, IOException {
+	public static WebsearchApi getWebsearch(Websearch ws, SmaphConfig c)
+	        throws FileNotFoundException, ClassNotFoundException, IOException {
 		switch (ws) {
 		case GOOGLE_CSE:
 			if (GOOGLE_WEBSEARCH_API == null)
 				GOOGLE_WEBSEARCH_API = CachedWebsearchApi.builder()
-				        .api(new GoogleSearchApiCaller(SmaphConfig.getDefaultGoogleCseId(), SmaphConfig.getDefaultGoogleApiKey()))
-				        .dbFrom((CachedWebsearchApi) BING_WEBSEARCH_API).path(SmaphConfig.getDefaultWebsearchCache()).create();
+				        .api(new GoogleSearchApiCaller(c.getDefaultGoogleCseId(), c.getDefaultGoogleApiKey()))
+				        .dbFrom((CachedWebsearchApi) BING_WEBSEARCH_API).path(c.getDefaultWebsearchCache()).create();
 			return GOOGLE_WEBSEARCH_API;
 		case BING:
 			if (BING_WEBSEARCH_API == null)
-				BING_WEBSEARCH_API = CachedWebsearchApi.builder().api(new BingSearchApiCaller(SmaphConfig.getDefaultBingKey()))
-				        .dbFrom((CachedWebsearchApi) GOOGLE_WEBSEARCH_API).path(SmaphConfig.getDefaultWebsearchCache()).create();
+				BING_WEBSEARCH_API = CachedWebsearchApi.builder().api(new BingSearchApiCaller(c.getDefaultBingKey()))
+				        .dbFrom((CachedWebsearchApi) GOOGLE_WEBSEARCH_API).path(c.getDefaultWebsearchCache()).create();
 			return BING_WEBSEARCH_API;
 		default:
 			return null;
@@ -95,32 +96,33 @@ public class SmaphBuilder {
 
 	private static SmaphAnnotator getDefaultSmaphParamTopk(WikipediaApiInterface wikiApi, EntityFilter entityFilter,
 	        FeatureNormalizer efNorm, LinkBack lb, boolean s1, int topkS1, boolean s2, int topkS2, boolean s3, int topkS3,
-	        Websearch ws) throws FileNotFoundException, ClassNotFoundException, IOException {
+	        Websearch ws, SmaphConfig c) throws FileNotFoundException, ClassNotFoundException, IOException {
 		return new SmaphAnnotator(s1, topkS1, s2, topkS2, s3, topkS3, DEFAULT_ANCHOR_MENTION_ED, false, lb, entityFilter, efNorm,
 		        DEFAULT_BINDING_GENERATOR, DEFAULT_AUX_ANNOTATOR, new FrequencyAnnotationFilter(DEFAULT_ANNOTATIONFILTER_RATIO),
-		        wikiApi, getWebsearch(ws));
+		        wikiApi, getWebsearch(ws, c));
 	}
 
 	private static SmaphAnnotator getDefaultSmaphParam(WikipediaApiInterface wikiApi, EntityFilter entityFilter,
-	        FeatureNormalizer efNorm, LinkBack lb, boolean s1, boolean s2, boolean s3, Websearch ws)
+	        FeatureNormalizer efNorm, LinkBack lb, boolean s1, boolean s2, boolean s3, Websearch ws, SmaphConfig c)
 	        throws FileNotFoundException, ClassNotFoundException, IOException {
 		return getDefaultSmaphParamTopk(wikiApi, entityFilter, efNorm, lb, s1, DEFAULT_NORMALSEARCH_RESULTS, s2,
-		        DEFAULT_WIKISEARCH_RESULTS, s3, DEFAULT_ANNOTATED_SNIPPETS, ws);
+		        DEFAULT_WIKISEARCH_RESULTS, s3, DEFAULT_ANNOTATED_SNIPPETS, ws, c);
 	}
 
-	public static SmaphAnnotator getSmaphGatherer(WikipediaApiInterface wikiApi, boolean s1, boolean s2, boolean s3, Websearch ws)
-	        throws FileNotFoundException, ClassNotFoundException, IOException {
-		return getDefaultSmaphParam(wikiApi, new NoEntityFilter(), null, new DummyLinkBack(), s1, s2, s3, ws);
+	public static SmaphAnnotator getSmaphGatherer(WikipediaApiInterface wikiApi, boolean s1, boolean s2, boolean s3, Websearch ws,
+	        SmaphConfig c) throws FileNotFoundException, ClassNotFoundException, IOException {
+		return getDefaultSmaphParam(wikiApi, new NoEntityFilter(), null, new DummyLinkBack(), s1, s2, s3, ws, c);
 	}
 
 	public static SmaphAnnotator getSmaphGatherer(WikipediaApiInterface wikiApi, boolean s1, int topkS1, boolean s2, int topkS2,
-	        boolean s3, int topkS3, Websearch ws) throws FileNotFoundException, ClassNotFoundException, IOException {
+	        boolean s3, int topkS3, Websearch ws, SmaphConfig c)
+	        throws FileNotFoundException, ClassNotFoundException, IOException {
 		return getDefaultSmaphParamTopk(wikiApi, new NoEntityFilter(), null, new DummyLinkBack(), s1, topkS1, s2, topkS2, s3,
-		        topkS3, ws);
+		        topkS3, ws, c);
 	}
 
-	public static SmaphAnnotator getSmaph(SmaphVersion v, WikipediaApiInterface wikiApi, boolean includeS2, Websearch ws)
-	        throws FileNotFoundException, ClassNotFoundException, IOException {
+	public static SmaphAnnotator getSmaph(SmaphVersion v, WikipediaApiInterface wikiApi, boolean includeS2, Websearch ws,
+	        SmaphConfig c) throws FileNotFoundException, ClassNotFoundException, IOException {
 		URL model = getDefaultModel(v, ws, true, includeS2, true);
 		URL zscore = getDefaultZscoreNormalizer(v, ws, true, includeS2, true);
 
@@ -131,17 +133,17 @@ public class SmaphBuilder {
 			        new AdvancedIndividualLinkback(LibSvmAnnotationRegressor.fromUrl(model),
 			                ZScoreFeatureNormalizer.fromUrl(zscore, new AnnotationFeaturePack()), wikiApi,
 			                DEFAULT_ANCHOR_MENTION_ED),
-			        true, includeS2, true, ws);
+			        true, includeS2, true, ws, c);
 			break;
 		case ENTITY_FILTER:
 			a = getDefaultSmaphParam(wikiApi, LibSvmEntityFilter.fromUrl(model),
 			        ZScoreFeatureNormalizer.fromUrl(zscore, new EntityFeaturePack()), new DummyLinkBack(), true, includeS2, true,
-			        ws);
+			        ws, c);
 			break;
 		case COLLECTIVE:
 			CollectiveLinkBack lb = new CollectiveLinkBack(wikiApi, new DefaultBindingGenerator(),
 			        RankLibBindingRegressor.fromUrl(model), new NoFeatureNormalizer());
-			a = getDefaultSmaphParam(wikiApi, new NoEntityFilter(), null, lb, true, includeS2, true, ws);
+			a = getDefaultSmaphParam(wikiApi, new NoEntityFilter(), null, lb, true, includeS2, true, ws, c);
 			break;
 		default:
 			throw new NotImplementedException();
@@ -151,9 +153,9 @@ public class SmaphBuilder {
 		return a;
 	}
 
-	public static SmaphAnnotator getSmaph(SmaphVersion v, WikipediaApiInterface wikiApi)
+	public static SmaphAnnotator getSmaph(SmaphVersion v, WikipediaApiInterface wikiApi, SmaphConfig c)
 	        throws FileNotFoundException, ClassNotFoundException, IOException {
-		return getSmaph(v, wikiApi, false, DEFAULT_WEBSEARCH);
+		return getSmaph(v, wikiApi, false, DEFAULT_WEBSEARCH, c);
 	}
 
 	public static String getDefaultLabel(SmaphVersion v, Websearch ws, boolean s1, boolean s2, boolean s3) {

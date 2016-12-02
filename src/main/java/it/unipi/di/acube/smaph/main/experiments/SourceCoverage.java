@@ -44,24 +44,24 @@ public class SourceCoverage {
 		System.out.println("Printing basic information about dataset " + ds.getName());
 		TestDataset.dumpInfo(ds, wikiApi);
 
-		SmaphConfig.setConfigFile("smaph-config.xml");
+		SmaphConfig c = SmaphConfig.fromConfigFile("smaph-config.xml");
 		SmaphBuilder.Websearch ws = SmaphBuilder.websearchFromString(line.getOptionValue("websearch-piggyback"));
 		String wsStr = ws.toString();
 		List<C2WSystem> annotators = new Vector<C2WSystem>();
-		annotators.add(SmaphBuilder.getSmaphGatherer(wikiApi, true, false, false, ws).appendName("-" + wsStr + "-S1-def"));
-		annotators.add(SmaphBuilder.getSmaphGatherer(wikiApi, false, true, false, ws).appendName("-" + wsStr + "-S2-def"));
-		annotators.add(SmaphBuilder.getSmaphGatherer(wikiApi, false, false, true, ws).appendName("-" + wsStr + "-S3-def"));
-		annotators.add(SmaphBuilder.getSmaphGatherer(wikiApi, true, true, true, ws).appendName("-" + wsStr + "-S123-def"));
-		annotators.add(SmaphBuilder.getSmaphGatherer(wikiApi, true, false, true, ws).appendName("-" + wsStr + "-S13-def"));
+		annotators.add(SmaphBuilder.getSmaphGatherer(wikiApi, true, false, false, ws, c).appendName("-" + wsStr + "-S1-def"));
+		annotators.add(SmaphBuilder.getSmaphGatherer(wikiApi, false, true, false, ws, c).appendName("-" + wsStr + "-S2-def"));
+		annotators.add(SmaphBuilder.getSmaphGatherer(wikiApi, false, false, true, ws, c).appendName("-" + wsStr + "-S3-def"));
+		annotators.add(SmaphBuilder.getSmaphGatherer(wikiApi, true, true, true, ws, c).appendName("-" + wsStr + "-S123-def"));
+		annotators.add(SmaphBuilder.getSmaphGatherer(wikiApi, true, false, true, ws, c).appendName("-" + wsStr + "-S13-def"));
 
 		for (int topKS1 : new int[] { 0, 1, 2, 3, 4, 5, 10, 20 })
-			annotators.add(SmaphBuilder.getSmaphGatherer(wikiApi, true, topKS1, false, 0, false, 0, ws)
+			annotators.add(SmaphBuilder.getSmaphGatherer(wikiApi, true, topKS1, false, 0, false, 0, ws, c)
 			        .appendName("-" + wsStr + "-S1-top" + topKS1));
 		for (int topKS2 : new int[] { 0, 1, 2, 3, 4, 6, 8, 10 })
-			annotators.add(SmaphBuilder.getSmaphGatherer(wikiApi, false, 0, true, topKS2, false, 0, ws)
+			annotators.add(SmaphBuilder.getSmaphGatherer(wikiApi, false, 0, true, topKS2, false, 0, ws, c)
 			        .appendName("-" + wsStr + "-S2-top" + topKS2));
 		for (int topKS3 : new int[] { 0, 1, 2, 3, 4, 5, 10, 20 })
-			annotators.add(SmaphBuilder.getSmaphGatherer(wikiApi, false, 0, false, 0, true, topKS3, ws)
+			annotators.add(SmaphBuilder.getSmaphGatherer(wikiApi, false, 0, false, 0, true, topKS3, ws, c)
 			        .appendName("-" + wsStr + "-S3-top" + topKS3));
 
 		HashMap<C2WSystem, MetricsResultSet> C2WRes = new HashMap<>();

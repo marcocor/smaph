@@ -76,25 +76,25 @@ public class GenerateProblemFiles {
 		SmaphBuilder.Websearch ws = SmaphBuilder.websearchFromString(line.getOptionValue("websearch-piggyback"));
 
 		Locale.setDefault(Locale.US);
-		SmaphConfig.setConfigFile("smaph-config.xml");
+		SmaphConfig c = SmaphConfig.fromConfigFile("smaph-config.xml");
 		wikiApi = WikipediaApiInterface.api();
 		WATRelatednessComputer.setCache("relatedness.cache");
 		CachedWATAnnotator.setCache("wikisense.cache");
 
 		if (line.hasOption("dump-entity-filter"))
-			generateEFModel(ws, s1, s2, s3);
+			generateEFModel(ws, s1, s2, s3, c);
 		if (line.hasOption("dump-annotation-regressor"))
-			generateIndividualAdvancedAnnotationModel(ws, s1, s2, s3);
+			generateIndividualAdvancedAnnotationModel(ws, s1, s2, s3, c);
 		if (line.hasOption("dump-collective-rank"))
-			generateCollectiveModel(ws, s1, s2, s3);
+			generateCollectiveModel(ws, s1, s2, s3, c);
 
 		CachedWATAnnotator.flush();
 		WATRelatednessComputer.flush();
 	}
 
-	public static void generateEFModel(SmaphBuilder.Websearch ws, boolean s1, boolean s2, boolean s3) throws Exception {
+	public static void generateEFModel(SmaphBuilder.Websearch ws, boolean s1, boolean s2, boolean s3, SmaphConfig c) throws Exception {
 		OptDataset opt = OptDataset.SMAPH_DATASET;
-		SmaphAnnotator smaphGatherer = SmaphBuilder.getSmaphGatherer(wikiApi, s1, s2, s3, ws);
+		SmaphAnnotator smaphGatherer = SmaphBuilder.getSmaphGatherer(wikiApi, s1, s2, s3, ws, c);
 
 		ExampleGatherer<Tag, HashSet<Tag>> trainEntityFilterGatherer = new ExampleGatherer<Tag, HashSet<Tag>>();
 		ExampleGatherer<Tag, HashSet<Tag>> develEntityFilterGatherer = new ExampleGatherer<Tag, HashSet<Tag>>();
@@ -119,10 +119,10 @@ public class GenerateProblemFiles {
 		        new NoFeatureNormalizer());
 	}
 
-	public static void generateIndividualAdvancedAnnotationModel(SmaphBuilder.Websearch ws, boolean s1, boolean s2, boolean s3)
+	public static void generateIndividualAdvancedAnnotationModel(SmaphBuilder.Websearch ws, boolean s1, boolean s2, boolean s3, SmaphConfig c)
 	        throws Exception {
 		OptDataset opt = OptDataset.SMAPH_DATASET;
-		SmaphAnnotator smaphGatherer = SmaphBuilder.getSmaphGatherer(wikiApi, s1, s2, s3, ws);
+		SmaphAnnotator smaphGatherer = SmaphBuilder.getSmaphGatherer(wikiApi, s1, s2, s3, ws, c);
 
 		ExampleGatherer<Annotation, HashSet<Annotation>> trainAdvancedAnnotationGatherer = new ExampleGatherer<Annotation, HashSet<Annotation>>();
 		ExampleGatherer<Annotation, HashSet<Annotation>> develAdvancedAnnotationGatherer = new ExampleGatherer<Annotation, HashSet<Annotation>>();
@@ -149,10 +149,10 @@ public class GenerateProblemFiles {
 		        new NoFeatureNormalizer());
 	}
 
-	public static void generateCollectiveModel(SmaphBuilder.Websearch ws, boolean s1, boolean s2, boolean s3) throws Exception {
+	public static void generateCollectiveModel(SmaphBuilder.Websearch ws, boolean s1, boolean s2, boolean s3, SmaphConfig c) throws Exception {
 		OptDataset opt = OptDataset.SMAPH_DATASET;
 
-		SmaphAnnotator smaphGatherer = SmaphBuilder.getSmaphGatherer(wikiApi, s1, s2, s3, ws);
+		SmaphAnnotator smaphGatherer = SmaphBuilder.getSmaphGatherer(wikiApi, s1, s2, s3, ws, c);
 		CachedWATAnnotator.setCache("wikisense.cache");
 
 		ExampleGatherer<HashSet<Annotation>, HashSet<Annotation>> trainCollectiveGatherer = new ExampleGatherer<HashSet<Annotation>, HashSet<Annotation>>();

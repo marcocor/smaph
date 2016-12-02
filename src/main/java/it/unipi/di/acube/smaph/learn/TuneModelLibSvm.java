@@ -119,7 +119,7 @@ public class TuneModelLibSvm {
 		SmaphBuilder.Websearch ws = SmaphBuilder.websearchFromString(line.getOptionValue("websearch-piggyback"));
 
 		Locale.setDefault(Locale.US);
-		SmaphConfig.setConfigFile("smaph-config.xml");
+		SmaphConfig c = SmaphConfig.fromConfigFile("smaph-config.xml");
 		CachedWATAnnotator.setCache("wikisense.cache");
 		WATRelatednessComputer.setCache("relatedness.cache");
 		WikipediaApiInterface wikiApi = WikipediaApiInterface.api();
@@ -150,7 +150,7 @@ public class TuneModelLibSvm {
 						File modelFile = SmaphBuilder.getModelFile(SmaphVersion.ENTITY_FILTER, ws, topKS1i, topKS2i, topKS3i);
 						File normFile = SmaphBuilder.getZscoreNormalizerFile(SmaphVersion.ENTITY_FILTER, ws, topKS1i, topKS2i, topKS3i);
 						SmaphAnnotator smaphGatherer = SmaphBuilder
-						        .getSmaphGatherer(wikiApi, true, topKS1i, true, topKS2i, true, topKS3i, ws).appendName(label);
+						        .getSmaphGatherer(wikiApi, true, topKS1i, true, topKS2i, true, topKS3i, ws, c).appendName(label);
 						Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult> modelAndStats = trainIterativeEF(
 						        smaphGatherer, opt, OptimizaionProfiles.MAXIMIZE_MACRO_F1, -1.0, ftrSelMethod,
 						        ftrRestriction, initialFtrSet, wikiApi, modelFile, normFile);
@@ -172,7 +172,7 @@ public class TuneModelLibSvm {
 						File normFile = SmaphBuilder.getZscoreNormalizerFile(SmaphVersion.ANNOTATION_REGRESSOR, ws, topKS1i,
 						        topKS2i, topKS3i);
 						SmaphAnnotator smaphGatherer = SmaphBuilder
-						        .getSmaphGatherer(wikiApi, true, topKS1i, true, topKS2i, true, topKS3i, ws).appendName(label);
+						        .getSmaphGatherer(wikiApi, true, topKS1i, true, topKS2i, true, topKS3i, ws, c).appendName(label);
 						Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult> modelAndStats = trainIterativeAR(
 						        smaphGatherer, opt, OptimizaionProfiles.MAXIMIZE_MACRO_F1, -1.0, ftrSelMethod,
 						        ftrRestriction, initialFtrSet, wikiApi, modelFile, normFile);
