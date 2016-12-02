@@ -16,50 +16,38 @@
 
 package it.unipi.di.acube.smaph.learn.models.entityfilters;
 
-import it.unipi.di.acube.batframework.data.Tag;
-import it.unipi.di.acube.smaph.learn.featurePacks.FeaturePack;
-import it.unipi.di.acube.smaph.learn.models.LibSvmModel;
-import it.unipi.di.acube.smaph.learn.normalizer.FeatureNormalizer;
-
-import java.io.FileInputStream;
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
+import java.net.URL;
 
+import it.unipi.di.acube.batframework.data.Tag;
+import it.unipi.di.acube.smaph.learn.featurePacks.FeaturePack;
+import it.unipi.di.acube.smaph.learn.models.LibSvmModel;
+import it.unipi.di.acube.smaph.learn.normalizer.FeatureNormalizer;
 import libsvm.svm_model;
 
 /**
  * An SVM-based entity filter.
  */
 public class LibSvmEntityFilter extends LibSvmModel<Tag> implements EntityFilter, Serializable {
-    private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = 1L;
 
-	public LibSvmEntityFilter(String modelFile) throws IOException {
+	private LibSvmEntityFilter(URL modelFile) throws IOException {
 		super(modelFile);
 	}
 
-	public LibSvmEntityFilter(svm_model model) {
+	private LibSvmEntityFilter(svm_model model) {
 		super(model);
 	}
 
-	@Override
-	public boolean filterEntity(FeaturePack<Tag> fp, FeatureNormalizer fn) {
-		boolean result = predict(fp, fn);
-		/*String ftrDesc = "";
-		for (String key : fp.getFeatureNames())
-			if (fp.featureIsSet(key))
-				ftrDesc += String.format("%s:%.3f ", key, fp.getFeature(key));
-		SmaphAnnotatorDebugger.out.printf("EF: %s has been %s.%n", ftrDesc,
-				result ? "accepted" : "discarded");*/
-		return result;
-	}
-
-	public static LibSvmEntityFilter fromFile(String file) {
+	public static LibSvmEntityFilter fromUrl(URL modelUrl) throws IOException {
 		LibSvmEntityFilter obj;
 		try {
-			ObjectInputStream in = new ObjectInputStream(new FileInputStream(file));
+			ObjectInputStream in = new ObjectInputStream(modelUrl.openStream());
 			obj = (LibSvmEntityFilter) in.readObject();
 			in.close();
 		} catch (Exception e) {
@@ -67,15 +55,25 @@ public class LibSvmEntityFilter extends LibSvmModel<Tag> implements EntityFilter
 		}
 		return obj;
 	}
-	
-	public void toFile(String filename){
-        try {
-			ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(filename));
+
+	public static LibSvmEntityFilter fromModel(svm_model model) {
+		return new LibSvmEntityFilter(model);
+	}
+
+	@Override
+	public boolean filterEntity(FeaturePack<Tag> fp, FeatureNormalizer fn) {
+		boolean result = predict(fp, fn);
+		return result;
+	}
+
+	public void toFile(File modelFile) {
+		try {
+			ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(modelFile));
 			out.writeObject(this);
 			out.close();
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
 	}
-	
+
 }

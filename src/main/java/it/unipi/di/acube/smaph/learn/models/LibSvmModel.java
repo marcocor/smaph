@@ -16,12 +16,14 @@
 
 package it.unipi.di.acube.smaph.learn.models;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.Serializable;
+import java.net.URL;
+
 import it.unipi.di.acube.smaph.learn.featurePacks.FeaturePack;
 import it.unipi.di.acube.smaph.learn.normalizer.FeatureNormalizer;
-
-import java.io.IOException;
-import java.io.Serializable;
-
 import libsvm.svm;
 import libsvm.svm_model;
 import libsvm.svm_node;
@@ -32,23 +34,23 @@ import libsvm.svm_node;
  * @author Marco Cornolti
  *
  */
-public abstract class LibSvmModel <T> implements Serializable {
+public abstract class LibSvmModel<T> implements Serializable {
 	private static final long serialVersionUID = 1L;
 	private svm_model model;
-	private String modelFile;
-	
+	private URL modelURL;
+
 	public static svm_node[] featuresArrayToNode(double[] ftrArray, int[] pickedFtrsI) {
 		svm_node[] ftrVect = new svm_node[pickedFtrsI.length];
-		for (int i=0; i<pickedFtrsI.length; i++) {
+		for (int i = 0; i < pickedFtrsI.length; i++) {
 			int ftrId = pickedFtrsI[i];
 			ftrVect[i] = new svm_node();
 			ftrVect[i].index = ftrId;
-			ftrVect[i].value = ftrArray[ftrId-1];
+			ftrVect[i].value = ftrArray[ftrId - 1];
 		}
 		return ftrVect;
 	}
 
-	public LibSvmModel(String modelFile) throws IOException {
+	public LibSvmModel(URL modelFile) throws IOException {
 		setModel(modelFile);
 	}
 
@@ -60,28 +62,29 @@ public abstract class LibSvmModel <T> implements Serializable {
 		return predictScore(fp, fn) > 0.0;
 	}
 
-	private int[] getUsedFtr(){
+	private int[] getUsedFtr() {
 		svm_node[] firstSv = model.SV[0];
 		int[] res = new int[firstSv.length];
-		for (int i=0 ; i<res.length; i++)
+		for (int i = 0; i < res.length; i++)
 			res[i] = firstSv[i].index;
 		return res;
 	}
-	
+
 	public double predictScore(FeaturePack<T> fp, FeatureNormalizer fn) {
-		svm_node[] ftrVect = featuresArrayToNode(fn
-				.ftrToNormalizedFtrArray(fp), getUsedFtr());
+		svm_node[] ftrVect = featuresArrayToNode(fn.ftrToNormalizedFtrArray(fp), getUsedFtr());
 		return svm.svm_predict(model, ftrVect);
 	}
 
 	public String getModel() {
-		return modelFile;
+		return modelURL.toString();
 	}
 
-	public void setModel(String modelFile) {
-		this.modelFile = modelFile;
+	public void setModel(URL modelFile) {
+		this.modelURL = modelFile;
 		try {
-			this.model = svm.svm_load_model(modelFile);
+			this.model = svm.svm_load_model(new BufferedReader(new InputStreamReader(modelURL.openStream(), "ascii")));
+			if (this.model == null)
+				throw new RuntimeException("Could not load model file.");
 		} catch (IOException e) {
 			e.printStackTrace();
 			throw new RuntimeException(e);

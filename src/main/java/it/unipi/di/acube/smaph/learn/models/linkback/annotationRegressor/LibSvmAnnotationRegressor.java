@@ -20,6 +20,7 @@ import it.unipi.di.acube.batframework.data.Annotation;
 import it.unipi.di.acube.smaph.learn.models.LibSvmModel;
 
 import java.io.*;
+import java.net.URL;
 
 import libsvm.svm_model;
 
@@ -30,10 +31,10 @@ public class LibSvmAnnotationRegressor extends LibSvmModel<Annotation> implement
     private static final long serialVersionUID = 1L;
 	private double threshold;
 	
-	public static LibSvmAnnotationRegressor fromFile(String file) {
+	public static LibSvmAnnotationRegressor fromUrl(URL uri) {
 		LibSvmAnnotationRegressor obj;
 		try {
-			ObjectInputStream in = new ObjectInputStream(new FileInputStream(file));
+			ObjectInputStream in = new ObjectInputStream(uri.openStream());
 			obj = (LibSvmAnnotationRegressor) in.readObject();
 			in.close();
 		} catch (Exception e) {
@@ -42,9 +43,9 @@ public class LibSvmAnnotationRegressor extends LibSvmModel<Annotation> implement
 		return obj;
 	}
 	
-	public void toFile(String filename){
+	public void toFile(File file){
         try {
-			ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(filename));
+			ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(file));
 			out.writeObject(this);
 			out.close();
 		} catch (IOException e) {

@@ -34,8 +34,7 @@ public class RankLibModelTest {
 		f2_4 = TestFeaturePack.fromValues(0.8, 0.2);
 
 		// Load LambdaMart model
-		r = new RankLibModel(currentThread().getContextClassLoader()
-				.getResource("ranklib_lm_model").getFile());
+		r = new RankLibModel(currentThread().getContextClassLoader().getResource("ranklib_lm_model"));
 
 		// Create lists
 		l0 = new Vector<>();

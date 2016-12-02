@@ -3,7 +3,11 @@ package it.unipi.di.acube.smaph.learn.models;
 import it.unipi.di.acube.smaph.learn.featurePacks.FeaturePack;
 import it.unipi.di.acube.smaph.learn.normalizer.FeatureNormalizer;
 
+import java.io.IOException;
+import java.net.URL;
 import java.util.List;
+
+import org.apache.commons.io.IOUtils;
 
 import ciir.umass.edu.learning.DataPoint;
 import ciir.umass.edu.learning.DenseDataPoint;
@@ -14,9 +18,10 @@ import ciir.umass.edu.utilities.Sorter;
 public class RankLibModel <T>{
 	private Ranker ranker;
 
-	public RankLibModel(String modelFile) {
+	public RankLibModel(URL modelUrl) throws IOException {
 		RankerFactory rFact = new RankerFactory();
-		ranker = rFact.loadRankerFromFile(modelFile);
+		String modelStr = IOUtils.toString(modelUrl.openStream());
+		ranker = rFact.loadRankerFromString(modelStr);
 	}
 
 	public static String ftrVectToString(double[] ftrVect, int rank, int groupid) {

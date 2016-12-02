@@ -16,6 +16,7 @@
 
 package it.unipi.di.acube.smaph.learn;
 
+import java.io.File;
 import java.io.Serializable;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
@@ -146,8 +147,8 @@ public class TuneModelLibSvm {
 				for (int topKS2i : topKS2)
 					for (int topKS3i : topKS3) {
 						String label = SmaphBuilder.getSourceLabel(SmaphVersion.ENTITY_FILTER, ws, topKS1i, topKS2i, topKS3i);
-						String modelFile = SmaphBuilder.getModel(SmaphVersion.ENTITY_FILTER, ws, topKS1i, topKS2i, topKS3i);
-						String normFile = SmaphBuilder.getZscoreNormalizer(SmaphVersion.ENTITY_FILTER, ws, topKS1i, topKS2i, topKS3i);
+						File modelFile = SmaphBuilder.getModelFile(SmaphVersion.ENTITY_FILTER, ws, topKS1i, topKS2i, topKS3i);
+						File normFile = SmaphBuilder.getZscoreNormalizerFile(SmaphVersion.ENTITY_FILTER, ws, topKS1i, topKS2i, topKS3i);
 						SmaphAnnotator smaphGatherer = SmaphBuilder
 						        .getSmaphGatherer(wikiApi, true, topKS1i, true, topKS2i, true, topKS3i, ws).appendName(label);
 						Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult> modelAndStats = trainIterativeEF(
@@ -166,9 +167,9 @@ public class TuneModelLibSvm {
 					for (int topKS3i : topKS3) {
 						String label = SmaphBuilder.getSourceLabel(SmaphVersion.ANNOTATION_REGRESSOR, ws, topKS1i, topKS2i,
 						        topKS3i);
-						String modelFile = SmaphBuilder.getModel(SmaphVersion.ANNOTATION_REGRESSOR, ws, topKS1i, topKS2i,
+						File modelFile = SmaphBuilder.getModelFile(SmaphVersion.ANNOTATION_REGRESSOR, ws, topKS1i, topKS2i,
 						        topKS3i);
-						String normFile = SmaphBuilder.getZscoreNormalizer(SmaphVersion.ANNOTATION_REGRESSOR, ws, topKS1i,
+						File normFile = SmaphBuilder.getZscoreNormalizerFile(SmaphVersion.ANNOTATION_REGRESSOR, ws, topKS1i,
 						        topKS2i, topKS3i);
 						SmaphAnnotator smaphGatherer = SmaphBuilder
 						        .getSmaphGatherer(wikiApi, true, topKS1i, true, topKS2i, true, topKS3i, ws).appendName(label);
@@ -196,7 +197,7 @@ public class TuneModelLibSvm {
 
 	private static Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult> trainIterativeEF(SmaphAnnotator annotator,
 	        OptDataset optDs, OptimizaionProfiles optProfile, double optProfileThreshold, String ftrSelMethod,
-	        int[][] restrictFeatures, int[] initialFeatures, WikipediaApiInterface wikiApi, String modelFile, String zscoreFile)
+	        int[][] restrictFeatures, int[] initialFeatures, WikipediaApiInterface wikiApi, File modelFile, File normFile)
 	                throws Exception {
 
 		Vector<ModelConfigurationResult> globalScoreboard = new Vector<>();
@@ -333,10 +334,10 @@ public class TuneModelLibSvm {
 		ModelConfigurationResult globalBest = ModelConfigurationResult.findBest(globalScoreboard, optProfile,
 		        optProfileThreshold);
 
-		ZScoreFeatureNormalizer scaleFn = new ZScoreFeatureNormalizer(trainGatherer);
+		ZScoreFeatureNormalizer scaleFn = ZScoreFeatureNormalizer.fromGatherer(trainGatherer);
 		LibSvmEntityFilter bestEf = ParameterTesterEF.getFilter(trainGatherer, scaleFn, globalBest.getFeatures(),
 		        globalBest.getWPos(), globalBest.getWNeg(), globalBest.getGamma(), globalBest.getC());
-		scaleFn.dump(zscoreFile);
+		scaleFn.dump(normFile);
 		bestEf.toFile(modelFile);
 
 		return new Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult>(globalScoreboard, globalBest);
@@ -344,7 +345,7 @@ public class TuneModelLibSvm {
 
 	private static Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult> trainIterativeAR(SmaphAnnotator annotator,
 	        OptDataset optDs, OptimizaionProfiles optProfile, double optProfileThreshold, String ftrSelMethod,
-	        int[][] restrictFeatures, int[] initFeatures, WikipediaApiInterface wikiApi, String modelFile, String zscoreFile)
+	        int[][] restrictFeatures, int[] initFeatures, WikipediaApiInterface wikiApi, File modelFile, File normFile)
 	        throws Exception {
 		Vector<ModelConfigurationResult> globalScoreboard = new Vector<>();
 		int stepsCGamma = 6;
@@ -477,10 +478,10 @@ public class TuneModelLibSvm {
 		ModelConfigurationResult globalBest = ModelConfigurationResult.findBest(globalScoreboard, optProfile,
 		        optProfileThreshold);
 
-		ZScoreFeatureNormalizer scaleFn = new ZScoreFeatureNormalizer(trainGatherer);
+		ZScoreFeatureNormalizer scaleFn = ZScoreFeatureNormalizer.fromGatherer(trainGatherer);
 		LibSvmAnnotationRegressor bestAR = ParameterTesterAR.getRegressor(trainGatherer, scaleFn, globalBest.getFeatures(),
 		        globalBest.getGamma(), globalBest.getC(), globalBest.getThreshold());
-		scaleFn.dump(zscoreFile);
+		scaleFn.dump(normFile);
 		bestAR.toFile(modelFile);
 
 		return new Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult>(globalScoreboard, globalBest);

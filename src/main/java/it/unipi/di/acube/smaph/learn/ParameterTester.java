@@ -218,7 +218,7 @@ public abstract class ParameterTester<E, G> implements Callable<ModelConfigurati
 
 		@Override
 		public ModelConfigurationResult call() throws Exception {
-			ZScoreFeatureNormalizer scaleFn = new ZScoreFeatureNormalizer(trainGatherer);
+			ZScoreFeatureNormalizer scaleFn = ZScoreFeatureNormalizer.fromGatherer(trainGatherer);
 			LibSvmAnnotationRegressor ar = getRegressor(trainGatherer, scaleFn, features, gamma, C, -1);
 
 			List<HashSet<Annotation>> golds = new Vector<>();
@@ -309,18 +309,19 @@ public abstract class ParameterTester<E, G> implements Callable<ModelConfigurati
 			this.wikiApi = wikiApi;
 		}
 
-		public static LibSvmEntityFilter getFilter(ExampleGatherer<Tag, HashSet<Tag>> trainGatherer, ZScoreFeatureNormalizer scaleFn, int[] features, double wPos, double wNeg, double gamma, double C){
+		public static LibSvmEntityFilter getFilter(ExampleGatherer<Tag, HashSet<Tag>> trainGatherer,
+		        ZScoreFeatureNormalizer scaleFn, int[] features, double wPos, double wNeg, double gamma, double C) {
 			svm_problem trainProblem = trainGatherer.generateLibSvmProblem(features, scaleFn);
 			svm_parameter param = getParametersClassifier(wPos, wNeg, gamma, C);
 			svm_model model = trainModel(param, trainProblem);
 
-			return new LibSvmEntityFilter(model);
+			return LibSvmEntityFilter.fromModel(model);
 		}
 
 		@Override
 		public ModelConfigurationResult call() throws Exception {
 
-			ZScoreFeatureNormalizer scaleFn = new ZScoreFeatureNormalizer(trainGatherer);
+			ZScoreFeatureNormalizer scaleFn = ZScoreFeatureNormalizer.fromGatherer(trainGatherer);
 			EntityFilter ef = getFilter(trainGatherer, scaleFn, features, wPos, wNeg, gamma, C);
 
 			MetricsResultSet metrics = testEntityFilter(ef, testGatherer, this.features, scaleFn, new SolutionComputer.TagSetSolutionComputer(wikiApi));

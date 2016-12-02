@@ -16,6 +16,7 @@
 
 package it.unipi.di.acube.smaph.learn;
 
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -102,8 +103,8 @@ public class GenerateProblemFiles {
 
 		String label = SmaphBuilder.getDefaultLabel(SmaphVersion.ENTITY_FILTER, ws, s1, s2, s3);
 		LOG.info("Building Z-score normalizer over training set...");
-		ZScoreFeatureNormalizer fNormEF = new ZScoreFeatureNormalizer(trainEntityFilterGatherer);
-		fNormEF.dump(String.format("train_%s.zscore", label));
+		ZScoreFeatureNormalizer fNormEF = ZScoreFeatureNormalizer.fromGatherer(trainEntityFilterGatherer);
+		fNormEF.dump(new File(String.format("train_%s.zscore", label)));
 		LOG.info("Dumping entity filter training problems (scaled)...");
 		trainEntityFilterGatherer.dumpExamplesLibSvm(String.format("train_zscore_%s.dat", label),
 		        fNormEF);
@@ -132,8 +133,8 @@ public class GenerateProblemFiles {
 
 		String label = SmaphBuilder.getDefaultLabel(SmaphVersion.ANNOTATION_REGRESSOR, ws, s1, s2, s3);
 		LOG.info("Building Z-score normalizer over training set...");
-		ZScoreFeatureNormalizer fNormAR = new ZScoreFeatureNormalizer(trainAdvancedAnnotationGatherer);
-		fNormAR.dump(String.format("train_%s.zscore", label));
+		ZScoreFeatureNormalizer fNormAR = ZScoreFeatureNormalizer.fromGatherer(trainAdvancedAnnotationGatherer);
+		fNormAR.dump(new File(String.format("train_%s.zscore", label)));
 		LOG.info("Dumping annotation regressor training problems (scaled)...");
 		trainAdvancedAnnotationGatherer.dumpExamplesLibSvm(String.format("train_zscore_%s.dat", label),
 		        fNormAR);
