@@ -105,16 +105,16 @@ def get_valid_ftrs(train_file):
 				diverse_features |= set([f for f in f_dict.keys() if first_line[f] != f_dict[f]])
 	return sorted(list(diverse_features))
 
-def get_model_base_name(dataset_file, model_name_prefix=""):
-	return "models/" + model_name_prefix + "model_" + os.path.basename(dataset_file) + "_" 
+def get_model_base_name(dataset_file):
+	return "coll_{}.model".format(os.path.basename(dataset_file))
 
-def build_models(ftrs_to_try, opt_vals, ranker, train_file, validate_file, optimize="NDCG", model_name_prefix="", tree=[1000], leaf=[10], cpus=None):
+def build_models(ftrs_to_try, opt_vals, ranker, train_file, validate_file, dataset_code, optimize="NDCG", tree=[1000], leaf=[10], cpus=None):
 	get_name = lambda optimize, t, l, op, model_name_base : '{4}.t{1}.l{2}.{0}@{3}'.format(optimize, t, l, op, model_name_base)
 	ftrs_string = hashlib.md5(ftr_set_string(ftrs_to_try)).hexdigest()
 	features_file = ftr_filename(ftrs_string)
 	if not os.path.isfile(features_file):
 		gen_ftr_file(ftrs_to_try)
-	model_name_base = get_model_base_name(train_file, model_name_prefix) + ftrs_string 
+	model_name_base = "models/{}_{}".format(get_model_base_name(dataset_code), ftrs_string) 
 	models_param = [(optimize, t, l, o, model_name_base) for t in tree for l in leaf for o in opt_vals]
 	to_train_param = [p for p in models_param if not os.path.isfile(get_name(*p))]
 	if not to_train_param:
@@ -211,10 +211,10 @@ def gen_ftr_file(ftrs):
 			f.write("\n")
 	return filename
 
-def generate_and_test_model(ftrs_to_try, qid_cand_to_score, opt_vals, ranker, train_file, validate_file, tree=[1000], leaf=[10], cpus=None):
+def generate_and_test_model(ftrs_to_try, qid_cand_to_score, opt_vals, ranker, train_file, validate_file, dataset_code, tree=[1000], leaf=[10], cpus=None):
 	print("testing feature set: {}".format(ftrs_to_try), file=sys.stderr)
 	gen_ftr_file(ftrs_to_try)
-	models = build_models(ftrs_to_try, opt_vals, ranker, train_file, validate_file, tree=tree, leaf=leaf, cpus=cpus)
+	models = build_models(ftrs_to_try, opt_vals, ranker, train_file, validate_file, dataset_code, tree=tree, leaf=leaf, cpus=cpus)
 	employed_ftrs = [get_model_used_features(m) for m in models]
 	for m_f in zip(models, employed_ftrs):
 		print("generated model: {} employed_features ({} features):{}".format(m_f[0], len(m_f[1]), ftr_set_string(m_f[1])), file=sys.stderr)

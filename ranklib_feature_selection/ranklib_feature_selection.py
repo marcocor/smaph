@@ -119,7 +119,7 @@ if __name__ == '__main__':
 	if args.method in['increment', 'ablation']:
 		print("Testing initial feature set", file=sys.stderr)
 		for leaf in leaves:
-			_, best_f1, employed_ftrs = generate_and_test_model(good_ftr, qid_cand_to_score, OPT_VALS, RANKER, TRAIN_DATA, VALIDATE_DATA, leaf=[leaf], cpus=cpus)
+			_, best_f1, employed_ftrs = generate_and_test_model(good_ftr, qid_cand_to_score, OPT_VALS, RANKER, TRAIN_DATA, VALIDATE_DATA, args.dataset, leaf=[leaf], cpus=cpus)
 		print("Initial best score: {}".format(best_f1), file=sys.stderr)
 		print("Initial features actually employed by these models ({} features): {}".format(len(employed_ftrs), ftr_set_string(employed_ftrs)), file=sys.stderr)
 		good_ftr = employed_ftrs
@@ -140,9 +140,10 @@ if __name__ == '__main__':
 			overall_best_f1, overall_best_model = best_f1, model
 		print("Tuning - Overall best model: {}".format(model), file=sys.stderr)
 		print("Tuning - Overall best score: {}".format(best_f1), file=sys.stderr)
-		print("Tunint - Features actually employed by these models ({} features): {}".format(len(employed_ftrs), ftr_set_string(employed_ftrs)), file=sys.stderr)
+		print("Tuning - Features actually employed by these models ({} features): {}".format(len(employed_ftrs), ftr_set_string(employed_ftrs)), file=sys.stderr)
 
 	if overall_best_model:
-		print("Exporting best model {} to {}".format(overall_best_model, get_model_base_name(TRAIN_DATA) + "best"), file=sys.stderr)
-		shutil.copy(overall_best_model, get_model_base_name(TRAIN_DATA) + "best")
+		bestmodel_name = "../src/main/resources/models/best_{}".format(get_model_base_name(args.dataset))
+		print("Exporting best model {} to {}".format(overall_best_model, bestmodel_name, file=sys.stderr))
+		shutil.copy(overall_best_model, bestmodel_name)
 	
