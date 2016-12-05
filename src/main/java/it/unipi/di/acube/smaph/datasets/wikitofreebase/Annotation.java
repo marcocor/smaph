@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-package it.cnr.isti.hpc.erd;
+package it.unipi.di.acube.smaph.datasets.wikitofreebase;
 
 /**
  * @author Diego Ceccarelli <diego.ceccarelli@isti.cnr.it>

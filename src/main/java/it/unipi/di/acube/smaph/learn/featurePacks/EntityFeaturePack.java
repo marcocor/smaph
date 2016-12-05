@@ -1,11 +1,11 @@
 package it.unipi.di.acube.smaph.learn.featurePacks;
 
-import it.cnr.isti.hpc.erd.WikipediaToFreebase;
 import it.unipi.di.acube.batframework.data.Tag;
 import it.unipi.di.acube.batframework.utils.Pair;
 import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
 import it.unipi.di.acube.smaph.QueryInformation;
 import it.unipi.di.acube.smaph.SmaphUtils;
+import it.unipi.di.acube.smaph.datasets.wikitofreebase.WikipediaToFreebase;
 import it.unipi.di.acube.smaph.main.ERDDatasetFilter;
 
 import java.io.IOException;

@@ -40,7 +40,6 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import it.cnr.isti.hpc.erd.WikipediaToFreebase;
 import it.unipi.di.acube.batframework.data.Annotation;
 import it.unipi.di.acube.batframework.data.Tag;
 import it.unipi.di.acube.batframework.systemPlugins.CachedWATAnnotator;
@@ -52,6 +51,7 @@ import it.unipi.di.acube.smaph.SmaphConfig;
 import it.unipi.di.acube.smaph.SmaphUtils;
 import it.unipi.di.acube.smaph.WATRelatednessComputer;
 import it.unipi.di.acube.smaph.SmaphBuilder.SmaphVersion;
+import it.unipi.di.acube.smaph.datasets.wikitofreebase.WikipediaToFreebase;
 import it.unipi.di.acube.smaph.learn.GenerateTrainingAndTest.OptDataset;
 import it.unipi.di.acube.smaph.learn.ParameterTester.ParameterTesterAR;
 import it.unipi.di.acube.smaph.learn.ParameterTester.ParameterTesterEF;

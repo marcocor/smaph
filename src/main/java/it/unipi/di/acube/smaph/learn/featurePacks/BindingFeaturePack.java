@@ -1,12 +1,12 @@
 package it.unipi.di.acube.smaph.learn.featurePacks;
 
-import it.cnr.isti.hpc.erd.WikipediaToFreebase;
 import it.unipi.di.acube.batframework.data.Annotation;
 import it.unipi.di.acube.batframework.utils.Pair;
 import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
 import it.unipi.di.acube.smaph.QueryInformation;
 import it.unipi.di.acube.smaph.SmaphUtils;
 import it.unipi.di.acube.smaph.WATRelatednessComputer;
+import it.unipi.di.acube.smaph.datasets.wikitofreebase.WikipediaToFreebase;
 
 import java.util.Arrays;
 import java.util.HashMap;

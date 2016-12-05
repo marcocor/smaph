@@ -2,7 +2,7 @@ package it.unipi.di.acube.smaph.wikiAnchors;
 
 import static org.junit.Assert.*;
 import it.unipi.di.acube.batframework.utils.Pair;
-import it.unipi.di.acube.smaph.wikiAnchors.EntityToAnchors;
+import it.unipi.di.acube.smaph.datasets.wikiAnchors.EntityToAnchors;
 
 import java.io.FileInputStream;
 import java.io.ObjectInputStream;

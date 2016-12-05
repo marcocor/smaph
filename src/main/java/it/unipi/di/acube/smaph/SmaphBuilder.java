@@ -8,13 +8,13 @@ import java.nio.file.Paths;
 
 import org.apache.commons.lang.NotImplementedException;
 
-import it.cnr.isti.hpc.erd.WikipediaToFreebase;
 import it.unipi.di.acube.batframework.systemPlugins.CachedWATAnnotator;
 import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
 import it.unipi.di.acube.searchapi.CachedWebsearchApi;
 import it.unipi.di.acube.searchapi.WebsearchApi;
 import it.unipi.di.acube.searchapi.callers.BingSearchApiCaller;
 import it.unipi.di.acube.searchapi.callers.GoogleSearchApiCaller;
+import it.unipi.di.acube.smaph.datasets.wikitofreebase.WikipediaToFreebase;
 import it.unipi.di.acube.smaph.learn.featurePacks.AnnotationFeaturePack;
 import it.unipi.di.acube.smaph.learn.featurePacks.EntityFeaturePack;
 import it.unipi.di.acube.smaph.learn.models.entityfilters.EntityFilter;

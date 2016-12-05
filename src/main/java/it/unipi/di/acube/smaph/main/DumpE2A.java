@@ -1,9 +1,9 @@
 package it.unipi.di.acube.smaph.main;
 
-import it.unipi.di.acube.smaph.wikiAnchors.EntityToAnchors;
-
 import java.io.FileInputStream;
 import java.io.ObjectInputStream;
+
+import it.unipi.di.acube.smaph.datasets.wikiAnchors.EntityToAnchors;
 
 public class DumpE2A {
 	public static final String DATASET_FILENAME = "e2a.dataset";

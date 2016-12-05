@@ -1,6 +1,5 @@
 package it.unipi.di.acube.smaph.linkback;
 
-import it.cnr.isti.hpc.erd.WikipediaToFreebase;
 import it.unipi.di.acube.batframework.data.Annotation;
 import it.unipi.di.acube.batframework.data.ScoredAnnotation;
 import it.unipi.di.acube.batframework.data.Tag;
@@ -9,6 +8,7 @@ import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
 import it.unipi.di.acube.smaph.QueryInformation;
 import it.unipi.di.acube.smaph.SmaphDebugger;
 import it.unipi.di.acube.smaph.SmaphUtils;
+import it.unipi.di.acube.smaph.datasets.wikitofreebase.WikipediaToFreebase;
 import it.unipi.di.acube.smaph.learn.featurePacks.AnnotationFeaturePack;
 import it.unipi.di.acube.smaph.learn.models.linkback.annotationRegressor.AnnotationRegressor;
 import it.unipi.di.acube.smaph.learn.normalizer.FeatureNormalizer;

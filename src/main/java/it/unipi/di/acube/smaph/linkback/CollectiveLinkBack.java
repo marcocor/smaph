@@ -1,6 +1,5 @@
 package it.unipi.di.acube.smaph.linkback;
 
-import it.cnr.isti.hpc.erd.WikipediaToFreebase;
 import it.unipi.di.acube.batframework.data.Annotation;
 import it.unipi.di.acube.batframework.data.ScoredAnnotation;
 import it.unipi.di.acube.batframework.data.Tag;
@@ -9,12 +8,13 @@ import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
 import it.unipi.di.acube.smaph.QueryInformation;
 import it.unipi.di.acube.smaph.SmaphDebugger;
 import it.unipi.di.acube.smaph.SmaphUtils;
+import it.unipi.di.acube.smaph.datasets.wikiAnchors.EntityToAnchors;
+import it.unipi.di.acube.smaph.datasets.wikitofreebase.WikipediaToFreebase;
 import it.unipi.di.acube.smaph.learn.featurePacks.BindingFeaturePack;
 import it.unipi.di.acube.smaph.learn.featurePacks.FeaturePack;
 import it.unipi.di.acube.smaph.learn.models.linkback.bindingRegressor.BindingRegressor;
 import it.unipi.di.acube.smaph.learn.normalizer.FeatureNormalizer;
 import it.unipi.di.acube.smaph.linkback.bindingGenerator.BindingGenerator;
-import it.unipi.di.acube.smaph.wikiAnchors.EntityToAnchors;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;

@@ -29,10 +29,9 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-package it.cnr.isti.hpc.erd.cli;
+package it.unipi.di.acube.smaph.datasets.wikitofreebase;
 
 import it.cnr.isti.hpc.cli.AbstractCommandLineInterface;
-import it.cnr.isti.hpc.erd.WikipediaLabelToFreebaseRecord;
 import it.cnr.isti.hpc.io.reader.RecordReader;
 import it.cnr.isti.hpc.log.ProgressLogger;
 
@@ -50,10 +49,10 @@ import org.slf4j.LoggerFactory;
  * 
  *         Created on Mar 15, 2014
  */
-public class IndexWikipediaLabelToFreebaseIdCLI {
+public class IndexWikipediaFreebase {
 
 	private static final Logger logger = LoggerFactory
-			.getLogger(IndexWikipediaLabelToFreebaseIdCLI.class);
+			.getLogger(IndexWikipediaFreebase.class);
 
 	private static String usage = "java -cp $jar it.cnr.isti.hpc.erd.cli.IndexWikipediaLabelToFreebaseIdCLI entity.tsv index_directory";
 

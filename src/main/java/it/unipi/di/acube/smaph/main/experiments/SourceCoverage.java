@@ -10,7 +10,6 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.GnuParser;
 import org.apache.commons.cli.Options;
 
-import it.cnr.isti.hpc.erd.WikipediaToFreebase;
 import it.unipi.di.acube.batframework.cache.BenchmarkCache;
 import it.unipi.di.acube.batframework.data.Tag;
 import it.unipi.di.acube.batframework.datasetPlugins.DatasetBuilder;
@@ -26,6 +25,7 @@ import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
 import it.unipi.di.acube.smaph.SmaphBuilder;
 import it.unipi.di.acube.smaph.SmaphConfig;
 import it.unipi.di.acube.smaph.WATRelatednessComputer;
+import it.unipi.di.acube.smaph.datasets.wikitofreebase.WikipediaToFreebase;
 
 public class SourceCoverage {
 	private static final Locale LOCALE = Locale.US;

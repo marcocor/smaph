@@ -5,9 +5,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Vector;
 
-import it.cnr.isti.hpc.erd.WikipediaToFreebase;
 import it.unipi.di.acube.batframework.data.Tag;
 import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
+import it.unipi.di.acube.smaph.datasets.wikitofreebase.WikipediaToFreebase;
 import it.unipi.di.acube.smaph.main.ERDDatasetFilter;
 
 public class StrongTagMatchNEOnly extends StrongTagMatch {

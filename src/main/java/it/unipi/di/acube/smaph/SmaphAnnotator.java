@@ -41,7 +41,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
 
-import it.cnr.isti.hpc.erd.WikipediaToFreebase;
 import it.unipi.di.acube.batframework.data.Annotation;
 import it.unipi.di.acube.batframework.data.Mention;
 import it.unipi.di.acube.batframework.data.ScoredAnnotation;
@@ -61,6 +60,8 @@ import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
 import it.unipi.di.acube.searchapi.WebsearchApi;
 import it.unipi.di.acube.searchapi.model.WebsearchResponse;
 import it.unipi.di.acube.searchapi.model.WebsearchResponseEntry;
+import it.unipi.di.acube.smaph.datasets.wikiAnchors.EntityToAnchors;
+import it.unipi.di.acube.smaph.datasets.wikitofreebase.WikipediaToFreebase;
 import it.unipi.di.acube.smaph.learn.featurePacks.AnnotationFeaturePack;
 import it.unipi.di.acube.smaph.learn.featurePacks.BindingFeaturePack;
 import it.unipi.di.acube.smaph.learn.featurePacks.EntityFeaturePack;
@@ -73,7 +74,6 @@ import it.unipi.di.acube.smaph.linkback.LinkBack;
 import it.unipi.di.acube.smaph.linkback.bindingGenerator.BindingGenerator;
 import it.unipi.di.acube.smaph.main.ERDDatasetFilter;
 import it.unipi.di.acube.smaph.snippetannotationfilters.SnippetAnnotationFilter;
-import it.unipi.di.acube.smaph.wikiAnchors.EntityToAnchors;
 
 public class SmaphAnnotator implements Sa2WSystem {
 	private final static Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

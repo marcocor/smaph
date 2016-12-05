@@ -1,4 +1,4 @@
-package it.cnr.isti.hpc.erd;
+package it.unipi.di.acube.smaph.datasets.wikitofreebase;
 
 import it.cnr.isti.hpc.io.reader.RecordParser;
 

@@ -11,8 +11,8 @@ import org.aksw.gerbil.transfer.nif.TurtleNIFDocumentParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import it.cnr.isti.hpc.erd.WikipediaToFreebase;
 import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
+import it.unipi.di.acube.smaph.datasets.wikitofreebase.WikipediaToFreebase;
 
 public class SmaphContextListener implements ServletContextListener {
 	private final static Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

@@ -1,4 +1,4 @@
-package it.unipi.di.acube.smaph.wikiAnchors;
+package it.unipi.di.acube.smaph.datasets.wikiAnchors;
 
 import it.unimi.dsi.fastutil.ints.Int2IntArrayMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
@@ -6,7 +6,6 @@ import it.unipi.di.acube.batframework.utils.Pair;
 import it.unipi.di.acube.smaph.SmaphUtils;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
