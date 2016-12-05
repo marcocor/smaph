@@ -1,5 +1,6 @@
 package it.unipi.di.acube.smaph.linkback;
 
+import it.cnr.isti.hpc.erd.WikipediaToFreebase;
 import it.unipi.di.acube.batframework.data.Annotation;
 import it.unipi.di.acube.batframework.data.ScoredAnnotation;
 import it.unipi.di.acube.batframework.data.Tag;
@@ -25,12 +26,14 @@ public class AdvancedIndividualLinkback implements LinkBack {
 	private FeatureNormalizer annFn;
 	private WikipediaApiInterface wikiApi;
 	private double edthreshold;
+	private WikipediaToFreebase w2f;
 
 	public AdvancedIndividualLinkback(AnnotationRegressor ar, FeatureNormalizer annFn, WikipediaApiInterface wikiApi,
-			double edthreshold) throws FileNotFoundException, IOException {
+	        WikipediaToFreebase w2f, double edthreshold) throws FileNotFoundException, IOException {
 		this.ar = ar;
 		this.annFn = annFn;
 		this.wikiApi = wikiApi;
+		this.w2f = w2f;
 		this.edthreshold = edthreshold;
 	}
 
@@ -55,7 +58,7 @@ public class AdvancedIndividualLinkback implements LinkBack {
 
 		List<Pair<Annotation, Double>> scoreAndAnnotations = new Vector<>();
 		for (Annotation a : getAnnotations(query, acceptedEntities, edthreshold)) {
-			double score = ar.predictScore(new AnnotationFeaturePack(a, query, qi, wikiApi),
+			double score = ar.predictScore(new AnnotationFeaturePack(a, query, qi, wikiApi, w2f),
 					annFn);
 			scoreAndAnnotations.add(new Pair<Annotation, Double>(a, score));
 		}

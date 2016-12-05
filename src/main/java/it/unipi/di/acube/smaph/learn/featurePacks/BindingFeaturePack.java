@@ -1,5 +1,6 @@
 package it.unipi.di.acube.smaph.learn.featurePacks;
 
+import it.cnr.isti.hpc.erd.WikipediaToFreebase;
 import it.unipi.di.acube.batframework.data.Annotation;
 import it.unipi.di.acube.batframework.utils.Pair;
 import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
@@ -21,8 +22,8 @@ public class BindingFeaturePack extends FeaturePack<HashSet<Annotation>> {
 	
 	public BindingFeaturePack(
 			HashSet<Annotation> binding, String query,
-			QueryInformation qi, WikipediaApiInterface wikiApi, HashMap<Annotation, HashMap<String, Double>> debugAnnotationFeatures, HashMap<String, Double> debugBindingFeatures){
-		super(getFeatures(binding, query, qi, wikiApi, debugAnnotationFeatures, debugBindingFeatures));
+			QueryInformation qi, WikipediaApiInterface wikiApi, WikipediaToFreebase w2f, HashMap<Annotation, HashMap<String, Double>> debugAnnotationFeatures, HashMap<String, Double> debugBindingFeatures){
+		super(getFeatures(binding, query, qi, wikiApi, w2f, debugAnnotationFeatures, debugBindingFeatures));
 	}
 
 	public BindingFeaturePack() {
@@ -139,13 +140,13 @@ public class BindingFeaturePack extends FeaturePack<HashSet<Annotation>> {
 	private static HashMap<String, Double> getFeatures(
 			HashSet<Annotation> binding,
 			String query,
-			QueryInformation qi, WikipediaApiInterface wikiApi, HashMap<Annotation, HashMap<String, Double>> debugAnnotationFeatures, HashMap<String, Double> debugBindingFeatures) {
+			QueryInformation qi, WikipediaApiInterface wikiApi, WikipediaToFreebase w2f, HashMap<Annotation, HashMap<String, Double>> debugAnnotationFeatures, HashMap<String, Double> debugBindingFeatures) {
 		
 		List<HashMap<String, Double>> allAnnotationsFeatures = new Vector<>();
 		
 		for (Annotation ann : binding) {
 			HashMap<String, Double> annFeatures = AnnotationFeaturePack
-					.getFeaturesStatic(ann, query, qi, wikiApi);
+					.getFeaturesStatic(ann, query, qi, wikiApi, w2f);
 			allAnnotationsFeatures.add(annFeatures);
 			if (debugAnnotationFeatures != null)
 				debugAnnotationFeatures.put(ann, annFeatures);

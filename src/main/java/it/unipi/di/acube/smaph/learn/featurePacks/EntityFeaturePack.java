@@ -1,5 +1,6 @@
 package it.unipi.di.acube.smaph.learn.featurePacks;
 
+import it.cnr.isti.hpc.erd.WikipediaToFreebase;
 import it.unipi.di.acube.batframework.data.Tag;
 import it.unipi.di.acube.batframework.utils.Pair;
 import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
@@ -19,8 +20,9 @@ import org.apache.commons.lang3.tuple.Triple;
 public class EntityFeaturePack extends FeaturePack<Tag> {
 	private static final long serialVersionUID = 1L;
 
-	public EntityFeaturePack(Tag candidate, String query, QueryInformation qi, WikipediaApiInterface wikiApi) {
-		super(getFeatures(candidate, query, qi, wikiApi));
+	public EntityFeaturePack(Tag candidate, String query, QueryInformation qi, WikipediaApiInterface wikiApi,
+	        WikipediaToFreebase freeb) {
+		super(getFeatures(candidate, query, qi, wikiApi, freeb));
 	}
 
 	public EntityFeaturePack() {
@@ -81,12 +83,12 @@ public class EntityFeaturePack extends FeaturePack<Tag> {
 	}
 
 	public static HashMap<String, Double> getFeatures(Tag candidate, String query, QueryInformation qi,
-			WikipediaApiInterface wikiApi) {
+			WikipediaApiInterface wikiApi, WikipediaToFreebase freeb) {
 		int wid = candidate.getConcept();
 		boolean candidateIsNE;
 		String title;
 		try {
-			candidateIsNE = ERDDatasetFilter.EntityIsNE(wikiApi, wid);
+			candidateIsNE = ERDDatasetFilter.entityIsNE(wikiApi, freeb, wid);
 			title = wikiApi.getTitlebyId(wid);
 		} catch (IOException e) {
 			throw new RuntimeException(e);

@@ -1,5 +1,6 @@
 package it.unipi.di.acube.smaph.learn.featurePacks;
 
+import it.cnr.isti.hpc.erd.WikipediaToFreebase;
 import it.unipi.di.acube.batframework.data.Annotation;
 import it.unipi.di.acube.batframework.data.Tag;
 import it.unipi.di.acube.batframework.utils.Pair;
@@ -22,20 +23,21 @@ public class AnnotationFeaturePack extends FeaturePack<Annotation> {
 	
 	private static final long serialVersionUID = 1L;
 
-	public AnnotationFeaturePack(Annotation a, String query,
-			QueryInformation qi, WikipediaApiInterface wikiApi) {
-		super(getFeaturesStatic(a, query, qi, wikiApi));
+	public AnnotationFeaturePack(Annotation a, String query, QueryInformation qi, WikipediaApiInterface wikiApi,
+	        WikipediaToFreebase w2f) {
+		super(getFeaturesStatic(a, query, qi, wikiApi, w2f));
 	}
 	
 	public AnnotationFeaturePack() {
 		super(null);
 	}
 	
-	public static HashMap<String, Double> getFeaturesStatic(Annotation a, String query, QueryInformation qi, WikipediaApiInterface wikiApi) {
+	public static HashMap<String, Double> getFeaturesStatic(Annotation a, String query, QueryInformation qi,
+	        WikipediaApiInterface wikiApi, WikipediaToFreebase w2f) {
 		Tag entity = new Tag(a.getConcept());
 		String mention = query.substring(a.getPosition(), a.getPosition() + a.getLength());
 		List<Pair<String, Integer>> anchorAndOccurrencies = EntityToAnchors.e2a().getAnchors(a.getConcept());
-		HashMap<String, Double> entityFeatures = EntityFeaturePack.getFeatures(entity, query, qi, wikiApi);
+		HashMap<String, Double> entityFeatures = EntityFeaturePack.getFeatures(entity, query, qi, wikiApi, w2f);
 		List<String> bolds = null;
 		if (qi.entityToBoldsSA.containsKey(entity))
 			bolds = qi.entityToBoldsSA.get(entity);

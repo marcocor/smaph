@@ -42,7 +42,7 @@ public class SmaphConfig {
 		this.defaultStands4Cache = defaultStands4Cache;
 		this.defaultStands4TokenId = defaultStands4TokenId;
 		this.defaultGoogleApiKey = defaultGoogleApiKey;
-		this.defaultGoogleCseId = defaultGoogleApiKey;
+		this.defaultGoogleCseId = defaultGoogleCseId;
 		this.defaultBingKey = defaultBingKey;
 		this.defaultWebsearchCache = defaultWebsearchCache;
 	}
@@ -105,7 +105,7 @@ public class SmaphConfig {
 	}
 
 	public String getDefaultWebsearchCache() {
-		return defaultWebsearchCache.isEmpty() ? null : defaultWebsearchCache;
+		return defaultWebsearchCache == null || defaultWebsearchCache.isEmpty() ? null : defaultWebsearchCache;
 	}
 
 	public String getDefaultStands4TokenId() {

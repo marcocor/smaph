@@ -41,6 +41,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
 
+import it.cnr.isti.hpc.erd.WikipediaToFreebase;
 import it.unipi.di.acube.batframework.data.Annotation;
 import it.unipi.di.acube.batframework.data.Mention;
 import it.unipi.di.acube.batframework.data.ScoredAnnotation;
@@ -94,6 +95,7 @@ public class SmaphAnnotator implements Sa2WSystem {
 	private SnippetAnnotationFilter snippetAnnotationFilter;
 	private double anchorMaxED;
 	private BindingGenerator bg;
+	private WikipediaToFreebase wikiToFreeb;
 
 	/**
 	 * Constructs a SMAPH annotator.
@@ -109,6 +111,7 @@ public class SmaphAnnotator implements Sa2WSystem {
 	 *            the entity filter feature normalizer.
 	 * @param wikiApi
 	 *            an API to Wikipedia.
+	 * @param wikiToFreeb 
 	 * @param searchApi
 	 *            the key to the search engine API.
 	 * @param auxDisambiguator
@@ -124,7 +127,7 @@ public class SmaphAnnotator implements Sa2WSystem {
 	        int topKwikiSearch, boolean includeSourceSnippets, int topKSnippets,
 	        double anchorMaxED, boolean tagTitles, LinkBack linkBack, EntityFilter entityFilter,
 	        FeatureNormalizer entityFilterNormalizer, BindingGenerator bg, CachedWATAnnotator snippetAnnotator,
-	        SnippetAnnotationFilter snippetAnnotationFilter, WikipediaApiInterface wikiApi, WebsearchApi searchApi) {
+	        SnippetAnnotationFilter snippetAnnotationFilter, WikipediaApiInterface wikiApi, WikipediaToFreebase wikiToFreeb, WebsearchApi searchApi) {
 		this.entityFilter = entityFilter;
 		this.entityFilterNormalizer = entityFilterNormalizer;
 		this.linkBack = linkBack;
@@ -140,6 +143,7 @@ public class SmaphAnnotator implements Sa2WSystem {
 		this.snippetAnnotator = snippetAnnotator;
 		this.anchorMaxED = anchorMaxED;
 		this.bg = bg;
+		this.wikiToFreeb = wikiToFreeb;
 	}
 
 	public void setPredictNEOnly(boolean predictNEonly) {
@@ -195,9 +199,9 @@ public class SmaphAnnotator implements Sa2WSystem {
 
 			for (Tag candidate : qi.allCandidates()){
 				if (predictNEonly
-						&& !ERDDatasetFilter.EntityIsNE(wikiApi, candidate.getConcept()))
+						&& !ERDDatasetFilter.entityIsNE(wikiApi, wikiToFreeb, candidate.getConcept()))
 					continue;
-				EntityFeaturePack fp = new EntityFeaturePack(candidate, query, qi, wikiApi);
+				EntityFeaturePack fp = new EntityFeaturePack(candidate, query, qi, wikiApi, wikiToFreeb);
 				boolean accept = entityFilter.filterEntity(fp, entityFilterNormalizer);
 				if (accept){
 					acceptedEntities.add(candidate);
@@ -211,13 +215,13 @@ public class SmaphAnnotator implements Sa2WSystem {
 				Set<Tag> resultsTag = annotations.stream().map(a -> new Tag(a.getConcept())).collect(Collectors.toSet());
 
 				for (Tag candidate : qi.candidatesNS)
-					debugger.addEntityFeaturesS1(query, candidate.getConcept(), EntityFeaturePack.getFeatures(candidate, query, qi, wikiApi), resultsTag.contains(candidate));
+					debugger.addEntityFeaturesS1(query, candidate.getConcept(), EntityFeaturePack.getFeatures(candidate, query, qi, wikiApi, wikiToFreeb), resultsTag.contains(candidate));
 				
 				for (Tag candidate : qi.candidatesWS)
-					debugger.addEntityFeaturesS2(query, candidate.getConcept(), EntityFeaturePack.getFeatures(candidate, query, qi, wikiApi), resultsTag.contains(candidate));
+					debugger.addEntityFeaturesS2(query, candidate.getConcept(), EntityFeaturePack.getFeatures(candidate, query, qi, wikiApi, wikiToFreeb), resultsTag.contains(candidate));
 				
 				for (Tag candidate : qi.candidatesSA)
-					debugger.addEntityFeaturesS3(query, candidate.getConcept(), EntityFeaturePack.getFeatures(candidate, query, qi, wikiApi), resultsTag.contains(candidate));
+					debugger.addEntityFeaturesS3(query, candidate.getConcept(), EntityFeaturePack.getFeatures(candidate, query, qi, wikiApi, wikiToFreeb), resultsTag.contains(candidate));
 			}
 
 		} catch (Exception e) {
@@ -675,9 +679,9 @@ public class SmaphAnnotator implements Sa2WSystem {
 		if (EFVectorsToPresence != null)
 			for (Tag tag : qi.allCandidates()) {
 				if (keepNEOnly
-						&& !ERDDatasetFilter.EntityIsNE(wikiApi, tag.getConcept()))
+						&& !ERDDatasetFilter.entityIsNE(wikiApi, wikiToFreeb, tag.getConcept()))
 					continue;
-				FeaturePack<Tag> features  = new EntityFeaturePack(tag, query, qi, wikiApi);
+				FeaturePack<Tag> features  = new EntityFeaturePack(tag, query, qi, wikiApi, wikiToFreeb);
 				EFVectorsToPresence.add(new Pair<FeaturePack<Tag>, Boolean>(features, goldStandard.contains(tag)));
 				if (EFCandidates != null)
 					EFCandidates.add(tag);
@@ -693,7 +697,7 @@ public class SmaphAnnotator implements Sa2WSystem {
 			if (keepNEOnly) {
 				acceptedEntities = new HashSet<Tag>();
 				for (Tag entity : qi.allCandidates())
-					if (ERDDatasetFilter.EntityIsNE(wikiApi, entity.getConcept()))
+					if (ERDDatasetFilter.entityIsNE(wikiApi, wikiToFreeb, entity.getConcept()))
 						acceptedEntities.add(entity);
 
 			} else {
@@ -749,7 +753,7 @@ public class SmaphAnnotator implements Sa2WSystem {
 					break;
 				}
 			if (EntityToAnchors.e2a().containsId(a.getConcept())) {
-				AnnotationFeaturePack features = new AnnotationFeaturePack(a, query, qi, wikiApi);
+				AnnotationFeaturePack features = new AnnotationFeaturePack(a, query, qi, wikiApi, wikiToFreeb);
 				annAndFtrsAndPresence.add(new ImmutableTriple<Annotation, AnnotationFeaturePack, Boolean>(a, features, inGold));
 			} else
 				LOG.warn("No anchors found for id={}", a.getConcept());
@@ -762,7 +766,8 @@ public class SmaphAnnotator implements Sa2WSystem {
 	        QueryInformation qi, HashSet<Annotation> goldStandardAnn, MatchRelation<Annotation> match,
 	        Set<Tag> acceptedEntities, SmaphDebugger debugger) {
 
-		Collection<Pair<HashSet<Annotation>, BindingFeaturePack>> bindingAndFeaturePacks = CollectiveLinkBack.getBindingFeaturePacks(query, acceptedEntities, qi, bg, wikiApi, debugger);
+		Collection<Pair<HashSet<Annotation>, BindingFeaturePack>> bindingAndFeaturePacks = CollectiveLinkBack
+		        .getBindingFeaturePacks(query, acceptedEntities, qi, bg, wikiApi, wikiToFreeb, debugger);
 
 		List<Triple<HashSet<Annotation>, BindingFeaturePack, Double>> res = new Vector<>();
 		for (Pair<HashSet<Annotation>, BindingFeaturePack> bindingAndFeaturePack : bindingAndFeaturePacks) {

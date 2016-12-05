@@ -23,6 +23,7 @@ import java.util.Vector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import it.cnr.isti.hpc.erd.WikipediaToFreebase;
 import it.unimi.dsi.logging.ProgressLogger;
 import it.unipi.di.acube.batframework.data.Annotation;
 import it.unipi.di.acube.batframework.data.Tag;
@@ -108,29 +109,29 @@ public class GenerateTrainingAndTest {
 			ExampleGatherer<Annotation, HashSet<Annotation>> trainIndividualAdvancedAnnotationGatherer,
 			ExampleGatherer<Annotation, HashSet<Annotation>> develIndividualAdvancedAnnotationGatherer,
 			List<String> trainInstances, List<String> develInstances,
-			WikipediaApiInterface wikiApi,
+			WikipediaApiInterface wikiApi, WikipediaToFreebase w2f,
 			OptDataset opt) throws Exception {
 		if (trainEntityFilterGatherer != null || trainLinkBackCollectiveGatherer != null || trainIndividualAdvancedAnnotationGatherer != null) {
 
 			if (opt == OptDataset.ERD_CHALLENGE) {
 
 				boolean keepNEOnly = true;
-				A2WDataset smaphTrainA = new ERDDatasetFilter(DatasetBuilder.getGerdaqTrainA(), wikiApi);
+				A2WDataset smaphTrainA = new ERDDatasetFilter(DatasetBuilder.getGerdaqTrainA(), wikiApi, w2f);
 				gatherExamples(smaph, smaphTrainA,
 						trainEntityFilterGatherer, trainLinkBackCollectiveGatherer,
 						trainIndividualAdvancedAnnotationGatherer, keepNEOnly);
 
-				A2WDataset smaphTrainB = new ERDDatasetFilter(DatasetBuilder.getGerdaqTrainB(), wikiApi);
+				A2WDataset smaphTrainB = new ERDDatasetFilter(DatasetBuilder.getGerdaqTrainB(), wikiApi, w2f);
 				gatherExamples(smaph, smaphTrainB,
 						trainEntityFilterGatherer, trainLinkBackCollectiveGatherer,
 						trainIndividualAdvancedAnnotationGatherer, keepNEOnly);
 
-				A2WDataset smaphTest = new ERDDatasetFilter(DatasetBuilder.getGerdaqTest(), wikiApi);
+				A2WDataset smaphTest = new ERDDatasetFilter(DatasetBuilder.getGerdaqTest(), wikiApi, w2f);
 				gatherExamples(smaph, smaphTest,
 						trainEntityFilterGatherer, trainLinkBackCollectiveGatherer,
 						trainIndividualAdvancedAnnotationGatherer, keepNEOnly);
 
-				A2WDataset smaphDevel = new ERDDatasetFilter(DatasetBuilder.getGerdaqDevel(), wikiApi);
+				A2WDataset smaphDevel = new ERDDatasetFilter(DatasetBuilder.getGerdaqDevel(), wikiApi, w2f);
 				gatherExamples(smaph, smaphDevel,
 						trainEntityFilterGatherer, trainLinkBackCollectiveGatherer,
 						trainIndividualAdvancedAnnotationGatherer, keepNEOnly);
@@ -138,7 +139,7 @@ public class GenerateTrainingAndTest {
 				A2WDataset yahoo = new ERDDatasetFilter(
 						new YahooWebscopeL24Dataset(
 								classLoader.getResource("datasets/yahoo_webscope_L24/ydata-search-query-log-to-entities-v1_0.xml").getFile()),
-								wikiApi);
+								wikiApi, w2f);
 				gatherExamples(smaph, yahoo, trainEntityFilterGatherer, trainLinkBackCollectiveGatherer,
 						trainIndividualAdvancedAnnotationGatherer, keepNEOnly);
 
@@ -171,7 +172,7 @@ public class GenerateTrainingAndTest {
 		if (develEntityFilterGatherer != null || develLinkBackCollectiveGatherer != null|| develIndividualAdvancedAnnotationGatherer != null) {
 			if (opt == OptDataset.ERD_CHALLENGE) {
 				boolean keepNEOnly = true;
-				A2WDataset smaphDevel = new ERDDatasetFilter(DatasetBuilder.getGerdaqDevel(), wikiApi);
+				A2WDataset smaphDevel = new ERDDatasetFilter(DatasetBuilder.getGerdaqDevel(), wikiApi, w2f);
 				gatherExamples(smaph, smaphDevel,
 						develEntityFilterGatherer,
 						develLinkBackCollectiveGatherer,

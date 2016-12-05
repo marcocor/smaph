@@ -16,11 +16,6 @@
 
 package it.unipi.di.acube.smaph.main;
 
-import it.unipi.di.acube.batframework.data.*;
-import it.unipi.di.acube.batframework.problems.A2WDataset;
-import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
-import it.cnr.isti.hpc.erd.WikipediaToFreebase;
-
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.HashSet;
@@ -30,6 +25,13 @@ import java.util.Vector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import it.cnr.isti.hpc.erd.WikipediaToFreebase;
+import it.unipi.di.acube.batframework.data.Annotation;
+import it.unipi.di.acube.batframework.data.Mention;
+import it.unipi.di.acube.batframework.data.Tag;
+import it.unipi.di.acube.batframework.problems.A2WDataset;
+import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
+
 public class ERDDatasetFilter implements A2WDataset {
 	private final static Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 	private List<HashSet<Tag>> ERDTopics;
@@ -37,25 +39,23 @@ public class ERDDatasetFilter implements A2WDataset {
 	private List<HashSet<Mention>> ERDMentions;
 	private List<HashSet<Annotation>> ERDAnnotations;
 
-	public ERDDatasetFilter(A2WDataset ds, WikipediaApiInterface wikiApi) throws IOException {
+	public ERDDatasetFilter(A2WDataset ds, WikipediaApiInterface wikiApi, WikipediaToFreebase w2f) throws IOException {
 		this.ds = ds;
-		FilterERDTopics(ds.getC2WGoldStandardList(), wikiApi);
-		FilterERDAnnotations(ds.getA2WGoldStandardList(), wikiApi);
+		FilterERDTopics(ds.getC2WGoldStandardList(), wikiApi, w2f);
+		FilterERDAnnotations(ds.getA2WGoldStandardList(), wikiApi, w2f);
 	}
 
-	public static boolean EntityIsNE(WikipediaApiInterface wikiApi, int wid) throws IOException {
+	public static boolean entityIsNE(WikipediaApiInterface wikiApi, WikipediaToFreebase w2f, int wid) throws IOException {
 		String title = wikiApi.getTitlebyId(wid);
-		return EntityIsNE(wikiApi, title);
+		return entityIsNE(wikiApi, w2f, title);
 	}
 
-	public static boolean EntityIsNE(WikipediaApiInterface wikiApi, String title) throws IOException {
-		return title != null && WikipediaToFreebase.getDefault().hasEntity(title);
+	public static boolean entityIsNE(WikipediaApiInterface wikiApi, WikipediaToFreebase w2f, String title) throws IOException {
+		return title != null && w2f.hasEntity(title);
 	}
 
-	private void FilterERDAnnotations(
-			List<HashSet<Annotation>> a2wGoldStandardList,
-			WikipediaApiInterface wikiApi)
-			throws IOException {
+	private void FilterERDAnnotations(List<HashSet<Annotation>> a2wGoldStandardList, WikipediaApiInterface wikiApi,
+	        WikipediaToFreebase w2f) throws IOException {
 		ERDMentions = new Vector<HashSet<Mention>>();
 		ERDAnnotations = new Vector<HashSet<Annotation>>();
 		for (HashSet<Annotation> anns : a2wGoldStandardList) {
@@ -65,26 +65,26 @@ public class ERDDatasetFilter implements A2WDataset {
 			ERDMentions.add(filteredMentions);
 			for (Annotation ann : anns) {
 				String title = wikiApi.getTitlebyId(ann.getConcept());
-				if (!EntityIsNE(wikiApi, ann.getConcept())) {
+				if (!entityIsNE(wikiApi, w2f, ann.getConcept())) {
 					LOG.info("Discarding title={}", title);
 					continue;
 				}
 				LOG.info("Including title={}", title);
 				filteredAnns.add(ann);
-				filteredMentions.add(new Mention(ann.getPosition(), ann
-						.getLength()));
+				filteredMentions.add(new Mention(ann.getPosition(), ann.getLength()));
 			}
 		}
 	}
 
-	private void FilterERDTopics(List<HashSet<Tag>> c2wGoldStandardList, WikipediaApiInterface wikiApi)			throws IOException {
+	private void FilterERDTopics(List<HashSet<Tag>> c2wGoldStandardList, WikipediaApiInterface wikiApi, WikipediaToFreebase w2f)
+	        throws IOException {
 		ERDTopics = new Vector<>();
 		for (HashSet<Tag> tags : c2wGoldStandardList) {
 			HashSet<Tag> erdTags = new HashSet<>();
 			ERDTopics.add(erdTags);
 			for (Tag t : tags) {
 				String title = wikiApi.getTitlebyId(t.getConcept());
-				if (!EntityIsNE(wikiApi, t.getConcept())) {
+				if (!entityIsNE(wikiApi, w2f, t.getConcept())) {
 					LOG.info("Discarding title={}", title);
 					continue;
 				}

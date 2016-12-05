@@ -40,6 +40,7 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import it.cnr.isti.hpc.erd.WikipediaToFreebase;
 import it.unipi.di.acube.batframework.data.Annotation;
 import it.unipi.di.acube.batframework.data.Tag;
 import it.unipi.di.acube.batframework.systemPlugins.CachedWATAnnotator;
@@ -63,6 +64,8 @@ import it.unipi.di.acube.smaph.learn.normalizer.ZScoreFeatureNormalizer;
 public class TuneModelLibSvm {
 	private final static Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 	private static int THREADS_NUM = Runtime.getRuntime().availableProcessors();
+	private static WikipediaApiInterface wikiApi;
+	private static WikipediaToFreebase w2f;
 
 	public enum OptimizaionProfiles {
 		MAXIMIZE_TN, MAXIMIZE_MICRO_F1, MAXIMIZE_MACRO_F1
@@ -122,7 +125,8 @@ public class TuneModelLibSvm {
 		SmaphConfig c = SmaphConfig.fromConfigFile("smaph-config.xml");
 		CachedWATAnnotator.setCache("wikisense.cache");
 		WATRelatednessComputer.setCache("relatedness.cache");
-		WikipediaApiInterface wikiApi = WikipediaApiInterface.api();
+		wikiApi = WikipediaApiInterface.api();
+		w2f = WikipediaToFreebase.getDefault();
 
 		OptDataset opt = OptDataset.SMAPH_DATASET;
 
@@ -150,10 +154,10 @@ public class TuneModelLibSvm {
 						File modelFile = SmaphBuilder.getModelFile(SmaphVersion.ENTITY_FILTER, ws, topKS1i, topKS2i, topKS3i);
 						File normFile = SmaphBuilder.getZscoreNormalizerFile(SmaphVersion.ENTITY_FILTER, ws, topKS1i, topKS2i, topKS3i);
 						SmaphAnnotator smaphGatherer = SmaphBuilder
-						        .getSmaphGatherer(wikiApi, true, topKS1i, true, topKS2i, true, topKS3i, ws, c).appendName(label);
+						        .getSmaphGatherer(wikiApi, w2f, true, topKS1i, true, topKS2i, true, topKS3i, ws, c).appendName(label);
 						Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult> modelAndStats = trainIterativeEF(
 						        smaphGatherer, opt, OptimizaionProfiles.MAXIMIZE_MACRO_F1, -1.0, ftrSelMethod,
-						        ftrRestriction, initialFtrSet, wikiApi, modelFile, normFile);
+						        ftrRestriction, initialFtrSet, modelFile, normFile);
 						System.gc();
 						for (ModelConfigurationResult res : modelAndStats.first)
 							LOG.info(res.getReadable());
@@ -172,10 +176,10 @@ public class TuneModelLibSvm {
 						File normFile = SmaphBuilder.getZscoreNormalizerFile(SmaphVersion.ANNOTATION_REGRESSOR, ws, topKS1i,
 						        topKS2i, topKS3i);
 						SmaphAnnotator smaphGatherer = SmaphBuilder
-						        .getSmaphGatherer(wikiApi, true, topKS1i, true, topKS2i, true, topKS3i, ws, c).appendName(label);
+						        .getSmaphGatherer(wikiApi, w2f, true, topKS1i, true, topKS2i, true, topKS3i, ws, c).appendName(label);
 						Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult> modelAndStats = trainIterativeAR(
 						        smaphGatherer, opt, OptimizaionProfiles.MAXIMIZE_MACRO_F1, -1.0, ftrSelMethod,
-						        ftrRestriction, initialFtrSet, wikiApi, modelFile, normFile);
+						        ftrRestriction, initialFtrSet, modelFile, normFile);
 						System.gc();
 						for (ModelConfigurationResult res : modelAndStats.first)
 							LOG.info(res.getReadable());
@@ -197,7 +201,7 @@ public class TuneModelLibSvm {
 
 	private static Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult> trainIterativeEF(SmaphAnnotator annotator,
 	        OptDataset optDs, OptimizaionProfiles optProfile, double optProfileThreshold, String ftrSelMethod,
-	        int[][] restrictFeatures, int[] initialFeatures, WikipediaApiInterface wikiApi, File modelFile, File normFile)
+	        int[][] restrictFeatures, int[] initialFeatures, File modelFile, File normFile)
 	                throws Exception {
 
 		Vector<ModelConfigurationResult> globalScoreboard = new Vector<>();
@@ -210,7 +214,7 @@ public class TuneModelLibSvm {
 		ExampleGatherer<Tag, HashSet<Tag>> develGatherer = new ExampleGatherer<Tag, HashSet<Tag>>();
 
 		GenerateTrainingAndTest.gatherExamplesTrainingAndDevel(annotator, trainGatherer, develGatherer, null, null, null, null,
-		        null, null, wikiApi, optDs);
+		        null, null, wikiApi, w2f, optDs);
 
 		int[] allFtrs = SmaphUtils.getAllFtrVect(new EntityFeaturePack().getFeatureCount());
 
@@ -238,7 +242,7 @@ public class TuneModelLibSvm {
 				int[] broadWeightFtrs = bestFeatures == null ? allFtrs : bestFeatures;
 
 				new WeightSelector(broadwPosMin, broadwPosMax, broadkPos, broadwNegMin, broadwNegMax, 1.0, bestGamma, bestC,
-				        broadStepsWeight, broadWeightFtrs, trainGatherer, develGatherer, restrictedFeaturesScoreboard, wikiApi)
+				        broadStepsWeight, broadWeightFtrs, trainGatherer, develGatherer, restrictedFeaturesScoreboard)
 				                .run();
 
 				ModelConfigurationResult bestWeights = ModelConfigurationResult.findBest(restrictedFeaturesScoreboard, optProfile,
@@ -262,7 +266,7 @@ public class TuneModelLibSvm {
 
 					Vector<ModelConfigurationResult> scoreboardWeightsTuning = new Vector<>();
 					new WeightSelector(finewPosMin, finewPosMax, -1, finewNegMin, finewNegMax, -1, bestGamma, bestC,
-					        fineStepsWeight, bestFeatures, trainGatherer, develGatherer, scoreboardWeightsTuning, wikiApi).run();
+					        fineStepsWeight, bestFeatures, trainGatherer, develGatherer, scoreboardWeightsTuning).run();
 
 					ModelConfigurationResult bestWeightsRes = ModelConfigurationResult.findBest(scoreboardWeightsTuning,
 					        optProfile, optProfileThreshold);
@@ -286,8 +290,8 @@ public class TuneModelLibSvm {
 					        bestGamma, bestC, wikiApi);
 					new GammaCSelector<Tag, HashSet<Tag>>(fineCMin, fineCMax, bestC,
 					        (fineCMax - fineCMin) / fineStepsCGamma / 10.0, fineGammaMin, fineGammaMax, bestGamma,
-					        (fineGammaMax - fineGammaMin) / fineStepsCGamma / 10.0, fineStepsCGamma, pt, scoreboardGammaCTuning,
-					        wikiApi).run();
+					        (fineGammaMax - fineGammaMin) / fineStepsCGamma / 10.0, fineStepsCGamma, pt, scoreboardGammaCTuning)
+					                .run();
 
 					ModelConfigurationResult bestCGammaResult = ModelConfigurationResult.findBest(scoreboardGammaCTuning,
 					        optProfile, optProfileThreshold);
@@ -345,7 +349,7 @@ public class TuneModelLibSvm {
 
 	private static Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult> trainIterativeAR(SmaphAnnotator annotator,
 	        OptDataset optDs, OptimizaionProfiles optProfile, double optProfileThreshold, String ftrSelMethod,
-	        int[][] restrictFeatures, int[] initFeatures, WikipediaApiInterface wikiApi, File modelFile, File normFile)
+	        int[][] restrictFeatures, int[] initFeatures, File modelFile, File normFile)
 	        throws Exception {
 		Vector<ModelConfigurationResult> globalScoreboard = new Vector<>();
 		int stepsCGamma = 6;
@@ -358,7 +362,7 @@ public class TuneModelLibSvm {
 		ExampleGatherer<Annotation, HashSet<Annotation>> develGatherer = new ExampleGatherer<>();
 
 		GenerateTrainingAndTest.gatherExamplesTrainingAndDevel(annotator, null, null, null, null, trainGatherer, develGatherer,
-		        null, null, wikiApi, optDs);
+		        null, null, wikiApi, w2f, optDs);
 
 		int[] allFtrs = SmaphUtils.getAllFtrVect(new AnnotationFeaturePack().getFeatureCount());
 
@@ -390,7 +394,7 @@ public class TuneModelLibSvm {
 
 					new GammaCSelector<Annotation, HashSet<Annotation>>(cMin, cMax, bestC, (cMax - cMin) / stepsCGamma / 10.0,
 					        gammaMin, gammaMax, bestGamma, (gammaMax - gammaMin) / stepsCGamma / 10.0, stepsCGamma, pt,
-					        scoreboardGammaCTuning, wikiApi).run();
+					        scoreboardGammaCTuning).run();
 					bestCGammaResult = ModelConfigurationResult.findBest(scoreboardGammaCTuning, optProfile, optProfileThreshold);
 
 					bestC = bestCGammaResult.getC();
@@ -412,8 +416,7 @@ public class TuneModelLibSvm {
 
 					new GammaCSelector<Annotation, HashSet<Annotation>>(fineCMin, fineCMax, bestC,
 					        (fineCMax - fineCMin) / fineStepsCGamma / 5.0, fineGammaMin, fineGammaMax, bestGamma,
-					        (fineGammaMax - fineGammaMin) / fineStepsCGamma / 5.0, fineStepsCGamma, pt, scoreboardGammaCTuning,
-					        wikiApi).run();
+					        (fineGammaMax - fineGammaMin) / fineStepsCGamma / 5.0, fineStepsCGamma, pt, scoreboardGammaCTuning).run();
 					ModelConfigurationResult newBestCGammaResult = ModelConfigurationResult.findBest(scoreboardGammaCTuning,
 					        optProfile, optProfileThreshold);
 
@@ -497,7 +500,7 @@ public class TuneModelLibSvm {
 
 		public GammaCSelector(double cMin, double cMax, double origC, double kappaC, double gammaMin, double gammaMax,
 		        double origGamma, double kappaGamma, int steps, ParameterTester<E, G> pt,
-		        Vector<ModelConfigurationResult> scoreboardGammaCTuning, WikipediaApiInterface wikiApi) {
+		        Vector<ModelConfigurationResult> scoreboardGammaCTuning) {
 			if (kappaC == -1)
 				kappaC = (cMax - cMin) / steps;
 			if (kappaGamma == -1)
@@ -560,12 +563,10 @@ public class TuneModelLibSvm {
 		private int[] features;
 		private Vector<ModelConfigurationResult> scoreboard;
 		private int steps;
-		private WikipediaApiInterface wikiApi;
 
 		public WeightSelector(double wPosMin, double wPosMax, double kappaPos, double wNegMin, double wNegMax, double kappaNeg,
 		        double gamma, double C, int steps, int[] features, ExampleGatherer<Tag, HashSet<Tag>> trainEQFGatherer,
-		        ExampleGatherer<Tag, HashSet<Tag>> testEQFGatherer, Vector<ModelConfigurationResult> scoreboard,
-		        WikipediaApiInterface wikiApi) {
+		        ExampleGatherer<Tag, HashSet<Tag>> testEQFGatherer, Vector<ModelConfigurationResult> scoreboard) {
 			if (kappaNeg == -1)
 				kappaNeg = (wNegMax - wNegMin) / steps;
 			if (kappaPos == -1)
@@ -590,7 +591,6 @@ public class TuneModelLibSvm {
 			this.C = C;
 			this.gamma = gamma;
 			this.steps = steps;
-			this.wikiApi = wikiApi;
 		}
 
 		@Override

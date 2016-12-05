@@ -58,7 +58,7 @@ public class WikipediaToFreebase {
 	public WikipediaToFreebase(String folder) {
 		File dir = new File(folder);
 		File mapfile = new File(dir, "freebase.db");
-		DB db = DBMaker.fileDB(mapfile).fileMmapEnable().closeOnJvmShutdown().make();
+		DB db = DBMaker.fileDB(mapfile).fileMmapEnable().readOnly().closeOnJvmShutdown().make();
 		map = db.hashMap("index", Serializer.STRING, Serializer.STRING).createOrOpen();
 		labels = db.hashMap("label", Serializer.STRING, Serializer.STRING).createOrOpen();
 	}
