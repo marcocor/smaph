@@ -1,4 +1,4 @@
-package it.unipi.di.acube.smaph.server.rest;
+package it.unipi.di.acube.smaph.servlet;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -8,15 +8,16 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Vector;
 
-import javax.ws.rs.Consumes;
+import javax.servlet.ServletContext;
 import javax.ws.rs.DefaultValue;
-import javax.ws.rs.FormParam;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 
 import org.aksw.gerbil.transfer.nif.Document;
 import org.aksw.gerbil.transfer.nif.Marking;
@@ -36,67 +37,22 @@ import it.unipi.di.acube.batframework.problems.Sa2WSystem;
 import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
 import it.unipi.di.acube.smaph.SmaphAnnotator;
 import it.unipi.di.acube.smaph.SmaphBuilder;
-import it.unipi.di.acube.smaph.SmaphDebugger;
-import it.unipi.di.acube.smaph.SmaphConfig;
-import it.unipi.di.acube.smaph.SmaphUtils;
 import it.unipi.di.acube.smaph.SmaphBuilder.SmaphVersion;
+import it.unipi.di.acube.smaph.SmaphConfig;
+import it.unipi.di.acube.smaph.SmaphDebugger;
+import it.unipi.di.acube.smaph.SmaphUtils;
 
 /**
  * @author Marco Cornolti
  */
 
 @Path("/")
-public class RestService {
+public class SmaphServlet {
 	private final static Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-	private static WikipediaApiInterface wikiApi;
-	private static SmaphAnnotator entityFilterAnn, annotationRegressorAnn, collectiveAnn, entityFilterAnnNoS2,
-	        annotationRegressorAnnNoS2, collectiveAnnNoS2, defaultAnn, defaultAnnNoS2;
-	private static TurtleNIFDocumentParser parser;
-	private static TurtleNIFDocumentCreator creator;
-	private static WikipediaToFreebase wikiToFreeb;
-	private static SmaphBuilder.Websearch ws = SmaphBuilder.Websearch.GOOGLE_CSE;
+	private final static SmaphVersion DEFAULT_SMAPH_VERSION = SmaphBuilder.SmaphVersion.ENTITY_FILTER;
 
-	public static void initialize() {
-		parser = new TurtleNIFDocumentParser();
-		creator = new TurtleNIFDocumentCreator();
-		wikiApi = new WikipediaApiInterface("wid.cache", "redirect.cache");
-		SmaphConfig.setConfigFile("smaph-config.xml");
-
-		try {
-			entityFilterAnn = SmaphBuilder.getSmaph(SmaphVersion.ENTITY_FILTER, wikiApi, true, ws);
-			annotationRegressorAnn = SmaphBuilder.getSmaph(SmaphVersion.ANNOTATION_REGRESSOR, wikiApi, true, ws);
-			collectiveAnn = SmaphBuilder.getSmaph(SmaphVersion.ENTITY_FILTER, wikiApi, true, ws);
-			entityFilterAnnNoS2 = SmaphBuilder.getSmaph(SmaphVersion.COLLECTIVE, wikiApi, false, ws);
-			annotationRegressorAnnNoS2 = SmaphBuilder.getSmaph(SmaphVersion.ANNOTATION_REGRESSOR, wikiApi, false, ws);
-			collectiveAnnNoS2 = SmaphBuilder.getSmaph(SmaphVersion.COLLECTIVE, wikiApi, false, ws);
-		} catch (ClassNotFoundException | IOException e) {
-			e.printStackTrace();
-			throw new RuntimeException(e);
-		}
-		wikiToFreeb = new WikipediaToFreebase("mapdb");
-
-		defaultAnn = annotationRegressorAnn;
-		defaultAnnNoS2 = annotationRegressorAnnNoS2;
-	}
-
-	/**
-	 * ERD Challenge interface
-	 */
-	@POST
-	@Path("/erd")
-	@Consumes(MediaType.MULTIPART_FORM_DATA)
-	@Produces({ MediaType.TEXT_PLAIN })
-	public String annotatePost(@FormParam("runID") String runId, @FormParam("TextID") String textId,
-	        @FormParam("Text") String query) {
-		SmaphAnnotator ann = null;
-		if (runId.equals("entity-filter"))
-			ann = entityFilterAnn;
-		else if (runId.equals("annotation-regressor"))
-			ann = annotationRegressorAnn;
-		else if (runId.equals("collective"))
-			ann = collectiveAnn;
-		return encodeResponseERD(query, textId, ann);
-	}
+	@Context
+	ServletContext context;
 
 	/**
 	 * Debug interface
@@ -104,12 +60,15 @@ public class RestService {
 	@GET
 	@Path("/debug")
 	@Produces({ MediaType.APPLICATION_JSON })
-	public String debugSmaph(@QueryParam("Text") String text) {
+	public Response debugSmaph(@QueryParam("Text") String text, @QueryParam("google-cse-id") String cseId,
+	        @QueryParam("google-api-key") String apiKey) {
+		WikipediaApiInterface wikiApi = (WikipediaApiInterface) context.getAttribute("wikipedia-api");
 		SmaphDebugger debugger = new SmaphDebugger();
-		defaultAnn.solveSa2W(text, debugger);
+		SmaphConfig c = getSmaphConfig(cseId, apiKey);
+		getAnnotatorByName("default", false, c).solveSa2W(text, debugger);
 
 		try {
-			return debugger.toJson(wikiApi).toString();
+			return Response.ok(debugger.toJson(wikiApi).toString()).build();
 		} catch (Exception e) {
 			LOG.error("Error debugging query: " + text, e);
 			throw new RuntimeException(e);
@@ -118,34 +77,63 @@ public class RestService {
 
 	@POST
 	@Path("/annotate-nif")
-	public String annotateNif(String request, @QueryParam("q") String q, @QueryParam("annotator") @DefaultValue("default") String annotator,
-	        @QueryParam("excludeS2") String excludeS2) {
-		return encodeResponseNif(request, getAnnotatorByName(annotator, excludeS2 != null));
+	public Response annotateNif(String request, @QueryParam("q") String q,
+	        @QueryParam("annotator") @DefaultValue("default") String annotator, @QueryParam("excludeS2") String excludeS2,
+	        @QueryParam("google-cse-id") String cseId, @QueryParam("google-api-key") String apiKey) {
+		if (q == null)
+			return Response.serverError().entity("Parameter q required.").build();
+		if (cseId == null)
+			return Response.serverError().entity("Parameter google-cse-id required.").build();
+		if (apiKey == null)
+			return Response.serverError().entity("Parameter google-api-key required.").build();
+		SmaphConfig c = getSmaphConfig(cseId, apiKey);
+		return Response.ok(encodeResponseNif(request, getAnnotatorByName(annotator, excludeS2 != null, c))).build();
 	}
 
 	@GET
 	@Path("/annotate")
 	@Produces({ MediaType.APPLICATION_JSON })
-	public String annotateDefault(@QueryParam("q") String q, @QueryParam("annotator") @DefaultValue("default") String annotator,
-	        @QueryParam("excludeS2") String excludeS2) {
-		return encodeResponseJson(getAnnotatorByName(annotator, excludeS2 != null).solveSa2W(q));
+	public Response annotateDefault(@QueryParam("q") String q, @QueryParam("annotator") @DefaultValue("default") String annotator,
+	        @QueryParam("excludeS2") String excludeS2, @QueryParam("google-cse-id") String cseId,
+	        @QueryParam("google-api-key") String apiKey) {
+		if (q == null)
+			return Response.serverError().entity("Parameter q required.").build();
+		if (cseId == null)
+			return Response.serverError().entity("Parameter google-cse-id required.").build();
+		if (apiKey == null)
+			return Response.serverError().entity("Parameter google-api-key required.").build();
+		SmaphConfig c = getSmaphConfig(cseId, apiKey);
+		return Response.ok(encodeResponseJson(getAnnotatorByName(annotator, excludeS2 != null, c).solveSa2W(q))).build();
 	}
 
-	private Sa2WSystem getAnnotatorByName(String annotator, boolean excludeS2) {
-		switch (annotator) {
-		case "default":
-			return excludeS2 ? defaultAnnNoS2 : defaultAnn;
-		case "ef":
-			return excludeS2 ? entityFilterAnnNoS2 : entityFilterAnn;
-		case "ar":
-			return excludeS2 ? annotationRegressorAnnNoS2 : annotationRegressorAnn;
-		case "coll":
-			return excludeS2 ? collectiveAnnNoS2 : collectiveAnn;
+	private SmaphConfig getSmaphConfig(String cseId, String apiKey) {
+		return new SmaphConfig(null, null, null, apiKey, cseId, null, null);
+	}
+
+	private SmaphAnnotator getAnnotatorByName(String annotator, boolean excludeS2, SmaphConfig c) {
+		WikipediaApiInterface wikiApi = (WikipediaApiInterface) context.getAttribute("wikipedia-api");
+		WikipediaToFreebase wikiToFreebase = (WikipediaToFreebase) context.getAttribute("wiki-to-freebase");
+		try {
+			switch (annotator) {
+			case "default":
+				return SmaphBuilder.getSmaph(DEFAULT_SMAPH_VERSION, wikiApi, wikiToFreebase, c);
+			case "ef":
+				return SmaphBuilder.getSmaph(SmaphVersion.ENTITY_FILTER, wikiApi, wikiToFreebase, c);
+			case "ar":
+				return SmaphBuilder.getSmaph(SmaphVersion.ANNOTATION_REGRESSOR, wikiApi, wikiToFreebase, c);
+			case "coll":
+				return SmaphBuilder.getSmaph(SmaphVersion.COLLECTIVE, wikiApi, wikiToFreebase, c);
+			}
+		} catch (ClassNotFoundException | IOException e) {
+			throw new RuntimeException(e);
 		}
 		throw new IllegalArgumentException("Unrecognized annotator identifier " + annotator);
 	}
 
-	private static String encodeResponseNif(String request, Sa2WSystem ann) {
+	private String encodeResponseNif(String request, Sa2WSystem ann) {
+		WikipediaApiInterface wikiApi = (WikipediaApiInterface) context.getAttribute("wikipedia-api");
+		TurtleNIFDocumentCreator creator = (TurtleNIFDocumentCreator) context.getAttribute("nif-creator");
+		TurtleNIFDocumentParser parser = (TurtleNIFDocumentParser) context.getAttribute("nif-parser");
 		Document doc;
 		try {
 			doc = parser.getDocumentFromNIFString(request);
@@ -166,6 +154,7 @@ public class RestService {
 	}
 
 	private String encodeResponseJson(HashSet<ScoredAnnotation> annotations) {
+		WikipediaApiInterface wikiApi = (WikipediaApiInterface) context.getAttribute("wikipedia-api");
 		JSONObject res = new JSONObject();
 
 		try {
@@ -177,9 +166,12 @@ public class RestService {
 				String title = wikiApi.getTitlebyId(ann.getConcept());
 				if (wid >= 0 && title != null) {
 					JSONObject annJson = new JSONObject();
+					annJson.put("begin", ann.getPosition());
+					annJson.put("end", ann.getPosition() + ann.getLength());
 					annJson.put("wid", wid);
 					annJson.put("title", title);
 					annJson.put("url", SmaphUtils.getWikipediaURI(title));
+					annJson.put("score", ann.getScore());
 					annotJson.put(annJson);
 				}
 			}
@@ -192,6 +184,9 @@ public class RestService {
 	}
 
 	public List<Annotation> annotatePure(String query, String textID, Sa2WSystem annotator) {
+		WikipediaApiInterface wikiApi = (WikipediaApiInterface) context.getAttribute("wikipedia-api");
+		WikipediaToFreebase wikiToFreeb = (WikipediaToFreebase) context.getAttribute("wiki-to-freebase");
+
 		List<Annotation> annotations = new ArrayList<Annotation>();
 		HashSet<ScoredAnnotation> res = annotator.solveSa2W(query);
 		HashMap<Annotation, String> annToTitle = new HashMap<>();
@@ -220,6 +215,9 @@ public class RestService {
 	}
 
 	private String encodeResponseERD(String query, String textID, SmaphAnnotator annotator) {
+		WikipediaApiInterface wikiApi = (WikipediaApiInterface) context.getAttribute("wikipedia-api");
+		WikipediaToFreebase wikiToFreeb = (WikipediaToFreebase) context.getAttribute("wiki-to-freebase");
+
 		List<Annotation> annotations = new ArrayList<Annotation>();
 		HashSet<ScoredAnnotation> res = annotator.solveSa2W(query);
 		HashMap<Annotation, String> annToTitle = new HashMap<>();
