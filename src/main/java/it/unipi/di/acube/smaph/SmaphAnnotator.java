@@ -56,7 +56,7 @@ import it.unipi.di.acube.batframework.systemPlugins.CachedWATAnnotator;
 import it.unipi.di.acube.batframework.utils.AnnotationException;
 import it.unipi.di.acube.batframework.utils.Pair;
 import it.unipi.di.acube.batframework.utils.ProblemReduction;
-import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
+import it.unipi.di.acube.batframework.utils.WikipediaInterface;
 import it.unipi.di.acube.searchapi.WebsearchApi;
 import it.unipi.di.acube.searchapi.model.WebsearchResponse;
 import it.unipi.di.acube.searchapi.model.WebsearchResponseEntry;
@@ -78,7 +78,7 @@ import it.unipi.di.acube.smaph.snippetannotationfilters.SnippetAnnotationFilter;
 public class SmaphAnnotator implements Sa2WSystem {
 	private final static Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 	private static final Pattern WIKI_URL_PATTERN = Pattern.compile("https?://en.wikipedia.org/wiki/(.+)");
-	private WikipediaApiInterface wikiApi;
+	private WikipediaInterface wikiApi;
 	private WebsearchApi websearchApi = null;
 	private CachedWATAnnotator snippetAnnotator;
 	private EntityFilter entityFilter;
@@ -127,7 +127,7 @@ public class SmaphAnnotator implements Sa2WSystem {
 	        int topKwikiSearch, boolean includeSourceSnippets, int topKSnippets,
 	        double anchorMaxED, boolean tagTitles, LinkBack linkBack, EntityFilter entityFilter,
 	        FeatureNormalizer entityFilterNormalizer, BindingGenerator bg, CachedWATAnnotator snippetAnnotator,
-	        SnippetAnnotationFilter snippetAnnotationFilter, WikipediaApiInterface wikiApi, WikipediaToFreebase wikiToFreeb, WebsearchApi searchApi) {
+	        SnippetAnnotationFilter snippetAnnotationFilter, WikipediaInterface wikiApi, WikipediaToFreebase wikiToFreeb, WebsearchApi searchApi) {
 		this.entityFilter = entityFilter;
 		this.entityFilterNormalizer = entityFilterNormalizer;
 		this.linkBack = linkBack;

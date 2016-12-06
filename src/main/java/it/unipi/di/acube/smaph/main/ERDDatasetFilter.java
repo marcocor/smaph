@@ -29,7 +29,7 @@ import it.unipi.di.acube.batframework.data.Annotation;
 import it.unipi.di.acube.batframework.data.Mention;
 import it.unipi.di.acube.batframework.data.Tag;
 import it.unipi.di.acube.batframework.problems.A2WDataset;
-import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
+import it.unipi.di.acube.batframework.utils.WikipediaInterface;
 import it.unipi.di.acube.smaph.datasets.wikitofreebase.WikipediaToFreebase;
 
 public class ERDDatasetFilter implements A2WDataset {
@@ -39,22 +39,22 @@ public class ERDDatasetFilter implements A2WDataset {
 	private List<HashSet<Mention>> ERDMentions;
 	private List<HashSet<Annotation>> ERDAnnotations;
 
-	public ERDDatasetFilter(A2WDataset ds, WikipediaApiInterface wikiApi, WikipediaToFreebase w2f) throws IOException {
+	public ERDDatasetFilter(A2WDataset ds, WikipediaInterface wikiApi, WikipediaToFreebase w2f) throws IOException {
 		this.ds = ds;
 		FilterERDTopics(ds.getC2WGoldStandardList(), wikiApi, w2f);
 		FilterERDAnnotations(ds.getA2WGoldStandardList(), wikiApi, w2f);
 	}
 
-	public static boolean entityIsNE(WikipediaApiInterface wikiApi, WikipediaToFreebase w2f, int wid) throws IOException {
+	public static boolean entityIsNE(WikipediaInterface wikiApi, WikipediaToFreebase w2f, int wid) throws IOException {
 		String title = wikiApi.getTitlebyId(wid);
 		return entityIsNE(wikiApi, w2f, title);
 	}
 
-	public static boolean entityIsNE(WikipediaApiInterface wikiApi, WikipediaToFreebase w2f, String title) throws IOException {
+	public static boolean entityIsNE(WikipediaInterface wikiApi, WikipediaToFreebase w2f, String title) throws IOException {
 		return title != null && w2f.hasEntity(title);
 	}
 
-	private void FilterERDAnnotations(List<HashSet<Annotation>> a2wGoldStandardList, WikipediaApiInterface wikiApi,
+	private void FilterERDAnnotations(List<HashSet<Annotation>> a2wGoldStandardList, WikipediaInterface wikiApi,
 	        WikipediaToFreebase w2f) throws IOException {
 		ERDMentions = new Vector<HashSet<Mention>>();
 		ERDAnnotations = new Vector<HashSet<Annotation>>();
@@ -76,7 +76,7 @@ public class ERDDatasetFilter implements A2WDataset {
 		}
 	}
 
-	private void FilterERDTopics(List<HashSet<Tag>> c2wGoldStandardList, WikipediaApiInterface wikiApi, WikipediaToFreebase w2f)
+	private void FilterERDTopics(List<HashSet<Tag>> c2wGoldStandardList, WikipediaInterface wikiApi, WikipediaToFreebase w2f)
 	        throws IOException {
 		ERDTopics = new Vector<>();
 		for (HashSet<Tag> tags : c2wGoldStandardList) {

@@ -3,7 +3,7 @@ package it.unipi.di.acube.smaph.linkback.bindingGenerator;
 import it.unipi.di.acube.batframework.data.Annotation;
 import it.unipi.di.acube.batframework.data.Tag;
 import it.unipi.di.acube.batframework.utils.Pair;
-import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
+import it.unipi.di.acube.batframework.utils.WikipediaInterface;
 import it.unipi.di.acube.smaph.QueryInformation;
 import it.unipi.di.acube.smaph.SmaphUtils;
 
@@ -249,7 +249,7 @@ public class DefaultBindingGenerator implements BindingGenerator {
 	@Override
 	public List<HashSet<Annotation>> getBindings(String query,
 			QueryInformation qi, Set<Tag> acceptedEntities,
-			WikipediaApiInterface wikiApi) {
+			WikipediaInterface wikiApi) {
 		HashMap<Tag, String[]> entityToBolds;
 		entityToBolds = SmaphUtils.getEntitiesToBoldsList(qi.entityToBoldsSA,
 				qi.allCandidates());

@@ -20,7 +20,7 @@ import it.unipi.di.acube.batframework.data.ScoredAnnotation;
 import it.unipi.di.acube.batframework.data.Tag;
 import it.unipi.di.acube.batframework.problems.A2WDataset;
 import it.unipi.di.acube.batframework.utils.Pair;
-import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
+import it.unipi.di.acube.batframework.utils.WikipediaInterface;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -495,7 +495,7 @@ public class SmaphUtils {
 	}
 
 	public static HashMap<Tag, String> getEntitiesToTitles(
-			Set<Tag> acceptedEntities, WikipediaApiInterface wikiApi) {
+			Set<Tag> acceptedEntities, WikipediaInterface wikiApi) {
 		HashMap<Tag, String> res = new HashMap<>();
 		for (Tag t : acceptedEntities)
 			try {
@@ -768,7 +768,7 @@ public class SmaphUtils {
 	
 
 	public static String getDBPediaURI(String title) {
-		return BASE_DBPEDIA_URI + WikipediaApiInterface.normalize(title);
+		return BASE_DBPEDIA_URI + WikipediaInterface.normalize(title);
 	}
 
 	public static String getWikipediaURI(String title) {
@@ -779,7 +779,7 @@ public class SmaphUtils {
         }
 	}
 
-	public static void exportToNif(A2WDataset ds, String baseUri, WikipediaApiInterface wikiApi, OutputStream outputStream) {
+	public static void exportToNif(A2WDataset ds, String baseUri, WikipediaInterface wikiApi, OutputStream outputStream) {
 		List<org.aksw.gerbil.transfer.nif.Document> documents = new Vector<>();
 
 		for (int i = 0; i < ds.getSize(); i++) {

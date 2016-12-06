@@ -2,7 +2,7 @@ package it.unipi.di.acube.smaph.learn.featurePacks;
 
 import it.unipi.di.acube.batframework.data.Annotation;
 import it.unipi.di.acube.batframework.utils.Pair;
-import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
+import it.unipi.di.acube.batframework.utils.WikipediaInterface;
 import it.unipi.di.acube.smaph.QueryInformation;
 import it.unipi.di.acube.smaph.SmaphUtils;
 import it.unipi.di.acube.smaph.WATRelatednessComputer;
@@ -22,7 +22,7 @@ public class BindingFeaturePack extends FeaturePack<HashSet<Annotation>> {
 	
 	public BindingFeaturePack(
 			HashSet<Annotation> binding, String query,
-			QueryInformation qi, WikipediaApiInterface wikiApi, WikipediaToFreebase w2f, HashMap<Annotation, HashMap<String, Double>> debugAnnotationFeatures, HashMap<String, Double> debugBindingFeatures){
+			QueryInformation qi, WikipediaInterface wikiApi, WikipediaToFreebase w2f, HashMap<Annotation, HashMap<String, Double>> debugAnnotationFeatures, HashMap<String, Double> debugBindingFeatures){
 		super(getFeatures(binding, query, qi, wikiApi, w2f, debugAnnotationFeatures, debugBindingFeatures));
 	}
 
@@ -140,7 +140,7 @@ public class BindingFeaturePack extends FeaturePack<HashSet<Annotation>> {
 	private static HashMap<String, Double> getFeatures(
 			HashSet<Annotation> binding,
 			String query,
-			QueryInformation qi, WikipediaApiInterface wikiApi, WikipediaToFreebase w2f, HashMap<Annotation, HashMap<String, Double>> debugAnnotationFeatures, HashMap<String, Double> debugBindingFeatures) {
+			QueryInformation qi, WikipediaInterface wikiApi, WikipediaToFreebase w2f, HashMap<Annotation, HashMap<String, Double>> debugAnnotationFeatures, HashMap<String, Double> debugBindingFeatures) {
 		
 		List<HashMap<String, Double>> allAnnotationsFeatures = new Vector<>();
 		

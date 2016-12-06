@@ -37,7 +37,8 @@ import org.slf4j.LoggerFactory;
 import it.unipi.di.acube.batframework.data.Annotation;
 import it.unipi.di.acube.batframework.data.Tag;
 import it.unipi.di.acube.batframework.systemPlugins.CachedWATAnnotator;
-import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
+import it.unipi.di.acube.batframework.utils.WikipediaInterface;
+import it.unipi.di.acube.batframework.utils.WikipediaLocalInterface;
 import it.unipi.di.acube.smaph.SmaphAnnotator;
 import it.unipi.di.acube.smaph.SmaphBuilder;
 import it.unipi.di.acube.smaph.SmaphBuilder.SmaphVersion;
@@ -50,7 +51,7 @@ import it.unipi.di.acube.smaph.learn.normalizer.ZScoreFeatureNormalizer;
 
 public class GenerateProblemFiles {
 	private final static Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-	private static WikipediaApiInterface wikiApi;
+	private static WikipediaInterface wikiApi;
 	private static WikipediaToFreebase wikiToFreeb;
 
 	public static void main(String[] args) throws Exception {
@@ -79,7 +80,7 @@ public class GenerateProblemFiles {
 
 		Locale.setDefault(Locale.US);
 		SmaphConfig c = SmaphConfig.fromConfigFile("smaph-config.xml");
-		wikiApi = WikipediaApiInterface.api();
+		wikiApi = WikipediaLocalInterface.open("mapdb/wikipedia_pages.mapdb");
 		wikiToFreeb = WikipediaToFreebase.getDefault();
 		WATRelatednessComputer.setCache("relatedness.cache");
 		CachedWATAnnotator.setCache("wikisense.cache");

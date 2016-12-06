@@ -5,7 +5,7 @@ import it.unipi.di.acube.batframework.data.Tag;
 import it.unipi.di.acube.batframework.metrics.MetricsResultSet;
 import it.unipi.di.acube.batframework.metrics.StrongAnnotationMatch;
 import it.unipi.di.acube.batframework.utils.Pair;
-import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
+import it.unipi.di.acube.batframework.utils.WikipediaInterface;
 import it.unipi.di.acube.smaph.learn.SolutionComputer.AnnotationSetSolutionComputer;
 import it.unipi.di.acube.smaph.learn.TuneModelLibSvm.OptimizaionProfiles;
 import it.unipi.di.acube.smaph.learn.featurePacks.FeaturePack;
@@ -185,7 +185,7 @@ public abstract class ParameterTester<E, G> implements Callable<ModelConfigurati
 		private ExampleGatherer<Annotation, HashSet<Annotation>> trainGatherer;
 		private ExampleGatherer<Annotation, HashSet<Annotation>> testGatherer;
 		private int[] features;
-		private WikipediaApiInterface wikiApi;
+		private WikipediaInterface wikiApi;
 		private double gamma, C;
 		private double optProfileThr;
 		private OptimizaionProfiles optProfile;
@@ -196,7 +196,7 @@ public abstract class ParameterTester<E, G> implements Callable<ModelConfigurati
 				ExampleGatherer<Annotation, HashSet<Annotation>> testGatherer,
 				double gamma, double C, OptimizaionProfiles optProfile, double optProfileThr,
 				int thrSteps,
-				WikipediaApiInterface wikiApi) {
+				WikipediaInterface wikiApi) {
 			this.features = features;
 			this.trainGatherer = trainGatherer;
 			this.testGatherer = testGatherer;
@@ -292,13 +292,13 @@ public abstract class ParameterTester<E, G> implements Callable<ModelConfigurati
 		private ExampleGatherer<Tag, HashSet<Tag>> trainGatherer;
 		private ExampleGatherer<Tag, HashSet<Tag>> testGatherer;
 		private int[] features;
-		private WikipediaApiInterface wikiApi;
+		private WikipediaInterface wikiApi;
 
 		public ParameterTesterEF(double wPos, double wNeg, int[] features,
 				ExampleGatherer<Tag, HashSet<Tag>> trainEQFGatherer,
 				ExampleGatherer<Tag, HashSet<Tag>> testEQFGatherer,
 				double gamma, double C,
-				WikipediaApiInterface wikiApi) {
+				WikipediaInterface wikiApi) {
 			this.wPos = wPos;
 			this.wNeg = wNeg;
 			this.features = features;

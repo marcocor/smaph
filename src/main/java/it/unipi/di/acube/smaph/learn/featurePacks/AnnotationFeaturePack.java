@@ -3,7 +3,7 @@ package it.unipi.di.acube.smaph.learn.featurePacks;
 import it.unipi.di.acube.batframework.data.Annotation;
 import it.unipi.di.acube.batframework.data.Tag;
 import it.unipi.di.acube.batframework.utils.Pair;
-import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
+import it.unipi.di.acube.batframework.utils.WikipediaInterface;
 import it.unipi.di.acube.smaph.QueryInformation;
 import it.unipi.di.acube.smaph.SmaphUtils;
 import it.unipi.di.acube.smaph.WATRelatednessComputer;
@@ -23,7 +23,7 @@ public class AnnotationFeaturePack extends FeaturePack<Annotation> {
 	
 	private static final long serialVersionUID = 1L;
 
-	public AnnotationFeaturePack(Annotation a, String query, QueryInformation qi, WikipediaApiInterface wikiApi,
+	public AnnotationFeaturePack(Annotation a, String query, QueryInformation qi, WikipediaInterface wikiApi,
 	        WikipediaToFreebase w2f) {
 		super(getFeaturesStatic(a, query, qi, wikiApi, w2f));
 	}
@@ -33,7 +33,7 @@ public class AnnotationFeaturePack extends FeaturePack<Annotation> {
 	}
 	
 	public static HashMap<String, Double> getFeaturesStatic(Annotation a, String query, QueryInformation qi,
-	        WikipediaApiInterface wikiApi, WikipediaToFreebase w2f) {
+	        WikipediaInterface wikiApi, WikipediaToFreebase w2f) {
 		Tag entity = new Tag(a.getConcept());
 		String mention = query.substring(a.getPosition(), a.getPosition() + a.getLength());
 		List<Pair<String, Integer>> anchorAndOccurrencies = EntityToAnchors.e2a().getAnchors(a.getConcept());

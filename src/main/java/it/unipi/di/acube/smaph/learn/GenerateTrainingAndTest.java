@@ -30,7 +30,7 @@ import it.unipi.di.acube.batframework.datasetPlugins.DatasetBuilder;
 import it.unipi.di.acube.batframework.datasetPlugins.YahooWebscopeL24Dataset;
 import it.unipi.di.acube.batframework.problems.A2WDataset;
 import it.unipi.di.acube.batframework.utils.Pair;
-import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
+import it.unipi.di.acube.batframework.utils.WikipediaInterface;
 import it.unipi.di.acube.smaph.SmaphAnnotator;
 import it.unipi.di.acube.smaph.datasets.wikitofreebase.WikipediaToFreebase;
 import it.unipi.di.acube.smaph.learn.featurePacks.FeaturePack;
@@ -109,7 +109,7 @@ public class GenerateTrainingAndTest {
 			ExampleGatherer<Annotation, HashSet<Annotation>> trainIndividualAdvancedAnnotationGatherer,
 			ExampleGatherer<Annotation, HashSet<Annotation>> develIndividualAdvancedAnnotationGatherer,
 			List<String> trainInstances, List<String> develInstances,
-			WikipediaApiInterface wikiApi, WikipediaToFreebase w2f,
+			WikipediaInterface wikiApi, WikipediaToFreebase w2f,
 			OptDataset opt) throws Exception {
 		if (trainEntityFilterGatherer != null || trainLinkBackCollectiveGatherer != null || trainIndividualAdvancedAnnotationGatherer != null) {
 

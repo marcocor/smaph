@@ -26,7 +26,7 @@ import it.unipi.di.acube.batframework.metrics.MatchRelation;
 import it.unipi.di.acube.batframework.metrics.Metrics;
 import it.unipi.di.acube.batframework.metrics.StrongAnnotationMatch;
 import it.unipi.di.acube.batframework.utils.Pair;
-import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
+import it.unipi.di.acube.batframework.utils.WikipediaInterface;
 
 public class SmaphDebugger {
 	private List<String> processedQueries = new Vector<>();
@@ -47,7 +47,7 @@ public class SmaphDebugger {
 		processedQueries.add(query);
 	}
 
-	private static String widToUrl(int wid, WikipediaApiInterface wikiApi) {
+	private static String widToUrl(int wid, WikipediaInterface wikiApi) {
 		try {
 			return "http://en.wikipedia.org/wiki/"
 					+ URLEncoder.encode(wikiApi.getTitlebyId(wid), "utf8")
@@ -102,7 +102,7 @@ public class SmaphDebugger {
 		return textJs;
 	}
 
-	private JSONArray getAnnotatedSnippetS3(String query, WikipediaApiInterface wikiApi) throws JSONException, IOException {
+	private JSONArray getAnnotatedSnippetS3(String query, WikipediaInterface wikiApi) throws JSONException, IOException {
 		JSONArray res = new JSONArray();
 		if (this.annotatedSnippetsAndBoldsS3.containsKey(query))
 			for (Triple<String, HashSet<Annotation>, HashSet<Mention>> p : this.annotatedSnippetsAndBoldsS3.get(query)) {
@@ -186,7 +186,7 @@ public class SmaphDebugger {
 
 	private JSONArray getEntityFeaturesJson(
 			HashMap<String, List<Triple<Integer, HashMap<String, Double>, Boolean>>> source,
-			String query, WikipediaApiInterface wikiApi) throws JSONException,
+			String query, WikipediaInterface wikiApi) throws JSONException,
 			IOException {
 		JSONArray res = new JSONArray();
 		if (source.containsKey(query))
@@ -208,7 +208,7 @@ public class SmaphDebugger {
 
 	private JSONArray getSourceSearchResultJson(
 			HashMap<String, List<Triple<Integer, String, Integer>>> source,
-			String query, WikipediaApiInterface wikiApi) throws JSONException, IOException {
+			String query, WikipediaInterface wikiApi) throws JSONException, IOException {
 		JSONArray res = new JSONArray();
 		if (source.containsKey(query))
 			for (Triple<Integer, String, Integer> t : source.get(query)) {
@@ -224,7 +224,7 @@ public class SmaphDebugger {
 		return res;
 	}
 
-	private JSONArray getResultsJson(String query, WikipediaApiInterface wikiApi)
+	private JSONArray getResultsJson(String query, WikipediaInterface wikiApi)
 			throws JSONException, IOException {
 		JSONArray res = new JSONArray();
 		if (result.containsKey(query))
@@ -241,7 +241,7 @@ public class SmaphDebugger {
 		return res;
 	}
 
-	public JSONObject toJson(WikipediaApiInterface wikiApi)
+	public JSONObject toJson(WikipediaInterface wikiApi)
 			throws JSONException, IOException {
 		JSONObject dump = new JSONObject();
 
@@ -304,7 +304,7 @@ public class SmaphDebugger {
 		linkBackAnnotationFeaturesAndBindingFeatures.get(query).put(binding, new Pair<HashMap<Annotation,HashMap<String,Double>>, HashMap<String,Double>>(debugAnnotationFeatures, debugBindingFeatures));
 	}
 	
-	public JSONArray getLinkbackBindingFeatures(String query, HashSet<Annotation> goldStandard, WikipediaApiInterface wikiApi) throws JSONException, IOException {
+	public JSONArray getLinkbackBindingFeatures(String query, HashSet<Annotation> goldStandard, WikipediaInterface wikiApi) throws JSONException, IOException {
 		MatchRelation<Annotation> sam = new StrongAnnotationMatch(wikiApi);
 		Metrics<Annotation> m = new Metrics<Annotation>();
 		float bestF1 = -1;

@@ -21,7 +21,8 @@ import it.unipi.di.acube.batframework.problems.A2WDataset;
 import it.unipi.di.acube.batframework.problems.C2WSystem;
 import it.unipi.di.acube.batframework.systemPlugins.CachedWATAnnotator;
 import it.unipi.di.acube.batframework.utils.TestDataset;
-import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
+import it.unipi.di.acube.batframework.utils.WikipediaInterface;
+import it.unipi.di.acube.batframework.utils.WikipediaLocalInterface;
 import it.unipi.di.acube.smaph.SmaphBuilder;
 import it.unipi.di.acube.smaph.SmaphConfig;
 import it.unipi.di.acube.smaph.WATRelatednessComputer;
@@ -37,7 +38,7 @@ public class SourceCoverage {
 
 		java.security.Security.setProperty("networkaddress.cache.ttl", "0");
 		Locale.setDefault(LOCALE);
-		WikipediaApiInterface wikiApi = WikipediaApiInterface.api();
+		WikipediaInterface wikiApi = WikipediaLocalInterface.open("mapdb/wikipedia_pages.mapdb");
 		WikipediaToFreebase w2f = WikipediaToFreebase.getDefault();
 		WATRelatednessComputer.setCache("relatedness.cache");
 		A2WDataset ds = DatasetBuilder.getGerdaqDevel();

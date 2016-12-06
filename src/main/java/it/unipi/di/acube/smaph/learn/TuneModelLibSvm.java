@@ -44,7 +44,8 @@ import it.unipi.di.acube.batframework.data.Annotation;
 import it.unipi.di.acube.batframework.data.Tag;
 import it.unipi.di.acube.batframework.systemPlugins.CachedWATAnnotator;
 import it.unipi.di.acube.batframework.utils.Pair;
-import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
+import it.unipi.di.acube.batframework.utils.WikipediaInterface;
+import it.unipi.di.acube.batframework.utils.WikipediaLocalInterface;
 import it.unipi.di.acube.smaph.SmaphAnnotator;
 import it.unipi.di.acube.smaph.SmaphBuilder;
 import it.unipi.di.acube.smaph.SmaphConfig;
@@ -64,7 +65,7 @@ import it.unipi.di.acube.smaph.learn.normalizer.ZScoreFeatureNormalizer;
 public class TuneModelLibSvm {
 	private final static Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 	private static int THREADS_NUM = Runtime.getRuntime().availableProcessors();
-	private static WikipediaApiInterface wikiApi;
+	private static WikipediaInterface wikiApi;
 	private static WikipediaToFreebase w2f;
 
 	public enum OptimizaionProfiles {
@@ -125,7 +126,7 @@ public class TuneModelLibSvm {
 		SmaphConfig c = SmaphConfig.fromConfigFile("smaph-config.xml");
 		CachedWATAnnotator.setCache("wikisense.cache");
 		WATRelatednessComputer.setCache("relatedness.cache");
-		wikiApi = WikipediaApiInterface.api();
+		wikiApi = WikipediaLocalInterface.open("mapdb/wikipedia_pages.mapdb");
 		w2f = WikipediaToFreebase.getDefault();
 
 		OptDataset opt = OptDataset.SMAPH_DATASET;

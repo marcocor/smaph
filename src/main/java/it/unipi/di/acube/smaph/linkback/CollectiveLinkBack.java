@@ -4,7 +4,7 @@ import it.unipi.di.acube.batframework.data.Annotation;
 import it.unipi.di.acube.batframework.data.ScoredAnnotation;
 import it.unipi.di.acube.batframework.data.Tag;
 import it.unipi.di.acube.batframework.utils.Pair;
-import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
+import it.unipi.di.acube.batframework.utils.WikipediaInterface;
 import it.unipi.di.acube.smaph.QueryInformation;
 import it.unipi.di.acube.smaph.SmaphDebugger;
 import it.unipi.di.acube.smaph.SmaphUtils;
@@ -31,13 +31,13 @@ import org.slf4j.LoggerFactory;
 public class CollectiveLinkBack implements LinkBack {
 	private final static Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 	private BindingRegressor bindingRegressorModel;
-	private WikipediaApiInterface wikiApi;
+	private WikipediaInterface wikiApi;
 	private BindingGenerator bg;
 	private FeatureNormalizer brFn;
 	private SmaphDebugger debugger;
 	private WikipediaToFreebase w2f;
 
-	public CollectiveLinkBack(WikipediaApiInterface wikiApi, WikipediaToFreebase w2f, BindingGenerator bg, BindingRegressor lbReg,
+	public CollectiveLinkBack(WikipediaInterface wikiApi, WikipediaToFreebase w2f, BindingGenerator bg, BindingRegressor lbReg,
 	        FeatureNormalizer brFn) throws IOException {
 		this.bindingRegressorModel = lbReg;
 		this.wikiApi = wikiApi;
@@ -47,7 +47,7 @@ public class CollectiveLinkBack implements LinkBack {
 	}
 	
 	public static List<Pair<HashSet<Annotation>, BindingFeaturePack>> getBindingFeaturePacks(String query,
-	        Set<Tag> acceptedEntities, QueryInformation qi, BindingGenerator bg, WikipediaApiInterface wikiApi,
+	        Set<Tag> acceptedEntities, QueryInformation qi, BindingGenerator bg, WikipediaInterface wikiApi,
 	        WikipediaToFreebase w2f, SmaphDebugger debugger) {
 		List<Pair<HashSet<Annotation>,BindingFeaturePack>> featurePacks = new Vector<>();
 		//TODO: don't like.

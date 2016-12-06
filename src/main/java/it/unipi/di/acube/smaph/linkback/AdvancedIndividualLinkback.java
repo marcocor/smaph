@@ -4,7 +4,7 @@ import it.unipi.di.acube.batframework.data.Annotation;
 import it.unipi.di.acube.batframework.data.ScoredAnnotation;
 import it.unipi.di.acube.batframework.data.Tag;
 import it.unipi.di.acube.batframework.utils.Pair;
-import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
+import it.unipi.di.acube.batframework.utils.WikipediaInterface;
 import it.unipi.di.acube.smaph.QueryInformation;
 import it.unipi.di.acube.smaph.SmaphDebugger;
 import it.unipi.di.acube.smaph.SmaphUtils;
@@ -24,11 +24,11 @@ import java.util.Vector;
 public class AdvancedIndividualLinkback implements LinkBack {
 	private AnnotationRegressor ar;
 	private FeatureNormalizer annFn;
-	private WikipediaApiInterface wikiApi;
+	private WikipediaInterface wikiApi;
 	private double edthreshold;
 	private WikipediaToFreebase w2f;
 
-	public AdvancedIndividualLinkback(AnnotationRegressor ar, FeatureNormalizer annFn, WikipediaApiInterface wikiApi,
+	public AdvancedIndividualLinkback(AnnotationRegressor ar, FeatureNormalizer annFn, WikipediaInterface wikiApi,
 	        WikipediaToFreebase w2f, double edthreshold) throws FileNotFoundException, IOException {
 		this.ar = ar;
 		this.annFn = annFn;

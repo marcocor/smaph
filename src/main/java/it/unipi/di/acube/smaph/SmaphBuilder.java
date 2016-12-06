@@ -9,7 +9,7 @@ import java.nio.file.Paths;
 import org.apache.commons.lang.NotImplementedException;
 
 import it.unipi.di.acube.batframework.systemPlugins.CachedWATAnnotator;
-import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
+import it.unipi.di.acube.batframework.utils.WikipediaInterface;
 import it.unipi.di.acube.searchapi.CachedWebsearchApi;
 import it.unipi.di.acube.searchapi.WebsearchApi;
 import it.unipi.di.acube.searchapi.callers.BingSearchApiCaller;
@@ -103,7 +103,7 @@ public class SmaphBuilder {
 		return null;
 	}
 
-	private static SmaphAnnotator getDefaultSmaphParamTopk(WikipediaApiInterface wikiApi, WikipediaToFreebase wikiToFreeb, EntityFilter entityFilter,
+	private static SmaphAnnotator getDefaultSmaphParamTopk(WikipediaInterface wikiApi, WikipediaToFreebase wikiToFreeb, EntityFilter entityFilter,
 	        FeatureNormalizer efNorm, LinkBack lb, boolean s1, int topkS1, boolean s2, int topkS2, boolean s3, int topkS3,
 	        Websearch ws, SmaphConfig c) throws FileNotFoundException, ClassNotFoundException, IOException {
 		return new SmaphAnnotator(s1, topkS1, s2, topkS2, s3, topkS3, DEFAULT_ANCHOR_MENTION_ED, false, lb, entityFilter, efNorm,
@@ -111,26 +111,26 @@ public class SmaphBuilder {
 		        wikiApi, wikiToFreeb, getWebsearch(ws, c));
 	}
 
-	private static SmaphAnnotator getDefaultSmaphParam(WikipediaApiInterface wikiApi, WikipediaToFreebase wikiToFreeb, EntityFilter entityFilter,
+	private static SmaphAnnotator getDefaultSmaphParam(WikipediaInterface wikiApi, WikipediaToFreebase wikiToFreeb, EntityFilter entityFilter,
 	        FeatureNormalizer efNorm, LinkBack lb, boolean s1, boolean s2, boolean s3, Websearch ws, SmaphConfig c)
 	        throws FileNotFoundException, ClassNotFoundException, IOException {
 		return getDefaultSmaphParamTopk(wikiApi, wikiToFreeb, entityFilter, efNorm, lb, s1, DEFAULT_NORMALSEARCH_RESULTS, s2,
 		        DEFAULT_WIKISEARCH_RESULTS, s3, DEFAULT_ANNOTATED_SNIPPETS, ws, c);
 	}
 
-	public static SmaphAnnotator getSmaphGatherer(WikipediaApiInterface wikiApi, WikipediaToFreebase wikiToFreeb, boolean s1, boolean s2, boolean s3, Websearch ws,
+	public static SmaphAnnotator getSmaphGatherer(WikipediaInterface wikiApi, WikipediaToFreebase wikiToFreeb, boolean s1, boolean s2, boolean s3, Websearch ws,
 	        SmaphConfig c) throws FileNotFoundException, ClassNotFoundException, IOException {
 		return getDefaultSmaphParam(wikiApi, wikiToFreeb, new NoEntityFilter(), null, new DummyLinkBack(), s1, s2, s3, ws, c);
 	}
 
-	public static SmaphAnnotator getSmaphGatherer(WikipediaApiInterface wikiApi, WikipediaToFreebase wikiToFreeb, boolean s1, int topkS1, boolean s2, int topkS2,
+	public static SmaphAnnotator getSmaphGatherer(WikipediaInterface wikiApi, WikipediaToFreebase wikiToFreeb, boolean s1, int topkS1, boolean s2, int topkS2,
 	        boolean s3, int topkS3, Websearch ws, SmaphConfig c)
 	        throws FileNotFoundException, ClassNotFoundException, IOException {
 		return getDefaultSmaphParamTopk(wikiApi, wikiToFreeb, new NoEntityFilter(), null, new DummyLinkBack(), s1, topkS1, s2, topkS2, s3,
 		        topkS3, ws, c);
 	}
 
-	public static SmaphAnnotator getSmaph(SmaphVersion v, WikipediaApiInterface wikiApi, WikipediaToFreebase wikiToFreeb, boolean includeS2, Websearch ws,
+	public static SmaphAnnotator getSmaph(SmaphVersion v, WikipediaInterface wikiApi, WikipediaToFreebase wikiToFreeb, boolean includeS2, Websearch ws,
 	        SmaphConfig c) throws FileNotFoundException, ClassNotFoundException, IOException {
 		URL model = getDefaultModel(v, ws, true, includeS2, true);
 		URL zscore = getDefaultZscoreNormalizer(v, ws, true, includeS2, true);
@@ -162,7 +162,7 @@ public class SmaphBuilder {
 		return a;
 	}
 
-	public static SmaphAnnotator getSmaph(SmaphVersion v, WikipediaApiInterface wikiApi, WikipediaToFreebase wikiToFreeb, SmaphConfig c)
+	public static SmaphAnnotator getSmaph(SmaphVersion v, WikipediaInterface wikiApi, WikipediaToFreebase wikiToFreeb, SmaphConfig c)
 	        throws FileNotFoundException, ClassNotFoundException, IOException {
 		return getSmaph(v, wikiApi, wikiToFreeb, false, DEFAULT_WEBSEARCH, c);
 	}

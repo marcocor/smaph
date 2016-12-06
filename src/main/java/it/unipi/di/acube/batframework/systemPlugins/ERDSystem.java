@@ -20,7 +20,7 @@ import it.unipi.di.acube.batframework.data.Tag;
 import it.unipi.di.acube.batframework.problems.C2WSystem;
 import it.unipi.di.acube.batframework.utils.AnnotationException;
 import it.unipi.di.acube.batframework.utils.FreebaseApi;
-import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
+import it.unipi.di.acube.batframework.utils.WikipediaInterface;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -53,7 +53,7 @@ public class ERDSystem implements C2WSystem {
 	private long lastTime = -1;
 	private long calib = -1;
 	private FreebaseApi freebApi;
-	private WikipediaApiInterface wikiApi;
+	private WikipediaInterface wikiApi;
 
 	/**
 	 * @param url
@@ -68,7 +68,7 @@ public class ERDSystem implements C2WSystem {
 	 *            an API to Wikipedia.
 	 */
 	public ERDSystem(String url, String run, String name, FreebaseApi freebApi,
-			WikipediaApiInterface wikiApi) {
+			WikipediaInterface wikiApi) {
 		this.url = url;
 		this.name = name;
 		this.run = run;

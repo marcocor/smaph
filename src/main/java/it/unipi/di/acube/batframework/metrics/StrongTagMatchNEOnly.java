@@ -6,15 +6,15 @@ import java.util.List;
 import java.util.Vector;
 
 import it.unipi.di.acube.batframework.data.Tag;
-import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
+import it.unipi.di.acube.batframework.utils.WikipediaInterface;
 import it.unipi.di.acube.smaph.datasets.wikitofreebase.WikipediaToFreebase;
 import it.unipi.di.acube.smaph.main.ERDDatasetFilter;
 
 public class StrongTagMatchNEOnly extends StrongTagMatch {
-	private WikipediaApiInterface api;
+	private WikipediaInterface api;
 	private WikipediaToFreebase w2f;
 
-	public StrongTagMatchNEOnly(WikipediaApiInterface api, WikipediaToFreebase w2f) {
+	public StrongTagMatchNEOnly(WikipediaInterface api, WikipediaToFreebase w2f) {
 		super(api);
 		this.api = api;
 		this.w2f = w2f;

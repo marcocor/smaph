@@ -9,7 +9,7 @@ import it.unipi.di.acube.batframework.metrics.StrongAnnotationMatch;
 import it.unipi.di.acube.batframework.metrics.StrongTagMatch;
 import it.unipi.di.acube.batframework.utils.Pair;
 import it.unipi.di.acube.batframework.utils.ProblemReduction;
-import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
+import it.unipi.di.acube.batframework.utils.WikipediaInterface;
 import it.unipi.di.acube.smaph.linkback.IndividualAnnotationLinkBack;
 
 import java.io.IOException;
@@ -33,7 +33,7 @@ public abstract class SolutionComputer <T extends Serializable, G extends Object
 	public static class TagSetSolutionComputer extends SolutionComputer<Tag, HashSet<Tag>>{
 		private StrongTagMatch stm;
 			
-		public  TagSetSolutionComputer(WikipediaApiInterface wikiApi){
+		public  TagSetSolutionComputer(WikipediaInterface wikiApi){
 			stm = new StrongTagMatch(wikiApi);
 		}
 		
@@ -70,7 +70,7 @@ public abstract class SolutionComputer <T extends Serializable, G extends Object
 		private double threshold;
 		private MatchRelation<Annotation> am;
 			
-		public  AnnotationSetSolutionComputer(WikipediaApiInterface wikiApi, double threshold){
+		public  AnnotationSetSolutionComputer(WikipediaInterface wikiApi, double threshold){
 			this.threshold = threshold;
 			this.am = new StrongAnnotationMatch(wikiApi);
 		}
@@ -109,7 +109,7 @@ public abstract class SolutionComputer <T extends Serializable, G extends Object
 	public static class BindingSolutionComputer extends SolutionComputer<HashSet<Annotation>, HashSet<Annotation>> {
 		private MatchRelation<Annotation> sam;
 
-		public  BindingSolutionComputer(WikipediaApiInterface wikiApi){
+		public  BindingSolutionComputer(WikipediaInterface wikiApi){
 			this.sam = new StrongAnnotationMatch(wikiApi);
 		}
 		

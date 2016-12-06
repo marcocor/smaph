@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
 
 import it.unipi.di.acube.batframework.data.ScoredAnnotation;
 import it.unipi.di.acube.batframework.problems.Sa2WSystem;
-import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
+import it.unipi.di.acube.batframework.utils.WikipediaInterface;
 import it.unipi.di.acube.smaph.SmaphAnnotator;
 import it.unipi.di.acube.smaph.SmaphBuilder;
 import it.unipi.di.acube.smaph.SmaphBuilder.SmaphVersion;
@@ -62,7 +62,7 @@ public class SmaphServlet {
 	@Produces({ MediaType.APPLICATION_JSON })
 	public Response debugSmaph(@QueryParam("Text") String text, @QueryParam("google-cse-id") String cseId,
 	        @QueryParam("google-api-key") String apiKey) {
-		WikipediaApiInterface wikiApi = (WikipediaApiInterface) context.getAttribute("wikipedia-api");
+		WikipediaInterface wikiApi = (WikipediaInterface) context.getAttribute("wikipedia-api");
 		SmaphDebugger debugger = new SmaphDebugger();
 		SmaphConfig c = getSmaphConfig(cseId, apiKey);
 		getAnnotatorByName("default", false, c).solveSa2W(text, debugger);
@@ -111,7 +111,7 @@ public class SmaphServlet {
 	}
 
 	private SmaphAnnotator getAnnotatorByName(String annotator, boolean excludeS2, SmaphConfig c) {
-		WikipediaApiInterface wikiApi = (WikipediaApiInterface) context.getAttribute("wikipedia-api");
+		WikipediaInterface wikiApi = (WikipediaInterface) context.getAttribute("wikipedia-api");
 		WikipediaToFreebase wikiToFreebase = (WikipediaToFreebase) context.getAttribute("wiki-to-freebase");
 		try {
 			switch (annotator) {
@@ -131,7 +131,7 @@ public class SmaphServlet {
 	}
 
 	private String encodeResponseNif(String request, Sa2WSystem ann) {
-		WikipediaApiInterface wikiApi = (WikipediaApiInterface) context.getAttribute("wikipedia-api");
+		WikipediaInterface wikiApi = (WikipediaInterface) context.getAttribute("wikipedia-api");
 		TurtleNIFDocumentCreator creator = (TurtleNIFDocumentCreator) context.getAttribute("nif-creator");
 		TurtleNIFDocumentParser parser = (TurtleNIFDocumentParser) context.getAttribute("nif-parser");
 		Document doc;
@@ -154,7 +154,7 @@ public class SmaphServlet {
 	}
 
 	private String encodeResponseJson(HashSet<ScoredAnnotation> annotations) {
-		WikipediaApiInterface wikiApi = (WikipediaApiInterface) context.getAttribute("wikipedia-api");
+		WikipediaInterface wikiApi = (WikipediaInterface) context.getAttribute("wikipedia-api");
 		JSONObject res = new JSONObject();
 
 		try {
@@ -184,7 +184,7 @@ public class SmaphServlet {
 	}
 
 	public List<Annotation> annotatePure(String query, String textID, Sa2WSystem annotator) {
-		WikipediaApiInterface wikiApi = (WikipediaApiInterface) context.getAttribute("wikipedia-api");
+		WikipediaInterface wikiApi = (WikipediaInterface) context.getAttribute("wikipedia-api");
 		WikipediaToFreebase wikiToFreeb = (WikipediaToFreebase) context.getAttribute("wiki-to-freebase");
 
 		List<Annotation> annotations = new ArrayList<Annotation>();
@@ -215,7 +215,7 @@ public class SmaphServlet {
 	}
 
 	private String encodeResponseERD(String query, String textID, SmaphAnnotator annotator) {
-		WikipediaApiInterface wikiApi = (WikipediaApiInterface) context.getAttribute("wikipedia-api");
+		WikipediaInterface wikiApi = (WikipediaInterface) context.getAttribute("wikipedia-api");
 		WikipediaToFreebase wikiToFreeb = (WikipediaToFreebase) context.getAttribute("wiki-to-freebase");
 
 		List<Annotation> annotations = new ArrayList<Annotation>();

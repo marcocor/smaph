@@ -4,7 +4,7 @@ import it.unipi.di.acube.batframework.data.Annotation;
 import it.unipi.di.acube.batframework.data.ScoredAnnotation;
 import it.unipi.di.acube.batframework.data.Tag;
 import it.unipi.di.acube.batframework.utils.Pair;
-import it.unipi.di.acube.batframework.utils.WikipediaApiInterface;
+import it.unipi.di.acube.batframework.utils.WikipediaInterface;
 import it.unipi.di.acube.smaph.QueryInformation;
 import it.unipi.di.acube.smaph.SmaphDebugger;
 import it.unipi.di.acube.smaph.SmaphUtils;
@@ -22,12 +22,12 @@ import java.util.Vector;
 public class IndividualAnnotationLinkBack implements LinkBack {
 	private AnnotationRegressor ar;
 	private FeatureNormalizer annFn;
-	private WikipediaApiInterface wikiApi;
+	private WikipediaInterface wikiApi;
 	private double threshold;
 	private WikipediaToFreebase w2f;
 
 	public IndividualAnnotationLinkBack(AnnotationRegressor ar,
-			FeatureNormalizer annFn, WikipediaApiInterface wikiApi,
+			FeatureNormalizer annFn, WikipediaInterface wikiApi,
 			double threshold, WikipediaToFreebase w2f) {
 		this.ar = ar;
 		this.annFn = annFn;
