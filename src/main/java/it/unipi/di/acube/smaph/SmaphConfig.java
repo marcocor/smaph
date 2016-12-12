@@ -35,9 +35,11 @@ public class SmaphConfig {
 	private String defaultGoogleCseId;
 	private String defaultBingKey;
 	private String defaultWebsearchCache;
+	private String defaultWikipagesStorage;
 
 	public SmaphConfig(String defaultStands4UserId, String defaultStands4Cache, String defaultStands4TokenId,
-	        String defaultGoogleApiKey, String defaultGoogleCseId, String defaultBingKey, String defaultWebsearchCache) {
+	        String defaultGoogleApiKey, String defaultGoogleCseId, String defaultBingKey, String defaultWebsearchCache,
+	        String defaultWikipagesStorage) {
 		this.defaultStands4UserId = defaultStands4UserId;
 		this.defaultStands4Cache = defaultStands4Cache;
 		this.defaultStands4TokenId = defaultStands4TokenId;
@@ -45,6 +47,7 @@ public class SmaphConfig {
 		this.defaultGoogleCseId = defaultGoogleCseId;
 		this.defaultBingKey = defaultBingKey;
 		this.defaultWebsearchCache = defaultWebsearchCache;
+		this.defaultWikipagesStorage = defaultWikipagesStorage;
 	}
 
 	/**
@@ -90,7 +93,7 @@ public class SmaphConfig {
 			return new SmaphConfig(getConfigValue("stands4", "uid", doc), getConfigValue("stands4", "cache", doc),
 			        getConfigValue("stands4", "tokenid", doc), getConfigValue("google-cse", "api-key", doc),
 			        getConfigValue("google-cse", "cse-id", doc), getConfigValue("bing", "key", doc),
-			        getConfigValue("cache", "websearch-cache", doc));
+			        getConfigValue("cache", "websearch-cache", doc), getConfigValue("wikipages", "storage", doc));
 		} catch (Exception e) {
 			e.printStackTrace();
 			throw new RuntimeException(e);
@@ -118,6 +121,10 @@ public class SmaphConfig {
 
 	public String getDefaultStands4Cache() {
 		return defaultStands4Cache;
+	}
+
+	public String getDefaultWikipagesStorage() {
+		return defaultWikipagesStorage;
 	}
 
 }

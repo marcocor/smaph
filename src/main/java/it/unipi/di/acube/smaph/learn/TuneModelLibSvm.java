@@ -126,7 +126,7 @@ public class TuneModelLibSvm {
 		SmaphConfig c = SmaphConfig.fromConfigFile("smaph-config.xml");
 		CachedWATAnnotator.setCache("wikisense.cache");
 		WATRelatednessComputer.setCache("relatedness.cache");
-		wikiApi = WikipediaLocalInterface.open("mapdb/wikipedia_pages.mapdb");
+		wikiApi = WikipediaLocalInterface.open(c.getDefaultWikipagesStorage());
 		w2f = WikipediaToFreebase.getDefault();
 
 		OptDataset opt = OptDataset.SMAPH_DATASET;
@@ -155,7 +155,8 @@ public class TuneModelLibSvm {
 						File modelFile = SmaphBuilder.getModelFile(SmaphVersion.ENTITY_FILTER, ws, topKS1i, topKS2i, topKS3i);
 						File normFile = SmaphBuilder.getZscoreNormalizerFile(SmaphVersion.ENTITY_FILTER, ws, topKS1i, topKS2i, topKS3i);
 						SmaphAnnotator smaphGatherer = SmaphBuilder
-						        .getSmaphGatherer(wikiApi, w2f, true, topKS1i, true, topKS2i, true, topKS3i, ws, c).appendName(label);
+						        .getSmaphGatherer(wikiApi, w2f, true, topKS1i, true, topKS2i, true, topKS3i, ws, c)
+						        .appendName("-" +label);
 						Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult> modelAndStats = trainIterativeEF(
 						        smaphGatherer, opt, OptimizaionProfiles.MAXIMIZE_MACRO_F1, -1.0, ftrSelMethod,
 						        ftrRestriction, initialFtrSet, modelFile, normFile);
@@ -177,7 +178,8 @@ public class TuneModelLibSvm {
 						File normFile = SmaphBuilder.getZscoreNormalizerFile(SmaphVersion.ANNOTATION_REGRESSOR, ws, topKS1i,
 						        topKS2i, topKS3i);
 						SmaphAnnotator smaphGatherer = SmaphBuilder
-						        .getSmaphGatherer(wikiApi, w2f, true, topKS1i, true, topKS2i, true, topKS3i, ws, c).appendName(label);
+						        .getSmaphGatherer(wikiApi, w2f, true, topKS1i, true, topKS2i, true, topKS3i, ws, c)
+						        .appendName("-" + label);
 						Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult> modelAndStats = trainIterativeAR(
 						        smaphGatherer, opt, OptimizaionProfiles.MAXIMIZE_MACRO_F1, -1.0, ftrSelMethod,
 						        ftrRestriction, initialFtrSet, modelFile, normFile);

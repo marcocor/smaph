@@ -116,22 +116,22 @@ public class GenerateTrainingAndTest {
 			if (opt == OptDataset.ERD_CHALLENGE) {
 
 				boolean keepNEOnly = true;
-				A2WDataset smaphTrainA = new ERDDatasetFilter(DatasetBuilder.getGerdaqTrainA(), wikiApi, w2f);
+				A2WDataset smaphTrainA = new ERDDatasetFilter(DatasetBuilder.getGerdaqTrainA(wikiApi), wikiApi, w2f);
 				gatherExamples(smaph, smaphTrainA,
 						trainEntityFilterGatherer, trainLinkBackCollectiveGatherer,
 						trainIndividualAdvancedAnnotationGatherer, keepNEOnly);
 
-				A2WDataset smaphTrainB = new ERDDatasetFilter(DatasetBuilder.getGerdaqTrainB(), wikiApi, w2f);
+				A2WDataset smaphTrainB = new ERDDatasetFilter(DatasetBuilder.getGerdaqTrainB(wikiApi), wikiApi, w2f);
 				gatherExamples(smaph, smaphTrainB,
 						trainEntityFilterGatherer, trainLinkBackCollectiveGatherer,
 						trainIndividualAdvancedAnnotationGatherer, keepNEOnly);
 
-				A2WDataset smaphTest = new ERDDatasetFilter(DatasetBuilder.getGerdaqTest(), wikiApi, w2f);
+				A2WDataset smaphTest = new ERDDatasetFilter(DatasetBuilder.getGerdaqTest(wikiApi), wikiApi, w2f);
 				gatherExamples(smaph, smaphTest,
 						trainEntityFilterGatherer, trainLinkBackCollectiveGatherer,
 						trainIndividualAdvancedAnnotationGatherer, keepNEOnly);
 
-				A2WDataset smaphDevel = new ERDDatasetFilter(DatasetBuilder.getGerdaqDevel(), wikiApi, w2f);
+				A2WDataset smaphDevel = new ERDDatasetFilter(DatasetBuilder.getGerdaqDevel(wikiApi), wikiApi, w2f);
 				gatherExamples(smaph, smaphDevel,
 						trainEntityFilterGatherer, trainLinkBackCollectiveGatherer,
 						trainIndividualAdvancedAnnotationGatherer, keepNEOnly);
@@ -153,12 +153,12 @@ public class GenerateTrainingAndTest {
 
 			} else if (opt == OptDataset.SMAPH_DATASET) {
 				boolean keepNEOnly = false;
-				A2WDataset smaphTrainA = DatasetBuilder.getGerdaqTrainA();
+				A2WDataset smaphTrainA = DatasetBuilder.getGerdaqTrainA(wikiApi);
 				gatherExamples(smaph, smaphTrainA,
 						trainEntityFilterGatherer, trainLinkBackCollectiveGatherer,
 						trainIndividualAdvancedAnnotationGatherer, keepNEOnly);
 
-				A2WDataset smaphTrainB = DatasetBuilder.getGerdaqTrainB();
+				A2WDataset smaphTrainB = DatasetBuilder.getGerdaqTrainB(wikiApi);
 				gatherExamples(smaph, smaphTrainB,
 						trainEntityFilterGatherer, trainLinkBackCollectiveGatherer,
 						trainIndividualAdvancedAnnotationGatherer, keepNEOnly);
@@ -172,7 +172,7 @@ public class GenerateTrainingAndTest {
 		if (develEntityFilterGatherer != null || develLinkBackCollectiveGatherer != null|| develIndividualAdvancedAnnotationGatherer != null) {
 			if (opt == OptDataset.ERD_CHALLENGE) {
 				boolean keepNEOnly = true;
-				A2WDataset smaphDevel = new ERDDatasetFilter(DatasetBuilder.getGerdaqDevel(), wikiApi, w2f);
+				A2WDataset smaphDevel = new ERDDatasetFilter(DatasetBuilder.getGerdaqDevel(wikiApi), wikiApi, w2f);
 				gatherExamples(smaph, smaphDevel,
 						develEntityFilterGatherer,
 						develLinkBackCollectiveGatherer,
@@ -184,7 +184,7 @@ public class GenerateTrainingAndTest {
 			}
 			else if (opt == OptDataset.SMAPH_DATASET){
 				boolean keepNEOnly = false;
-				A2WDataset smaphDevel = DatasetBuilder.getGerdaqDevel();
+				A2WDataset smaphDevel = DatasetBuilder.getGerdaqDevel(wikiApi);
 				gatherExamples(smaph, smaphDevel,
 						develEntityFilterGatherer, develLinkBackCollectiveGatherer,
 						develIndividualAdvancedAnnotationGatherer,  keepNEOnly);

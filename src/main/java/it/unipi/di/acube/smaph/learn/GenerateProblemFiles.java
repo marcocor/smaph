@@ -80,7 +80,7 @@ public class GenerateProblemFiles {
 
 		Locale.setDefault(Locale.US);
 		SmaphConfig c = SmaphConfig.fromConfigFile("smaph-config.xml");
-		wikiApi = WikipediaLocalInterface.open("mapdb/wikipedia_pages.mapdb");
+		wikiApi = WikipediaLocalInterface.open(c.getDefaultWikipagesStorage());
 		wikiToFreeb = WikipediaToFreebase.getDefault();
 		WATRelatednessComputer.setCache("relatedness.cache");
 		CachedWATAnnotator.setCache("wikisense.cache");

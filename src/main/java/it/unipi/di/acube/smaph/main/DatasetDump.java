@@ -2,6 +2,8 @@ package it.unipi.di.acube.smaph.main;
 
 import it.unipi.di.acube.batframework.datasetPlugins.DatasetBuilder;
 import it.unipi.di.acube.batframework.problems.A2WDataset;
+import it.unipi.di.acube.batframework.utils.WikipediaInterface;
+import it.unipi.di.acube.batframework.utils.WikipediaLocalInterface;
 import it.unipi.di.acube.smaph.SmaphConfig;
 import it.unipi.di.acube.smaph.SmaphUtils;
 import it.unipi.di.acube.smaph.abbreviations.Stands4AbbreviationExpansion;
@@ -27,10 +29,11 @@ public class DatasetDump {
 		Stands4AbbreviationExpansion.setCache(cache);
 
 		{
-			A2WDataset ds1 = DatasetBuilder.getGerdaqTrainA();
-			A2WDataset ds2 = DatasetBuilder.getGerdaqTrainB();
-			A2WDataset ds3 = DatasetBuilder.getGerdaqTest();
-			A2WDataset ds4 = DatasetBuilder.getGerdaqDevel();
+			WikipediaInterface wikiApi = WikipediaLocalInterface.open(c.getDefaultWikipagesStorage());
+			A2WDataset ds1 = DatasetBuilder.getGerdaqTrainA(wikiApi);
+			A2WDataset ds2 = DatasetBuilder.getGerdaqTrainB(wikiApi);
+			A2WDataset ds3 = DatasetBuilder.getGerdaqTest(wikiApi);
+			A2WDataset ds4 = DatasetBuilder.getGerdaqDevel(wikiApi);
 			
 			HashSet<String> insertedKeys = new HashSet<>();
 			FileWriter fw = new FileWriter("abbrev.json");

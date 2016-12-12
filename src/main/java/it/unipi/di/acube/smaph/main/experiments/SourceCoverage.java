@@ -38,16 +38,17 @@ public class SourceCoverage {
 
 		java.security.Security.setProperty("networkaddress.cache.ttl", "0");
 		Locale.setDefault(LOCALE);
-		WikipediaInterface wikiApi = WikipediaLocalInterface.open("mapdb/wikipedia_pages.mapdb");
+
+		SmaphConfig c = SmaphConfig.fromConfigFile("smaph-config.xml");
+		WikipediaInterface wikiApi = WikipediaLocalInterface.open(c.getDefaultWikipagesStorage());
 		WikipediaToFreebase w2f = WikipediaToFreebase.getDefault();
 		WATRelatednessComputer.setCache("relatedness.cache");
-		A2WDataset ds = DatasetBuilder.getGerdaqDevel();
+		A2WDataset ds = DatasetBuilder.getGerdaqDevel(wikiApi);
 		CachedWATAnnotator.setCache("wikisense.cache");
 
 		System.out.println("Printing basic information about dataset " + ds.getName());
 		TestDataset.dumpInfo(ds, wikiApi);
 
-		SmaphConfig c = SmaphConfig.fromConfigFile("smaph-config.xml");
 		SmaphBuilder.Websearch ws = SmaphBuilder.websearchFromString(line.getOptionValue("websearch-piggyback"));
 		String wsStr = ws.toString();
 		List<C2WSystem> annotators = new Vector<C2WSystem>();
