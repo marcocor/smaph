@@ -36,22 +36,24 @@ public class CollectiveLinkBack implements LinkBack {
 	private FeatureNormalizer brFn;
 	private SmaphDebugger debugger;
 	private WikipediaToFreebase w2f;
+	private EntityToAnchors e2a;
 
-	public CollectiveLinkBack(WikipediaInterface wikiApi, WikipediaToFreebase w2f, BindingGenerator bg, BindingRegressor lbReg,
-	        FeatureNormalizer brFn) throws IOException {
+	public CollectiveLinkBack(WikipediaInterface wikiApi, WikipediaToFreebase w2f, EntityToAnchors e2a, BindingGenerator bg,
+	        BindingRegressor lbReg, FeatureNormalizer brFn) throws IOException {
 		this.bindingRegressorModel = lbReg;
 		this.wikiApi = wikiApi;
 		this.bg = bg;
 		this.brFn = brFn;
 		this.w2f = w2f;
+		this.e2a = e2a;
 	}
 	
 	public static List<Pair<HashSet<Annotation>, BindingFeaturePack>> getBindingFeaturePacks(String query,
 	        Set<Tag> acceptedEntities, QueryInformation qi, BindingGenerator bg, WikipediaInterface wikiApi,
-	        WikipediaToFreebase w2f, SmaphDebugger debugger) {
+	        WikipediaToFreebase w2f, EntityToAnchors e2a, SmaphDebugger debugger) {
 		List<Pair<HashSet<Annotation>,BindingFeaturePack>> featurePacks = new Vector<>();
 		//TODO: don't like.
-		acceptedEntities = acceptedEntities.stream().filter(e -> EntityToAnchors.e2a().containsId(e.getConcept())).collect(Collectors.toCollection(HashSet::new));
+		acceptedEntities = acceptedEntities.stream().filter(e -> e2a.containsId(e.getConcept())).collect(Collectors.toCollection(HashSet::new));
 		
 		// Generate all possible bindings
 		LOG.info("Generating bindings.");
@@ -73,7 +75,7 @@ public class CollectiveLinkBack implements LinkBack {
 			HashMap<Annotation, HashMap<String, Double>> debugAnnotationFeatures = new HashMap<>();
 			HashMap<String, Double> debugBindingFeatures = new HashMap<>();
 			BindingFeaturePack features = new BindingFeaturePack(binding, query,
-					qi, wikiApi, w2f, debugAnnotationFeatures, debugBindingFeatures);
+					qi, wikiApi, w2f, e2a, debugAnnotationFeatures, debugBindingFeatures);
 			featurePacks.add(new Pair<HashSet<Annotation>, BindingFeaturePack>(binding, features));
 			if (debugger != null)
 				debugger.addLinkbackBindingFeatures(query, binding, debugAnnotationFeatures, debugBindingFeatures);
@@ -92,7 +94,8 @@ public class CollectiveLinkBack implements LinkBack {
 		HashSet<Annotation> bestBinding = null;
 		double bestScore = Double.NEGATIVE_INFINITY;
 		
-		List<Pair<HashSet<Annotation>, BindingFeaturePack>> bindingFeaturePacks = getBindingFeaturePacks(query, acceptedEntities, qi, bg, wikiApi, w2f, debugger);
+		List<Pair<HashSet<Annotation>, BindingFeaturePack>> bindingFeaturePacks = getBindingFeaturePacks(query, acceptedEntities,
+		        qi, bg, wikiApi, w2f, e2a, debugger);
 		List<FeaturePack<HashSet<Annotation>>> packs = new Vector<>();
 		for (Pair<HashSet<Annotation>, BindingFeaturePack> bindingAndFeatures: bindingFeaturePacks)
 			packs.add(bindingAndFeatures.second);

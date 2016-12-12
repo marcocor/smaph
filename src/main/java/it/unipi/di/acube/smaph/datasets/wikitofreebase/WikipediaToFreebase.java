@@ -31,7 +31,6 @@
  */
 package it.unipi.di.acube.smaph.datasets.wikitofreebase;
 
-import java.io.File;
 import java.util.Map;
 
 import org.mapdb.DB;
@@ -44,21 +43,15 @@ import org.mapdb.Serializer;
  *         Created on Mar 15, 2014
  */
 public class WikipediaToFreebase {
-	private static WikipediaToFreebase wikiToFreebase;
-
 	private Map<String, String> map;
 	private Map<String, String> labels;
 
-	public static WikipediaToFreebase getDefault() {
-		if (wikiToFreebase == null)
-			wikiToFreebase = new WikipediaToFreebase("mapdb");
-		return wikiToFreebase;
+	public static WikipediaToFreebase open(String file) {
+		return new WikipediaToFreebase(file);
 	}
-	
-	public WikipediaToFreebase(String folder) {
-		File dir = new File(folder);
-		File mapfile = new File(dir, "freebase.db");
-		DB db = DBMaker.fileDB(mapfile).fileMmapEnable().readOnly().closeOnJvmShutdown().make();
+
+	private WikipediaToFreebase(String file) {
+		DB db = DBMaker.fileDB(file).fileMmapEnable().readOnly().closeOnJvmShutdown().make();
 		map = db.hashMap("index", Serializer.STRING, Serializer.STRING).createOrOpen();
 		labels = db.hashMap("label", Serializer.STRING, Serializer.STRING).createOrOpen();
 	}
@@ -85,7 +78,7 @@ public class WikipediaToFreebase {
 	}
 
 	public static void main(String[] args) {
-		WikipediaToFreebase w2f = new WikipediaToFreebase("mapdb");
+		WikipediaToFreebase w2f = new WikipediaToFreebase("mapdb/freebase.db");
 		System.out.println(w2f.getFreebaseId("Diego_Maradona"));
 		System.out.println(w2f.getLabel("Diego_Maradona"));
 		System.out.println(w2f.getFreebaseId("East Ridge High School (Minnesota)"));

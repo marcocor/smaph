@@ -28,8 +28,7 @@ import org.slf4j.LoggerFactory;
 
 public class EntityToAnchors {
 	public static final String DEFAULT_INPUT = "./data/anchors.tsv";
-	public static final String DATASET_FILENAME = "./mapdb/e2a_dataset";
-	private static EntityToAnchors e2a;
+	public static final String DATASET_FILENAME = "./mapdb/e2a.db";
 
 	private DB db;
 	/**
@@ -59,9 +58,9 @@ public class EntityToAnchors {
 	
 	private static Logger logger = LoggerFactory.getLogger(EntityToAnchors.class.getName());
 
-	private static EntityToAnchors fromDB() {
+	public static EntityToAnchors fromDB(String datasetFilename) {
 		logger.info("Opening E2A database.");
-		DB db = DBMaker.fileDB(DATASET_FILENAME).fileMmapEnable().closeOnJvmShutdown().make();
+		DB db = DBMaker.fileDB(datasetFilename).fileMmapEnable().readOnly().closeOnJvmShutdown().make();
 		EntityToAnchors e2a = new EntityToAnchors(db);
 		logger.info("Loading E2A database done.");
 		return e2a;
@@ -76,12 +75,6 @@ public class EntityToAnchors {
 		anchorToOccurrences = db.hashMap("anchorToOccurrences", Serializer.INTEGER, Serializer.INTEGER).createOrOpen();
 	}
 
-	public static EntityToAnchors e2a() {
-		if (e2a == null)
-				e2a = fromDB();
-		return e2a;
-	}
-	
 	private static void createDB(String file) throws FileNotFoundException,
 			IOException {
 		

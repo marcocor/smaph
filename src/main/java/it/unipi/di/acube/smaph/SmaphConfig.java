@@ -36,10 +36,12 @@ public class SmaphConfig {
 	private String defaultBingKey;
 	private String defaultWebsearchCache;
 	private String defaultWikipagesStorage;
+	private String defaultEntityToAnchorsStorage;
+	private String defaultWikipediaToFreebaseStorage;
 
 	public SmaphConfig(String defaultStands4UserId, String defaultStands4Cache, String defaultStands4TokenId,
 	        String defaultGoogleApiKey, String defaultGoogleCseId, String defaultBingKey, String defaultWebsearchCache,
-	        String defaultWikipagesStorage) {
+	        String defaultWikipagesStorage, String defaultEntityToAnchorsStorage, String defaultWikipediaToFreebaseStorage) {
 		this.defaultStands4UserId = defaultStands4UserId;
 		this.defaultStands4Cache = defaultStands4Cache;
 		this.defaultStands4TokenId = defaultStands4TokenId;
@@ -48,6 +50,8 @@ public class SmaphConfig {
 		this.defaultBingKey = defaultBingKey;
 		this.defaultWebsearchCache = defaultWebsearchCache;
 		this.defaultWikipagesStorage = defaultWikipagesStorage;
+		this.defaultEntityToAnchorsStorage = defaultEntityToAnchorsStorage;
+		this.defaultWikipediaToFreebaseStorage = defaultWikipediaToFreebaseStorage;
 	}
 
 	/**
@@ -93,7 +97,8 @@ public class SmaphConfig {
 			return new SmaphConfig(getConfigValue("stands4", "uid", doc), getConfigValue("stands4", "cache", doc),
 			        getConfigValue("stands4", "tokenid", doc), getConfigValue("google-cse", "api-key", doc),
 			        getConfigValue("google-cse", "cse-id", doc), getConfigValue("bing", "key", doc),
-			        getConfigValue("cache", "websearch-cache", doc), getConfigValue("wikipages", "storage", doc));
+			        getConfigValue("cache", "websearch-cache", doc), getConfigValue("wikipages", "storage", doc),
+			        getConfigValue("entity-to-anchors", "storage", doc), getConfigValue("wikipedia-to-freebase", "storage", doc));
 		} catch (Exception e) {
 			e.printStackTrace();
 			throw new RuntimeException(e);
@@ -125,6 +130,14 @@ public class SmaphConfig {
 
 	public String getDefaultWikipagesStorage() {
 		return defaultWikipagesStorage;
+	}
+
+	public String getDefaultEntityToAnchorsStorage() {
+		return defaultEntityToAnchorsStorage;
+	}
+
+	public String getDefaultWikipediaToFreebaseStorage() {
+		return defaultWikipediaToFreebaseStorage;
 	}
 
 }

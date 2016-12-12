@@ -8,6 +8,7 @@ import it.unipi.di.acube.batframework.utils.WikipediaInterface;
 import it.unipi.di.acube.smaph.QueryInformation;
 import it.unipi.di.acube.smaph.SmaphDebugger;
 import it.unipi.di.acube.smaph.SmaphUtils;
+import it.unipi.di.acube.smaph.datasets.wikiAnchors.EntityToAnchors;
 import it.unipi.di.acube.smaph.datasets.wikitofreebase.WikipediaToFreebase;
 import it.unipi.di.acube.smaph.learn.featurePacks.AnnotationFeaturePack;
 import it.unipi.di.acube.smaph.learn.models.linkback.annotationRegressor.AnnotationRegressor;
@@ -25,15 +26,17 @@ public class IndividualAnnotationLinkBack implements LinkBack {
 	private WikipediaInterface wikiApi;
 	private double threshold;
 	private WikipediaToFreebase w2f;
+	private EntityToAnchors e2a;
 
 	public IndividualAnnotationLinkBack(AnnotationRegressor ar,
 			FeatureNormalizer annFn, WikipediaInterface wikiApi,
-			double threshold, WikipediaToFreebase w2f) {
+			double threshold, WikipediaToFreebase w2f, EntityToAnchors e2a) {
 		this.ar = ar;
 		this.annFn = annFn;
 		this.wikiApi = wikiApi;
 		this.threshold = threshold;
 		this.w2f = w2f;
+		this.e2a = e2a;
 	}
 
 	private static List<Annotation> getAnnotations(String query,
@@ -54,7 +57,7 @@ public class IndividualAnnotationLinkBack implements LinkBack {
 		List<Pair<Annotation, Double>> scoreAndAnnotations = new Vector<>();
 		for (Annotation a : getAnnotations(query, acceptedEntities, qi)) {
 			double score = ar.predictScore(
-					new AnnotationFeaturePack(a, query, qi, wikiApi, w2f), annFn);
+					new AnnotationFeaturePack(a, query, qi, wikiApi, w2f, e2a), annFn);
 			scoreAndAnnotations.add(new Pair<Annotation, Double>(a, score));
 		}
 

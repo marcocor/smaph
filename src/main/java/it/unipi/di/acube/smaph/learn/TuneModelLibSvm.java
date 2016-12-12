@@ -52,6 +52,7 @@ import it.unipi.di.acube.smaph.SmaphConfig;
 import it.unipi.di.acube.smaph.SmaphUtils;
 import it.unipi.di.acube.smaph.WATRelatednessComputer;
 import it.unipi.di.acube.smaph.SmaphBuilder.SmaphVersion;
+import it.unipi.di.acube.smaph.datasets.wikiAnchors.EntityToAnchors;
 import it.unipi.di.acube.smaph.datasets.wikitofreebase.WikipediaToFreebase;
 import it.unipi.di.acube.smaph.learn.GenerateTrainingAndTest.OptDataset;
 import it.unipi.di.acube.smaph.learn.ParameterTester.ParameterTesterAR;
@@ -67,6 +68,7 @@ public class TuneModelLibSvm {
 	private static int THREADS_NUM = Runtime.getRuntime().availableProcessors();
 	private static WikipediaInterface wikiApi;
 	private static WikipediaToFreebase w2f;
+	private static EntityToAnchors e2a;
 
 	public enum OptimizaionProfiles {
 		MAXIMIZE_TN, MAXIMIZE_MICRO_F1, MAXIMIZE_MACRO_F1
@@ -127,7 +129,8 @@ public class TuneModelLibSvm {
 		CachedWATAnnotator.setCache("wikisense.cache");
 		WATRelatednessComputer.setCache("relatedness.cache");
 		wikiApi = WikipediaLocalInterface.open(c.getDefaultWikipagesStorage());
-		w2f = WikipediaToFreebase.getDefault();
+		w2f = WikipediaToFreebase.open(c.getDefaultWikipediaToFreebaseStorage());
+		e2a = EntityToAnchors.fromDB(c.getDefaultEntityToAnchorsStorage());
 
 		OptDataset opt = OptDataset.SMAPH_DATASET;
 
@@ -155,11 +158,11 @@ public class TuneModelLibSvm {
 						File modelFile = SmaphBuilder.getModelFile(SmaphVersion.ENTITY_FILTER, ws, topKS1i, topKS2i, topKS3i);
 						File normFile = SmaphBuilder.getZscoreNormalizerFile(SmaphVersion.ENTITY_FILTER, ws, topKS1i, topKS2i, topKS3i);
 						SmaphAnnotator smaphGatherer = SmaphBuilder
-						        .getSmaphGatherer(wikiApi, w2f, true, topKS1i, true, topKS2i, true, topKS3i, ws, c)
-						        .appendName("-" +label);
+						        .getSmaphGatherer(wikiApi, w2f, e2a, true, topKS1i, true, topKS2i, true, topKS3i, ws, c)
+						        .appendName("-" + label);
 						Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult> modelAndStats = trainIterativeEF(
-						        smaphGatherer, opt, OptimizaionProfiles.MAXIMIZE_MACRO_F1, -1.0, ftrSelMethod,
-						        ftrRestriction, initialFtrSet, modelFile, normFile);
+						        smaphGatherer, opt, OptimizaionProfiles.MAXIMIZE_MACRO_F1, -1.0, ftrSelMethod, ftrRestriction,
+						        initialFtrSet, modelFile, normFile);
 						System.gc();
 						for (ModelConfigurationResult res : modelAndStats.first)
 							LOG.info(res.getReadable());
@@ -178,7 +181,7 @@ public class TuneModelLibSvm {
 						File normFile = SmaphBuilder.getZscoreNormalizerFile(SmaphVersion.ANNOTATION_REGRESSOR, ws, topKS1i,
 						        topKS2i, topKS3i);
 						SmaphAnnotator smaphGatherer = SmaphBuilder
-						        .getSmaphGatherer(wikiApi, w2f, true, topKS1i, true, topKS2i, true, topKS3i, ws, c)
+						        .getSmaphGatherer(wikiApi, w2f, e2a, true, topKS1i, true, topKS2i, true, topKS3i, ws, c)
 						        .appendName("-" + label);
 						Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult> modelAndStats = trainIterativeAR(
 						        smaphGatherer, opt, OptimizaionProfiles.MAXIMIZE_MACRO_F1, -1.0, ftrSelMethod,

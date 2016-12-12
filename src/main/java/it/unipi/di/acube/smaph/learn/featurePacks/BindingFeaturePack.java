@@ -6,6 +6,7 @@ import it.unipi.di.acube.batframework.utils.WikipediaInterface;
 import it.unipi.di.acube.smaph.QueryInformation;
 import it.unipi.di.acube.smaph.SmaphUtils;
 import it.unipi.di.acube.smaph.WATRelatednessComputer;
+import it.unipi.di.acube.smaph.datasets.wikiAnchors.EntityToAnchors;
 import it.unipi.di.acube.smaph.datasets.wikitofreebase.WikipediaToFreebase;
 
 import java.util.Arrays;
@@ -22,8 +23,8 @@ public class BindingFeaturePack extends FeaturePack<HashSet<Annotation>> {
 	
 	public BindingFeaturePack(
 			HashSet<Annotation> binding, String query,
-			QueryInformation qi, WikipediaInterface wikiApi, WikipediaToFreebase w2f, HashMap<Annotation, HashMap<String, Double>> debugAnnotationFeatures, HashMap<String, Double> debugBindingFeatures){
-		super(getFeatures(binding, query, qi, wikiApi, w2f, debugAnnotationFeatures, debugBindingFeatures));
+			QueryInformation qi, WikipediaInterface wikiApi, WikipediaToFreebase w2f, EntityToAnchors e2a, HashMap<Annotation, HashMap<String, Double>> debugAnnotationFeatures, HashMap<String, Double> debugBindingFeatures){
+		super(getFeatures(binding, query, qi, wikiApi, w2f, e2a, debugAnnotationFeatures, debugBindingFeatures));
 	}
 
 	public BindingFeaturePack() {
@@ -140,13 +141,13 @@ public class BindingFeaturePack extends FeaturePack<HashSet<Annotation>> {
 	private static HashMap<String, Double> getFeatures(
 			HashSet<Annotation> binding,
 			String query,
-			QueryInformation qi, WikipediaInterface wikiApi, WikipediaToFreebase w2f, HashMap<Annotation, HashMap<String, Double>> debugAnnotationFeatures, HashMap<String, Double> debugBindingFeatures) {
+			QueryInformation qi, WikipediaInterface wikiApi, WikipediaToFreebase w2f, EntityToAnchors e2a, HashMap<Annotation, HashMap<String, Double>> debugAnnotationFeatures, HashMap<String, Double> debugBindingFeatures) {
 		
 		List<HashMap<String, Double>> allAnnotationsFeatures = new Vector<>();
 		
 		for (Annotation ann : binding) {
 			HashMap<String, Double> annFeatures = AnnotationFeaturePack
-					.getFeaturesStatic(ann, query, qi, wikiApi, w2f);
+					.getFeaturesStatic(ann, query, qi, wikiApi, w2f, e2a);
 			allAnnotationsFeatures.add(annFeatures);
 			if (debugAnnotationFeatures != null)
 				debugAnnotationFeatures.put(ann, annFeatures);

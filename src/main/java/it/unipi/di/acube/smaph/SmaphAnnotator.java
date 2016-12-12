@@ -96,6 +96,7 @@ public class SmaphAnnotator implements Sa2WSystem {
 	private double anchorMaxED;
 	private BindingGenerator bg;
 	private WikipediaToFreebase wikiToFreeb;
+	private EntityToAnchors e2a;
 
 	/**
 	 * Constructs a SMAPH annotator.
@@ -124,10 +125,10 @@ public class SmaphAnnotator implements Sa2WSystem {
 	 *            Source 4 results limit.
 	 */
 	public SmaphAnnotator(boolean includeSourceWikiResults, int topKWikiResults, boolean includeSourceWikiSearchResults,
-	        int topKwikiSearch, boolean includeSourceSnippets, int topKSnippets,
-	        double anchorMaxED, boolean tagTitles, LinkBack linkBack, EntityFilter entityFilter,
-	        FeatureNormalizer entityFilterNormalizer, BindingGenerator bg, WATAnnotator snippetAnnotator,
-	        SnippetAnnotationFilter snippetAnnotationFilter, WikipediaInterface wikiApi, WikipediaToFreebase wikiToFreeb, WebsearchApi searchApi) {
+	        int topKwikiSearch, boolean includeSourceSnippets, int topKSnippets, double anchorMaxED, boolean tagTitles,
+	        LinkBack linkBack, EntityFilter entityFilter, FeatureNormalizer entityFilterNormalizer, BindingGenerator bg,
+	        WATAnnotator snippetAnnotator, SnippetAnnotationFilter snippetAnnotationFilter, WikipediaInterface wikiApi,
+	        WikipediaToFreebase wikiToFreeb, WebsearchApi searchApi, EntityToAnchors e2a) {
 		this.entityFilter = entityFilter;
 		this.entityFilterNormalizer = entityFilterNormalizer;
 		this.linkBack = linkBack;
@@ -144,6 +145,7 @@ public class SmaphAnnotator implements Sa2WSystem {
 		this.anchorMaxED = anchorMaxED;
 		this.bg = bg;
 		this.wikiToFreeb = wikiToFreeb;
+		this.e2a = e2a;
 	}
 
 	public void setPredictNEOnly(boolean predictNEonly) {
@@ -745,15 +747,15 @@ public class SmaphAnnotator implements Sa2WSystem {
 
 		List<Triple<Annotation, AnnotationFeaturePack, Boolean>> annAndFtrsAndPresence = new Vector<>();
 		for (Annotation a : AdvancedIndividualLinkback.getAnnotations(query,
-				qi.allCandidates(), anchorMaxED)) {
+				qi.allCandidates(), anchorMaxED, e2a)) {
 			boolean inGold = false;
 			for (Annotation goldAnn : goldStandardAnn)
 				if (annotationMatch.match(goldAnn, a)) {
 					inGold = true;
 					break;
 				}
-			if (EntityToAnchors.e2a().containsId(a.getConcept())) {
-				AnnotationFeaturePack features = new AnnotationFeaturePack(a, query, qi, wikiApi, wikiToFreeb);
+			if (e2a.containsId(a.getConcept())) {
+				AnnotationFeaturePack features = new AnnotationFeaturePack(a, query, qi, wikiApi, wikiToFreeb, e2a);
 				annAndFtrsAndPresence.add(new ImmutableTriple<Annotation, AnnotationFeaturePack, Boolean>(a, features, inGold));
 			} else
 				LOG.warn("No anchors found for id={}", a.getConcept());
@@ -767,7 +769,7 @@ public class SmaphAnnotator implements Sa2WSystem {
 	        Set<Tag> acceptedEntities, SmaphDebugger debugger) {
 
 		Collection<Pair<HashSet<Annotation>, BindingFeaturePack>> bindingAndFeaturePacks = CollectiveLinkBack
-		        .getBindingFeaturePacks(query, acceptedEntities, qi, bg, wikiApi, wikiToFreeb, debugger);
+		        .getBindingFeaturePacks(query, acceptedEntities, qi, bg, wikiApi, wikiToFreeb, e2a, debugger);
 
 		List<Triple<HashSet<Annotation>, BindingFeaturePack, Double>> res = new Vector<>();
 		for (Pair<HashSet<Annotation>, BindingFeaturePack> bindingAndFeaturePack : bindingAndFeaturePacks) {
@@ -828,7 +830,7 @@ public class SmaphAnnotator implements Sa2WSystem {
 	        double maxAnchorEd, SmaphDebugger debugger) throws Exception {
 		QueryInformation qi = getQueryInformation(query, debugger);
 		List<Annotation> candidateAnnotations = AdvancedIndividualLinkback.getAnnotations(query, qi.allCandidates(),
-		        maxAnchorEd);
+		        maxAnchorEd, e2a);
 		StrongAnnotationMatch sam = new StrongAnnotationMatch(wikiApi);
 
 		HashSet<ScoredAnnotation> bestBindingScored = new HashSet<>();

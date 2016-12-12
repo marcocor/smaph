@@ -39,6 +39,7 @@ import it.unipi.di.acube.smaph.SmaphBuilder.SmaphVersion;
 import it.unipi.di.acube.smaph.SmaphConfig;
 import it.unipi.di.acube.smaph.SmaphDebugger;
 import it.unipi.di.acube.smaph.SmaphUtils;
+import it.unipi.di.acube.smaph.datasets.wikiAnchors.EntityToAnchors;
 import it.unipi.di.acube.smaph.datasets.wikitofreebase.Annotation;
 import it.unipi.di.acube.smaph.datasets.wikitofreebase.WikipediaToFreebase;
 
@@ -106,26 +107,27 @@ public class SmaphServlet {
 	}
 
 	private SmaphConfig getSmaphConfig(String cseId, String apiKey) {
-		return new SmaphConfig(null, null, null, apiKey, cseId, null, null, null);
+		return new SmaphConfig(null, null, null, apiKey, cseId, null, null, null, null, null);
 	}
 
 	private SmaphAnnotator getAnnotatorByName(String annotator, SmaphConfig c) {
 		WikipediaInterface wikiApi = (WikipediaInterface) context.getAttribute("wikipedia-api");
 		WikipediaToFreebase wikiToFreebase = (WikipediaToFreebase) context.getAttribute("wiki-to-freebase");
+		EntityToAnchors e2a = (EntityToAnchors) context.getAttribute("entity-to-anchors");
 		try {
 			switch (annotator) {
 			case "default":
 				return SmaphBuilder.getSmaph(DEFAULT_SMAPH_VERSION, wikiApi, wikiToFreebase, SmaphBuilder.DEFAULT_AUX_ANNOTATOR,
-				        c);
+				        e2a, c);
 			case "ef":
 				return SmaphBuilder.getSmaph(SmaphVersion.ENTITY_FILTER, wikiApi, wikiToFreebase,
-				        SmaphBuilder.DEFAULT_AUX_ANNOTATOR, c);
+				        SmaphBuilder.DEFAULT_AUX_ANNOTATOR, e2a, c);
 			case "ar":
 				return SmaphBuilder.getSmaph(SmaphVersion.ANNOTATION_REGRESSOR, wikiApi, wikiToFreebase,
-				        SmaphBuilder.DEFAULT_AUX_ANNOTATOR, c);
+				        SmaphBuilder.DEFAULT_AUX_ANNOTATOR, e2a, c);
 			case "coll":
 				return SmaphBuilder.getSmaph(SmaphVersion.COLLECTIVE, wikiApi, wikiToFreebase, SmaphBuilder.DEFAULT_AUX_ANNOTATOR,
-				        c);
+				        e2a, c);
 			}
 		} catch (ClassNotFoundException | IOException e) {
 			throw new RuntimeException(e);
