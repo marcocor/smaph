@@ -9,7 +9,7 @@
         <servlet-class>org.glassfish.jersey.servlet.ServletContainer</servlet-class>
         <init-param>
             <param-name>jersey.config.server.provider.packages</param-name>
-            <param-value>it.unipi.di.acube.smaph.servlet.rest</param-value>
+            <param-value>it.unipi.di.acube.smaph.servlet</param-value>
         </init-param>
         <init-param>
             <param-name>jersey.config.server.provider.classnames</param-name>
@@ -19,7 +19,7 @@
     </servlet>
 
     <listener>
-        <listener-class>it.unipi.di.acube.smaph.servlet.ContextListener</listener-class>
+        <listener-class>it.unipi.di.acube.smaph.servlet.SmaphContextListener</listener-class>
     </listener>
 
     <servlet-mapping>
