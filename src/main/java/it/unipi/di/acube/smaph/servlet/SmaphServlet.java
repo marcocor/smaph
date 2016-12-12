@@ -36,11 +36,11 @@ import it.unipi.di.acube.batframework.utils.WikipediaInterface;
 import it.unipi.di.acube.smaph.SmaphAnnotator;
 import it.unipi.di.acube.smaph.SmaphBuilder;
 import it.unipi.di.acube.smaph.SmaphBuilder.SmaphVersion;
-import it.unipi.di.acube.smaph.datasets.wikitofreebase.Annotation;
-import it.unipi.di.acube.smaph.datasets.wikitofreebase.WikipediaToFreebase;
 import it.unipi.di.acube.smaph.SmaphConfig;
 import it.unipi.di.acube.smaph.SmaphDebugger;
 import it.unipi.di.acube.smaph.SmaphUtils;
+import it.unipi.di.acube.smaph.datasets.wikitofreebase.Annotation;
+import it.unipi.di.acube.smaph.datasets.wikitofreebase.WikipediaToFreebase;
 
 /**
  * @author Marco Cornolti
@@ -107,7 +107,7 @@ public class SmaphServlet {
 	}
 
 	private SmaphConfig getSmaphConfig(String cseId, String apiKey) {
-		return new SmaphConfig(null, null, null, apiKey, cseId, null, null);
+		return new SmaphConfig(null, null, null, apiKey, cseId, null, null, null);
 	}
 
 	private SmaphAnnotator getAnnotatorByName(String annotator, boolean excludeS2, SmaphConfig c) {
@@ -116,13 +116,17 @@ public class SmaphServlet {
 		try {
 			switch (annotator) {
 			case "default":
-				return SmaphBuilder.getSmaph(DEFAULT_SMAPH_VERSION, wikiApi, wikiToFreebase, c);
+				return SmaphBuilder.getSmaph(DEFAULT_SMAPH_VERSION, wikiApi, wikiToFreebase, SmaphBuilder.DEFAULT_AUX_ANNOTATOR,
+				        c);
 			case "ef":
-				return SmaphBuilder.getSmaph(SmaphVersion.ENTITY_FILTER, wikiApi, wikiToFreebase, c);
+				return SmaphBuilder.getSmaph(SmaphVersion.ENTITY_FILTER, wikiApi, wikiToFreebase,
+				        SmaphBuilder.DEFAULT_AUX_ANNOTATOR, c);
 			case "ar":
-				return SmaphBuilder.getSmaph(SmaphVersion.ANNOTATION_REGRESSOR, wikiApi, wikiToFreebase, c);
+				return SmaphBuilder.getSmaph(SmaphVersion.ANNOTATION_REGRESSOR, wikiApi, wikiToFreebase,
+				        SmaphBuilder.DEFAULT_AUX_ANNOTATOR, c);
 			case "coll":
-				return SmaphBuilder.getSmaph(SmaphVersion.COLLECTIVE, wikiApi, wikiToFreebase, c);
+				return SmaphBuilder.getSmaph(SmaphVersion.COLLECTIVE, wikiApi, wikiToFreebase, SmaphBuilder.DEFAULT_AUX_ANNOTATOR,
+				        c);
 			}
 		} catch (ClassNotFoundException | IOException e) {
 			throw new RuntimeException(e);

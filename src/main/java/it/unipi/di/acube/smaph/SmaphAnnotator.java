@@ -52,7 +52,7 @@ import it.unipi.di.acube.batframework.metrics.StrongAnnotationMatch;
 import it.unipi.di.acube.batframework.metrics.StrongMentionAnnotationMatch;
 import it.unipi.di.acube.batframework.metrics.StrongTagMatch;
 import it.unipi.di.acube.batframework.problems.Sa2WSystem;
-import it.unipi.di.acube.batframework.systemPlugins.CachedWATAnnotator;
+import it.unipi.di.acube.batframework.systemPlugins.WATAnnotator;
 import it.unipi.di.acube.batframework.utils.AnnotationException;
 import it.unipi.di.acube.batframework.utils.Pair;
 import it.unipi.di.acube.batframework.utils.ProblemReduction;
@@ -80,7 +80,7 @@ public class SmaphAnnotator implements Sa2WSystem {
 	private static final Pattern WIKI_URL_PATTERN = Pattern.compile("https?://en.wikipedia.org/wiki/(.+)");
 	private WikipediaInterface wikiApi;
 	private WebsearchApi websearchApi = null;
-	private CachedWATAnnotator snippetAnnotator;
+	private WATAnnotator snippetAnnotator;
 	private EntityFilter entityFilter;
 	private FeatureNormalizer entityFilterNormalizer;
 	private LinkBack linkBack;
@@ -126,7 +126,7 @@ public class SmaphAnnotator implements Sa2WSystem {
 	public SmaphAnnotator(boolean includeSourceWikiResults, int topKWikiResults, boolean includeSourceWikiSearchResults,
 	        int topKwikiSearch, boolean includeSourceSnippets, int topKSnippets,
 	        double anchorMaxED, boolean tagTitles, LinkBack linkBack, EntityFilter entityFilter,
-	        FeatureNormalizer entityFilterNormalizer, BindingGenerator bg, CachedWATAnnotator snippetAnnotator,
+	        FeatureNormalizer entityFilterNormalizer, BindingGenerator bg, WATAnnotator snippetAnnotator,
 	        SnippetAnnotationFilter snippetAnnotationFilter, WikipediaInterface wikiApi, WikipediaToFreebase wikiToFreeb, WebsearchApi searchApi) {
 		this.entityFilter = entityFilter;
 		this.entityFilterNormalizer = entityFilterNormalizer;
@@ -248,7 +248,7 @@ public class SmaphAnnotator implements Sa2WSystem {
 			String title = URLDecoder.decode(matcher.group(1), "utf-8");
 			if (!SmaphUtils.acceptWikipediaTitle(title))
 				return null;
-			return title;
+			return WikipediaInterface.normalize(title);
 
 		} catch (IllegalArgumentException | UnsupportedEncodingException e) {
 			return null;
