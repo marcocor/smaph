@@ -65,7 +65,7 @@ public class SmaphServlet {
 		WikipediaInterface wikiApi = (WikipediaInterface) context.getAttribute("wikipedia-api");
 		SmaphDebugger debugger = new SmaphDebugger();
 		SmaphConfig c = getSmaphConfig(cseId, apiKey);
-		getAnnotatorByName("default", false, c).solveSa2W(text, debugger);
+		getAnnotatorByName("default", c).solveSa2W(text, debugger);
 
 		try {
 			return Response.ok(debugger.toJson(wikiApi).toString()).build();
@@ -78,23 +78,7 @@ public class SmaphServlet {
 	@POST
 	@Path("/annotate-nif")
 	public Response annotateNif(String request, @QueryParam("q") String q,
-	        @QueryParam("annotator") @DefaultValue("default") String annotator, @QueryParam("excludeS2") String excludeS2,
-	        @QueryParam("google-cse-id") String cseId, @QueryParam("google-api-key") String apiKey) {
-		if (q == null)
-			return Response.serverError().entity("Parameter q required.").build();
-		if (cseId == null)
-			return Response.serverError().entity("Parameter google-cse-id required.").build();
-		if (apiKey == null)
-			return Response.serverError().entity("Parameter google-api-key required.").build();
-		SmaphConfig c = getSmaphConfig(cseId, apiKey);
-		return Response.ok(encodeResponseNif(request, getAnnotatorByName(annotator, excludeS2 != null, c))).build();
-	}
-
-	@GET
-	@Path("/annotate")
-	@Produces({ MediaType.APPLICATION_JSON })
-	public Response annotateDefault(@QueryParam("q") String q, @QueryParam("annotator") @DefaultValue("default") String annotator,
-	        @QueryParam("excludeS2") String excludeS2, @QueryParam("google-cse-id") String cseId,
+	        @QueryParam("annotator") @DefaultValue("default") String annotator, @QueryParam("google-cse-id") String cseId,
 	        @QueryParam("google-api-key") String apiKey) {
 		if (q == null)
 			return Response.serverError().entity("Parameter q required.").build();
@@ -103,14 +87,29 @@ public class SmaphServlet {
 		if (apiKey == null)
 			return Response.serverError().entity("Parameter google-api-key required.").build();
 		SmaphConfig c = getSmaphConfig(cseId, apiKey);
-		return Response.ok(encodeResponseJson(getAnnotatorByName(annotator, excludeS2 != null, c).solveSa2W(q))).build();
+		return Response.ok(encodeResponseNif(request, getAnnotatorByName(annotator, c))).build();
+	}
+
+	@GET
+	@Path("/annotate")
+	@Produces({ MediaType.APPLICATION_JSON })
+	public Response annotateDefault(@QueryParam("q") String q, @QueryParam("annotator") @DefaultValue("default") String annotator,
+	        @QueryParam("google-cse-id") String cseId, @QueryParam("google-api-key") String apiKey) {
+		if (q == null)
+			return Response.serverError().entity("Parameter q required.").build();
+		if (cseId == null)
+			return Response.serverError().entity("Parameter google-cse-id required.").build();
+		if (apiKey == null)
+			return Response.serverError().entity("Parameter google-api-key required.").build();
+		SmaphConfig c = getSmaphConfig(cseId, apiKey);
+		return Response.ok(encodeResponseJson(getAnnotatorByName(annotator, c).solveSa2W(q))).build();
 	}
 
 	private SmaphConfig getSmaphConfig(String cseId, String apiKey) {
 		return new SmaphConfig(null, null, null, apiKey, cseId, null, null, null);
 	}
 
-	private SmaphAnnotator getAnnotatorByName(String annotator, boolean excludeS2, SmaphConfig c) {
+	private SmaphAnnotator getAnnotatorByName(String annotator, SmaphConfig c) {
 		WikipediaInterface wikiApi = (WikipediaInterface) context.getAttribute("wikipedia-api");
 		WikipediaToFreebase wikiToFreebase = (WikipediaToFreebase) context.getAttribute("wiki-to-freebase");
 		try {
