@@ -31,7 +31,6 @@
  */
 package it.unipi.di.acube.smaph.datasets.wikitofreebase;
 
-import it.cnr.isti.hpc.cli.AbstractCommandLineInterface;
 import it.cnr.isti.hpc.io.reader.RecordReader;
 import it.cnr.isti.hpc.log.ProgressLogger;
 
