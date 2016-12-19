@@ -5,6 +5,8 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Paths;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.commons.lang.NotImplementedException;
 
@@ -22,7 +24,9 @@ import it.unipi.di.acube.smaph.learn.featurePacks.EntityFeaturePack;
 import it.unipi.di.acube.smaph.learn.models.entityfilters.EntityFilter;
 import it.unipi.di.acube.smaph.learn.models.entityfilters.LibSvmEntityFilter;
 import it.unipi.di.acube.smaph.learn.models.entityfilters.NoEntityFilter;
+import it.unipi.di.acube.smaph.learn.models.linkback.annotationRegressor.AnnotationRegressor;
 import it.unipi.di.acube.smaph.learn.models.linkback.annotationRegressor.LibSvmAnnotationRegressor;
+import it.unipi.di.acube.smaph.learn.models.linkback.bindingRegressor.BindingRegressor;
 import it.unipi.di.acube.smaph.learn.models.linkback.bindingRegressor.RankLibBindingRegressor;
 import it.unipi.di.acube.smaph.learn.normalizer.FeatureNormalizer;
 import it.unipi.di.acube.smaph.learn.normalizer.NoFeatureNormalizer;
@@ -44,6 +48,10 @@ public class SmaphBuilder {
 	        "mw", "0.2", "0.0");
 	public static WebsearchApi BING_WEBSEARCH_API = null;
 	public static WebsearchApi GOOGLE_WEBSEARCH_API = null;
+	private static Map<URL, FeatureNormalizer> urlToNormalizer = new HashMap<>();
+	private static Map<URL, EntityFilter> urlToEntityFilter = new HashMap<>();
+	private static Map<URL, AnnotationRegressor> urlToAnnotationRegressor = new HashMap<>();
+	private static Map<URL, BindingRegressor> urlToBindingRegressor = new HashMap<>();
 	public static final int DEFAULT_NORMALSEARCH_RESULTS = 5;
 	public static final int DEFAULT_WIKISEARCH_RESULTS = 10;
 	public static final int DEFAULT_ANNOTATED_SNIPPETS = 15;
@@ -108,8 +116,8 @@ public class SmaphBuilder {
 	}
 
 	private static SmaphAnnotator getDefaultSmaphParamTopk(WikipediaInterface wikiApi, WikipediaToFreebase wikiToFreeb,
-	        WATAnnotator auxAnnotator, EntityToAnchors e2a, EntityFilter entityFilter, FeatureNormalizer efNorm, LinkBack lb, boolean s1, int topkS1,
-	        boolean s2, int topkS2, boolean s3, int topkS3, Websearch ws, SmaphConfig c)
+	        WATAnnotator auxAnnotator, EntityToAnchors e2a, EntityFilter entityFilter, FeatureNormalizer efNorm, LinkBack lb,
+	        boolean s1, int topkS1, boolean s2, int topkS2, boolean s3, int topkS3, Websearch ws, SmaphConfig c)
 	        throws FileNotFoundException, ClassNotFoundException, IOException {
 		return new SmaphAnnotator(s1, topkS1, s2, topkS2, s3, topkS3, DEFAULT_ANCHOR_MENTION_ED, false, lb, entityFilter, efNorm,
 		        DEFAULT_BINDING_GENERATOR, auxAnnotator, new FrequencyAnnotationFilter(DEFAULT_ANNOTATIONFILTER_RATIO), wikiApi,
@@ -147,20 +155,22 @@ public class SmaphBuilder {
 		SmaphAnnotator a = null;
 		switch (v) {
 		case ANNOTATION_REGRESSOR:
+			AnnotationRegressor ar = getCachedAnnotationRegressor(model);
 			a = getDefaultSmaphParam(wikiApi, wikiToFreeb, auxAnnotator, e2a, new NoEntityFilter(), null,
-			        new AdvancedIndividualLinkback(LibSvmAnnotationRegressor.fromUrl(model),
-			                ZScoreFeatureNormalizer.fromUrl(zscore, new AnnotationFeaturePack()), wikiApi, wikiToFreeb, e2a,
-			                DEFAULT_ANCHOR_MENTION_ED),
+			        new AdvancedIndividualLinkback(ar, ZScoreFeatureNormalizer.fromUrl(zscore, new AnnotationFeaturePack()),
+			                wikiApi, wikiToFreeb, e2a, DEFAULT_ANCHOR_MENTION_ED),
 			        true, includeS2, true, ws, c);
 			break;
 		case ENTITY_FILTER:
-			a = getDefaultSmaphParam(wikiApi, wikiToFreeb, auxAnnotator, e2a, LibSvmEntityFilter.fromUrl(model),
-			        ZScoreFeatureNormalizer.fromUrl(zscore, new EntityFeaturePack()), new DummyLinkBack(), true, includeS2, true,
-			        ws, c);
+			EntityFilter ef = getCachedSvmEntityFilter(model);
+			FeatureNormalizer norm = getCachedFeatureNormalizer(zscore, new EntityFeaturePack());
+			a = getDefaultSmaphParam(wikiApi, wikiToFreeb, auxAnnotator, e2a, ef, norm, new DummyLinkBack(), true, includeS2,
+			        true, ws, c);
 			break;
 		case COLLECTIVE:
+			BindingRegressor bindingRegressor = getCachedBindingRegressor(model);
 			CollectiveLinkBack lb = new CollectiveLinkBack(wikiApi, wikiToFreeb, e2a, new DefaultBindingGenerator(),
-			        RankLibBindingRegressor.fromUrl(model), new NoFeatureNormalizer());
+			        bindingRegressor, new NoFeatureNormalizer());
 			a = getDefaultSmaphParam(wikiApi, wikiToFreeb, auxAnnotator, e2a, new NoEntityFilter(), null, lb, true, includeS2,
 			        true, ws, c);
 			break;
@@ -172,8 +182,33 @@ public class SmaphBuilder {
 		return a;
 	}
 
+	private static AnnotationRegressor getCachedAnnotationRegressor(URL model) {
+		if (!urlToAnnotationRegressor.containsKey(model))
+			urlToAnnotationRegressor.put(model, LibSvmAnnotationRegressor.fromUrl(model));
+		return urlToAnnotationRegressor.get(model);
+	}
+
+	private static EntityFilter getCachedSvmEntityFilter(URL model) throws IOException {
+		if (!urlToEntityFilter.containsKey(model))
+			urlToEntityFilter.put(model, LibSvmEntityFilter.fromUrl(model));
+		return urlToEntityFilter.get(model);
+	}
+
+	private static FeatureNormalizer getCachedFeatureNormalizer(URL zscore, EntityFeaturePack fp) {
+		if (!urlToNormalizer.containsKey(zscore))
+			urlToNormalizer.put(zscore, ZScoreFeatureNormalizer.fromUrl(zscore, fp));
+		return urlToNormalizer.get(zscore);
+	}
+
+	private static BindingRegressor getCachedBindingRegressor(URL model) throws IOException {
+		if (!urlToBindingRegressor.containsKey(model))
+			urlToBindingRegressor.put(model, RankLibBindingRegressor.fromUrl(model));
+		return urlToBindingRegressor.get(model);
+	}
+
 	public static SmaphAnnotator getSmaph(SmaphVersion v, WikipediaInterface wikiApi, WikipediaToFreebase wikiToFreeb,
-	        WATAnnotator auxAnnotator, EntityToAnchors e2a, SmaphConfig c) throws FileNotFoundException, ClassNotFoundException, IOException {
+	        WATAnnotator auxAnnotator, EntityToAnchors e2a, SmaphConfig c)
+	        throws FileNotFoundException, ClassNotFoundException, IOException {
 		return getSmaph(v, wikiApi, wikiToFreeb, auxAnnotator, e2a, false, DEFAULT_WEBSEARCH, c);
 	}
 
