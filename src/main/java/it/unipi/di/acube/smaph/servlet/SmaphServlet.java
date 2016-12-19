@@ -50,7 +50,7 @@ import it.unipi.di.acube.smaph.datasets.wikitofreebase.WikipediaToFreebase;
 @Path("/")
 public class SmaphServlet {
 	private final static Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-	private final static SmaphVersion DEFAULT_SMAPH_VERSION = SmaphBuilder.SmaphVersion.ENTITY_FILTER;
+	private final static SmaphVersion DEFAULT_SMAPH_VERSION = SmaphBuilder.SmaphVersion.ANNOTATION_REGRESSOR;
 
 	@Context
 	ServletContext context;
@@ -103,7 +103,8 @@ public class SmaphServlet {
 		if (apiKey == null)
 			return Response.serverError().entity("Parameter google-api-key required.").build();
 		SmaphConfig c = getSmaphConfig(cseId, apiKey);
-		return Response.ok(encodeResponseJson(getAnnotatorByName(annotator, c).solveSa2W(q))).build();
+		SmaphAnnotator ann = getAnnotatorByName(annotator, c);
+		return Response.ok(encodeResponseJson(ann.solveSa2W(q), ann)).build();
 	}
 
 	private SmaphConfig getSmaphConfig(String cseId, String apiKey) {
@@ -158,12 +159,13 @@ public class SmaphServlet {
 		return creator.getDocumentAsNIFString(doc);
 	}
 
-	private String encodeResponseJson(HashSet<ScoredAnnotation> annotations) {
+	private String encodeResponseJson(HashSet<ScoredAnnotation> annotations, SmaphAnnotator annotator) {
 		WikipediaInterface wikiApi = (WikipediaInterface) context.getAttribute("wikipedia-api");
 		JSONObject res = new JSONObject();
 
 		try {
 			res.put("response-code", "OK");
+			res.put("annotator", annotator.getName());
 
 			JSONArray annotJson = new JSONArray();
 			for (ScoredAnnotation ann : annotations) {
