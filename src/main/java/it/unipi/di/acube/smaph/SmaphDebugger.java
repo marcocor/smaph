@@ -31,6 +31,7 @@ import it.unipi.di.acube.batframework.utils.WikipediaInterface;
 public class SmaphDebugger {
 	private List<String> processedQueries = new Vector<>();
 	private HashMap<String, List<JSONObject>> websearchResponsesNS = new HashMap<String, List<JSONObject>>();
+	private HashMap<String, QueryInformation> queryInformations = new HashMap<String, QueryInformation>();
 	private HashMap<String, List<JSONObject>> websearchResponsesWS = new HashMap<String, List<JSONObject>>();
 	private HashMap<String, List<Triple<String, HashSet<Annotation>, HashSet<Mention>>>> annotatedSnippetsAndBoldsS3 = new HashMap<>();
 	private HashMap<String, List<Triple<Integer, HashMap<String, Double>, Boolean>>> entityFeaturesS1 = new HashMap<>();
@@ -45,6 +46,14 @@ public class SmaphDebugger {
 
 	public void addProcessedQuery(String query) {
 		processedQueries.add(query);
+	}
+
+	public void addQueryInformation(String query, QueryInformation qi) {
+		queryInformations.put(query, qi);
+	}
+
+	public QueryInformation getQueryInformation(String query) {
+		return queryInformations.get(query);
 	}
 
 	private static String widToUrl(int wid, WikipediaInterface wikiApi) {

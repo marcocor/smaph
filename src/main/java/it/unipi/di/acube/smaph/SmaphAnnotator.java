@@ -190,14 +190,16 @@ public class SmaphAnnotator implements Sa2WSystem {
 	}
 
 	public HashSet<ScoredAnnotation> solveSa2W(String query, SmaphDebugger debugger) throws AnnotationException {
-		if (debugger != null)
-			debugger.addProcessedQuery(query);
-
 		HashSet<ScoredAnnotation> annotations = new HashSet<>();
 		try {
 			HashSet<Tag> acceptedEntities = new HashSet<>();
 
 			QueryInformation qi = getQueryInformation(query, debugger);
+
+			if (debugger != null){
+				debugger.addProcessedQuery(query);
+				debugger.addQueryInformation(query, qi);
+			}
 
 			for (Tag candidate : qi.allCandidates()){
 				if (predictNEonly
