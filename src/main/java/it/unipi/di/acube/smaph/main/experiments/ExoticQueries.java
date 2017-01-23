@@ -50,27 +50,30 @@ public class ExoticQueries {
 		TestDataset.dumpInfo(ds, wikiApi);
 
 		SmaphBuilder.Websearch ws = SmaphBuilder.websearchFromString(line.getOptionValue("websearch-piggyback"));
-		SmaphAnnotator smaph = SmaphBuilder.getSmaph(SmaphVersion.ANNOTATION_REGRESSOR, wikiApi, w2f, SmaphBuilder.DEFAULT_CACHED_AUX_ANNOTATOR, e2a, false, ws, c);
+		SmaphAnnotator smaph = SmaphBuilder.getSmaph(SmaphVersion.ANNOTATION_REGRESSOR, wikiApi, w2f,
+		        SmaphBuilder.DEFAULT_CACHED_AUX_ANNOTATOR, e2a, false, ws, c);
 
 		Metrics<Tag> metrics = new Metrics<Tag>();
 		StrongTagMatch sam = new StrongTagMatch(wikiApi);
 		SmaphDebugger debugger = new SmaphDebugger();
-			
-		System.out.format(LOCALE, "query\twebResults\tF1\tTP\tFP\tFN%n");
+
+		System.out.format(LOCALE, "query\twebResults\tF1\tprecision\trecall\tTP\tFP\tFN%n");
 		for (int i = 0; i < ds.getSize(); i++) {
 			String query = ds.getTextInstanceList().get(i);
 			HashSet<Tag> result = ProblemReduction.A2WToC2W(ProblemReduction.Sa2WToA2W(smaph.solveSa2W(query, debugger)));
 			HashSet<Tag> expected = ds.getC2WGoldStandardList().get(i);
 
 			Double webResults = debugger.getQueryInformation(query).webTotalNS;
-			
+
 			float f1 = metrics.getSingleF1(expected, result, sam);
 			int tp = metrics.getSingleTp(expected, result, sam).size();
 			int fp = metrics.getSingleFp(expected, result, sam).size();
 			int fn = metrics.getSingleFn(expected, result, sam).size();
-			System.out.format(LOCALE, "%s\t%.0f\t%f\t%d\t%d\t%d%n", query, webResults, f1, tp, fp, fn);
+			float prec = metrics.getSinglePrecision(expected, result, sam);
+			float rec = metrics.getSingleRecall(expected, result, sam);
+			System.out.format(LOCALE, "%s\t%.0f\t%f\t%f\t%f\t%d\t%d\t%d%n", query, webResults, f1, prec, rec, tp, fp, fn);
 		}
-		
+
 		wikiApi.flush();
 		CachedWATAnnotator.flush();
 		WATRelatednessComputer.flush();
