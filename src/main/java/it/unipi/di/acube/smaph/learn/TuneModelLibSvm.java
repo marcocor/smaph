@@ -367,7 +367,7 @@ public class TuneModelLibSvm {
 		ExampleGatherer<Annotation, HashSet<Annotation>> trainGatherer = new ExampleGatherer<>();
 		ExampleGatherer<Annotation, HashSet<Annotation>> develGatherer = new ExampleGatherer<>();
 
-		GenerateTrainingAndTest.gatherExamplesTrainingAndDevel(annotator, null, null, null, null, trainGatherer, develGatherer,
+		GenerateTrainingAndTest.gatherExamplesTrainingAndDevel(annotator, null, null, trainGatherer, develGatherer, null, null,
 		        null, null, wikiApi, w2f, optDs);
 
 		int[] allFtrs = SmaphUtils.getAllFtrVect(new AnnotationFeaturePack().getFeatureCount());

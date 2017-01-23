@@ -652,18 +652,18 @@ public class SmaphAnnotator implements Sa2WSystem {
 	 *            a query.
 	 * @param goldStandard
 	 *            the entities associated to the query.
-	 * @param EFCandidates 
-	 * @param BRCandidates 
-	 * @param ARCandidates 
+	 * @param efCandidates 
+	 * @param arCandidates 
+	 * @param collCandidates 
+	 * @param keepNEOnly
+	 *            whether to limit the output to named entities, as defined by
+	 *            ERDDatasetFilter.EntityIsNE.
 	 * @param posEFVectors
 	 *            where to store the positive-example (true positives) feature
 	 *            vectors.
 	 * @param negEFVectors
 	 *            where to store the negative-example (false positives) feature
 	 *            vectors.
-	 * @param keepNEOnly
-	 *            whether to limit the output to named entities, as defined by
-	 *            ERDDatasetFilter.EntityIsNE.
 	 * @param wikiToFreeb
 	 *            a wikipedia to freebase-id mapping.
 	 * @throws Exception
@@ -673,35 +673,53 @@ public class SmaphAnnotator implements Sa2WSystem {
 			String query,
 			HashSet<Tag> goldStandard,
 			HashSet<Annotation> goldStandardAnn,
-			List<Pair<FeaturePack<Tag>, Boolean>> EFVectorsToPresence,
-			List<Tag> EFCandidates,
-			List<Pair<FeaturePack<HashSet<Annotation>>, Double>> lbVectorsToF1,
-			List<HashSet<Annotation>> BRCandidates,
-			List<Pair<FeaturePack<Annotation>, Boolean>> advancedAnnVectorsToPresence,
-			List<Annotation> ARCandidates, boolean keepNEOnly,
+			List<Pair<FeaturePack<Tag>, Boolean>> efVectorsToPresence,
+			List<Tag> efCandidates,
+			List<Pair<FeaturePack<Annotation>, Boolean>> arVectorsToPresence,
+			List<Annotation> arCandidates,
+			List<Pair<FeaturePack<HashSet<Annotation>>, Double>> collVectorsToF1,
+			List<HashSet<Annotation>> collCandidates, boolean keepNEOnly,
 			SmaphDebugger debugger)
 					throws Exception {
 
 		QueryInformation qi = getQueryInformation(query, debugger);
 
 		// Generate examples for entityFilter
-		if (EFVectorsToPresence != null)
+		if (efVectorsToPresence != null)
 			for (Tag tag : qi.allCandidates()) {
 				if (keepNEOnly
 						&& !ERDDatasetFilter.entityIsNE(wikiApi, wikiToFreeb, tag.getConcept()))
 					continue;
 				FeaturePack<Tag> features  = new EntityFeaturePack(tag, query, qi, wikiApi, wikiToFreeb);
-				EFVectorsToPresence.add(new Pair<FeaturePack<Tag>, Boolean>(features, goldStandard.contains(tag)));
-				if (EFCandidates != null)
-					EFCandidates.add(tag);
+				efVectorsToPresence.add(new Pair<FeaturePack<Tag>, Boolean>(features, goldStandard.contains(tag)));
+				if (efCandidates != null)
+					efCandidates.add(tag);
 
 				LOG.debug("{} in query [{}] is a {} example.",
 						tag.getConcept(), query,
 						goldStandard.contains(tag) ? "positive" : "negative");
 			}
 
-		// Generate examples for linkBack
-		if (lbVectorsToF1 != null) {
+		// Generate examples for annotation regressor
+		if (arVectorsToPresence != null) {
+			List<Triple<Annotation, AnnotationFeaturePack, Boolean>> annotationsAndFtrAndPresences = getAdvancedARToFtrsAndPresence(
+					query, qi, goldStandardAnn, new StrongAnnotationMatch(wikiApi));
+			for (Triple<Annotation, AnnotationFeaturePack, Boolean> annotationsAndFtrAndPresence : annotationsAndFtrAndPresences) {
+				AnnotationFeaturePack features = annotationsAndFtrAndPresence.getMiddle();
+				Annotation ann = annotationsAndFtrAndPresence.getLeft();
+				arVectorsToPresence.add(new Pair<FeaturePack<Annotation>, Boolean>(features, annotationsAndFtrAndPresence
+						.getRight()));
+				if (arCandidates != null)
+					arCandidates.add(ann);
+				LOG.info("[{}]->{} in query [{}] is a {} example.",
+						query.substring(ann.getPosition(), ann.getPosition() + ann.getLength()), ann.getConcept(), query,
+						annotationsAndFtrAndPresence.getRight() ? "positive" : "negative");
+
+			}
+		}
+
+		// Generate examples for collective annotation
+		if (collVectorsToF1 != null) {
 			Set<Tag> acceptedEntities = null;
 			if (keepNEOnly) {
 				acceptedEntities = new HashSet<Tag>();
@@ -719,29 +737,10 @@ public class SmaphAnnotator implements Sa2WSystem {
 				BindingFeaturePack features = bindingAndFtrsAndF1.getMiddle();
 				double f1 = bindingAndFtrsAndF1.getRight();
 				HashSet<Annotation> binding = bindingAndFtrsAndF1.getLeft();
-				lbVectorsToF1.add(new Pair<FeaturePack<HashSet<Annotation>>, Double>(features, f1));
+				collVectorsToF1.add(new Pair<FeaturePack<HashSet<Annotation>>, Double>(features, f1));
 
-				if (BRCandidates != null)
-					BRCandidates.add(binding);
-
-			}
-		}
-
-		// Generate examples for advanced annotation filter
-		if (advancedAnnVectorsToPresence != null) {
-
-			List<Triple<Annotation, AnnotationFeaturePack, Boolean>> annotationsAndFtrAndPresences = getAdvancedARToFtrsAndPresence(
-					query, qi, goldStandardAnn, new StrongAnnotationMatch(wikiApi));
-			for (Triple<Annotation, AnnotationFeaturePack, Boolean> annotationsAndFtrAndPresence : annotationsAndFtrAndPresences) {
-				AnnotationFeaturePack features = annotationsAndFtrAndPresence.getMiddle();
-				Annotation ann = annotationsAndFtrAndPresence.getLeft();
-				advancedAnnVectorsToPresence.add(new Pair<FeaturePack<Annotation>, Boolean>(features, annotationsAndFtrAndPresence
-						.getRight()));
-				if (ARCandidates != null)
-					ARCandidates.add(ann);
-				LOG.info("[{}]->{} in query [{}] is a {} example.",
-						query.substring(ann.getPosition(), ann.getPosition() + ann.getLength()), ann.getConcept(), query,
-						annotationsAndFtrAndPresence.getRight() ? "positive" : "negative");
+				if (collCandidates != null)
+					collCandidates.add(binding);
 
 			}
 		}

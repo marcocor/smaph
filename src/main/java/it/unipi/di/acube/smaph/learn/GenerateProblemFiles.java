@@ -91,7 +91,7 @@ public class GenerateProblemFiles {
 		if (line.hasOption("dump-entity-filter"))
 			generateEFModel(ws, s1, s2, s3, c);
 		if (line.hasOption("dump-annotation-regressor"))
-			generateIndividualAdvancedAnnotationModel(ws, s1, s2, s3, c);
+			generateAnnotationRegressorModel(ws, s1, s2, s3, c);
 		if (line.hasOption("dump-collective-rank"))
 			generateCollectiveModel(ws, s1, s2, s3, c);
 
@@ -126,33 +126,33 @@ public class GenerateProblemFiles {
 		        new NoFeatureNormalizer());
 	}
 
-	public static void generateIndividualAdvancedAnnotationModel(SmaphBuilder.Websearch ws, boolean s1, boolean s2, boolean s3, SmaphConfig c)
+	public static void generateAnnotationRegressorModel(SmaphBuilder.Websearch ws, boolean s1, boolean s2, boolean s3, SmaphConfig c)
 	        throws Exception {
 		OptDataset opt = OptDataset.SMAPH_DATASET;
 		SmaphAnnotator smaphGatherer = SmaphBuilder.getSmaphGatherer(wikiApi, wikiToFreeb, e2a, s1, s2, s3, ws, c);
 
-		ExampleGatherer<Annotation, HashSet<Annotation>> trainAdvancedAnnotationGatherer = new ExampleGatherer<Annotation, HashSet<Annotation>>();
-		ExampleGatherer<Annotation, HashSet<Annotation>> develAdvancedAnnotationGatherer = new ExampleGatherer<Annotation, HashSet<Annotation>>();
+		ExampleGatherer<Annotation, HashSet<Annotation>> trainAnnotationRegressorGatherer = new ExampleGatherer<Annotation, HashSet<Annotation>>();
+		ExampleGatherer<Annotation, HashSet<Annotation>> develAnnotationRegressorGatherer = new ExampleGatherer<Annotation, HashSet<Annotation>>();
 		List<String> develInstances = new Vector<>();
-		GenerateTrainingAndTest.gatherExamplesTrainingAndDevel(smaphGatherer, null, null, null, null,
-		        trainAdvancedAnnotationGatherer, develAdvancedAnnotationGatherer, null, develInstances, wikiApi, wikiToFreeb,
+		GenerateTrainingAndTest.gatherExamplesTrainingAndDevel(smaphGatherer, null, null, trainAnnotationRegressorGatherer, develAnnotationRegressorGatherer,
+		        null, null, null, develInstances, wikiApi, wikiToFreeb,
 		        opt);
 
 		String label = SmaphBuilder.getDefaultLabel(SmaphVersion.ANNOTATION_REGRESSOR, ws, s1, s2, s3);
 		LOG.info("Building Z-score normalizer over training set...");
-		ZScoreFeatureNormalizer fNormAR = ZScoreFeatureNormalizer.fromGatherer(trainAdvancedAnnotationGatherer);
+		ZScoreFeatureNormalizer fNormAR = ZScoreFeatureNormalizer.fromGatherer(trainAnnotationRegressorGatherer);
 		fNormAR.dump(new File(String.format("train_%s.zscore", label)));
 		LOG.info("Dumping annotation regressor training problems (scaled)...");
-		trainAdvancedAnnotationGatherer.dumpExamplesLibSvm(String.format("train_zscore_%s.dat", label),
+		trainAnnotationRegressorGatherer.dumpExamplesLibSvm(String.format("train_zscore_%s.dat", label),
 		        fNormAR);
 		LOG.info("Dumping annotation regressor training problems (original values)...");
-		trainAdvancedAnnotationGatherer.dumpExamplesLibSvm(String.format("train_%s.dat", label),
+		trainAnnotationRegressorGatherer.dumpExamplesLibSvm(String.format("train_%s.dat", label),
 		        new NoFeatureNormalizer());
 		LOG.info("Dumping annotation regressor development problems (scaled)...");
-		develAdvancedAnnotationGatherer.dumpExamplesLibSvm(String.format("devel_zscore_%s.dat", label),
+		develAnnotationRegressorGatherer.dumpExamplesLibSvm(String.format("devel_zscore_%s.dat", label),
 		        fNormAR);
 		LOG.info("Dumping annotation regressor development problems (original values)...");
-		develAdvancedAnnotationGatherer.dumpExamplesLibSvm(String.format("devel_%s.dat", label),
+		develAnnotationRegressorGatherer.dumpExamplesLibSvm(String.format("devel_%s.dat", label),
 		        new NoFeatureNormalizer());
 	}
 
@@ -164,8 +164,8 @@ public class GenerateProblemFiles {
 
 		ExampleGatherer<HashSet<Annotation>, HashSet<Annotation>> trainCollectiveGatherer = new ExampleGatherer<HashSet<Annotation>, HashSet<Annotation>>();
 		ExampleGatherer<HashSet<Annotation>, HashSet<Annotation>> develCollectiveGatherer = new ExampleGatherer<HashSet<Annotation>, HashSet<Annotation>>();
-		GenerateTrainingAndTest.gatherExamplesTrainingAndDevel(smaphGatherer, null, null, trainCollectiveGatherer,
-		        develCollectiveGatherer, null, null, null, null, wikiApi, wikiToFreeb, opt);
+		GenerateTrainingAndTest.gatherExamplesTrainingAndDevel(smaphGatherer, null, null, null,
+		        null, trainCollectiveGatherer, develCollectiveGatherer, null, null, wikiApi, wikiToFreeb, opt);
 
 		String label = SmaphBuilder.getDefaultLabel(SmaphVersion.COLLECTIVE, ws, s1, s2, s3);
 		LOG.info("Dumping annotation regressor training problems (original values)...");
