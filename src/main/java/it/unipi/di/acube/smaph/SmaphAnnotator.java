@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.lang.invoke.MethodHandles;
 import java.net.URLDecoder;
+import java.util.Calendar;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -97,6 +98,7 @@ public class SmaphAnnotator implements Sa2WSystem {
 	private BindingGenerator bg;
 	private WikipediaToFreebase wikiToFreeb;
 	private EntityToAnchors e2a;
+	private long lastAnnotationTime;
 
 	/**
 	 * Constructs a SMAPH annotator.
@@ -170,7 +172,7 @@ public class SmaphAnnotator implements Sa2WSystem {
 
 	@Override
 	public long getLastAnnotationTime() {
-		return 0;
+		return lastAnnotationTime;
 	}
 
 	@Override
@@ -192,6 +194,7 @@ public class SmaphAnnotator implements Sa2WSystem {
 	public HashSet<ScoredAnnotation> solveSa2W(String query, SmaphDebugger debugger) throws AnnotationException {
 		HashSet<ScoredAnnotation> annotations = new HashSet<>();
 		try {
+			lastAnnotationTime = Calendar.getInstance().getTimeInMillis();
 			HashSet<Tag> acceptedEntities = new HashSet<>();
 
 			QueryInformation qi = getQueryInformation(query, debugger);
@@ -213,6 +216,8 @@ public class SmaphAnnotator implements Sa2WSystem {
 			}
 			/** Link entities back to query mentions */
 			annotations = linkBack.linkBack(query, acceptedEntities, qi);
+			
+			lastAnnotationTime = Calendar.getInstance().getTimeInMillis() - lastAnnotationTime;
 
 			if (debugger != null){
 				debugger.addResult(query, annotations);
