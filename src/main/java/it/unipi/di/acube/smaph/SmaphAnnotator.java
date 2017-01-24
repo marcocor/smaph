@@ -67,6 +67,7 @@ import it.unipi.di.acube.smaph.learn.featurePacks.AnnotationFeaturePack;
 import it.unipi.di.acube.smaph.learn.featurePacks.BindingFeaturePack;
 import it.unipi.di.acube.smaph.learn.featurePacks.EntityFeaturePack;
 import it.unipi.di.acube.smaph.learn.featurePacks.FeaturePack;
+import it.unipi.di.acube.smaph.learn.featurePacks.GreedyFeaturePack;
 import it.unipi.di.acube.smaph.learn.models.entityfilters.EntityFilter;
 import it.unipi.di.acube.smaph.learn.normalizer.FeatureNormalizer;
 import it.unipi.di.acube.smaph.linkback.AdvancedIndividualLinkback;
@@ -655,6 +656,8 @@ public class SmaphAnnotator implements Sa2WSystem {
 	 * @param efCandidates 
 	 * @param arCandidates 
 	 * @param collCandidates 
+	 * @param greedyCandidates 
+	 * @param greedyVectorsToF1Incr 
 	 * @param keepNEOnly
 	 *            whether to limit the output to named entities, as defined by
 	 *            ERDDatasetFilter.EntityIsNE.
@@ -678,9 +681,12 @@ public class SmaphAnnotator implements Sa2WSystem {
 			List<Pair<FeaturePack<Annotation>, Boolean>> arVectorsToPresence,
 			List<Annotation> arCandidates,
 			List<Pair<FeaturePack<HashSet<Annotation>>, Double>> collVectorsToF1,
-			List<HashSet<Annotation>> collCandidates, boolean keepNEOnly,
-			SmaphDebugger debugger)
-					throws Exception {
+			List<HashSet<Annotation>> collCandidates,
+			HashSet<Annotation> greedyPartialSolution,
+			List<Pair<FeaturePack<Annotation>, Double>> greedyVectorsToF1Incr,
+			List<Annotation> greedyCandidates,
+			boolean keepNEOnly,
+	        SmaphDebugger debugger) throws Exception {
 
 		QueryInformation qi = getQueryInformation(query, debugger);
 
@@ -741,9 +747,54 @@ public class SmaphAnnotator implements Sa2WSystem {
 
 				if (collCandidates != null)
 					collCandidates.add(binding);
-
 			}
 		}
+
+		// Generate examples for greedy regressor
+		if (greedyVectorsToF1Incr != null) {
+			List<Triple<Annotation, GreedyFeaturePack, Double>> annotationsAndFtrAndIncrements = getGreedyAnnotationToFtrsAndIncrement(
+					query, qi, goldStandardAnn, greedyPartialSolution, new StrongAnnotationMatch(wikiApi));
+			for (Triple<Annotation, GreedyFeaturePack, Double> annotationsAndFtrAndIncrement : annotationsAndFtrAndIncrements) {
+				GreedyFeaturePack features = annotationsAndFtrAndIncrement.getMiddle();
+				Annotation ann = annotationsAndFtrAndIncrement.getLeft();
+				greedyVectorsToF1Incr.add(new Pair<FeaturePack<Annotation>, Double>(features, annotationsAndFtrAndIncrement
+						.getRight()));
+				if (greedyCandidates != null)
+					greedyCandidates.add(ann);
+				String psStr = greedyPartialSolution
+				        .stream().map(a -> String.format("%s -> %d",
+				                query.substring(a.getPosition(), a.getPosition() + a.getLength()), a.getConcept()))
+				        .collect(Collectors.joining(", "));
+				LOG.info("[{}]->{} in query [{}] with partial solution [{}] changes F1 by {}.",
+						query.substring(ann.getPosition(), ann.getPosition() + ann.getLength()), ann.getConcept(), query,
+						psStr, annotationsAndFtrAndIncrement.getRight());
+			}
+		}
+	}
+
+	private List<Triple<Annotation, GreedyFeaturePack, Double>> getGreedyAnnotationToFtrsAndIncrement(String query,
+	        QueryInformation qi, HashSet<Annotation> goldStandardAnn, HashSet<Annotation> greedyPartialSolution,
+	        StrongAnnotationMatch annotationMatch) {
+		List<Annotation> candidates = AdvancedIndividualLinkback.getAnnotations(query, qi.allCandidates(), anchorMaxED, e2a)
+		        .stream().filter(a -> !greedyPartialSolution.stream().anyMatch(aPS -> aPS.overlaps(a)))
+		        .collect(Collectors.toList());
+
+		double f1Before = new Metrics<Annotation>().getSingleF1(goldStandardAnn, greedyPartialSolution, annotationMatch);
+		
+		List<Triple<Annotation, GreedyFeaturePack, Double>> annAndFtrsAndIncrement = new Vector<>();
+		for (Annotation a : candidates) {
+			if (e2a.containsId(a.getConcept())) {
+				HashSet<Annotation> stepCandidateSolution = new HashSet<Annotation>(greedyPartialSolution);
+				stepCandidateSolution.add(a);
+				double f1After= new Metrics<Annotation>().getSingleF1(goldStandardAnn, stepCandidateSolution, annotationMatch);
+				
+				GreedyFeaturePack features = new GreedyFeaturePack(a, query, qi, greedyPartialSolution, wikiApi, wikiToFreeb, e2a);
+				annAndFtrsAndIncrement.add(new ImmutableTriple<Annotation, GreedyFeaturePack, Double>(a, features, f1After - f1Before));
+			} else
+				LOG.warn("No anchors found for id={}", a.getConcept());
+		}
+
+		return annAndFtrsAndIncrement;
 	}
 
 	private List<Triple<Annotation, AnnotationFeaturePack, Boolean>> getAdvancedARToFtrsAndPresence(

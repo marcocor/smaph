@@ -45,7 +45,10 @@ public class GenerateTrainingAndTest {
 	public static void gatherExamples(SmaphAnnotator smaph, A2WDataset ds,
 	        ExampleGatherer<Tag, HashSet<Tag>> entityFilterGatherer,
 	        ExampleGatherer<Annotation, HashSet<Annotation>> annotationRegressorGatherer,
-	        ExampleGatherer<HashSet<Annotation>, HashSet<Annotation>> collectiveGatherer, boolean keepNEOnly)
+	        ExampleGatherer<HashSet<Annotation>, HashSet<Annotation>> collectiveGatherer,
+	        HashSet<Annotation> greedyPartialSolution,
+	        ExampleGatherer<Annotation, HashSet<Annotation>> greedyGatherer,
+	        boolean keepNEOnly)
 	        throws Exception {
 		ProgressLogger plog = new ProgressLogger(logger, "document");
 		plog.start("Collecting examples.");
@@ -59,6 +62,8 @@ public class GenerateTrainingAndTest {
 			List<Annotation> arCandidates = null;
 			List<Pair<FeaturePack<HashSet<Annotation>>, Double>> collVectorsToF1 = null;
 			List<HashSet<Annotation>> collCandidates = null;
+			List<Pair<FeaturePack<Annotation>, Double>> greedyVectorsToF1Incr = null;
+			List<Annotation> greedyCandidates = null;
 
 			if (entityFilterGatherer != null){
 				efVectorsToPresence = new Vector<>();
@@ -72,9 +77,13 @@ public class GenerateTrainingAndTest {
 				collVectorsToF1 = new Vector<>();
 				collCandidates = new Vector<>();
 			}
+			if (greedyGatherer != null){
+				greedyVectorsToF1Incr = new Vector<>();
+				greedyCandidates = new Vector<>();
+			}
 
 			smaph.generateExamples(query, goldStandard, goldStandardAnn, efVectorsToPresence, efCandidates, arVectorsToPresence,
-			        arCandidates, collVectorsToF1, collCandidates, keepNEOnly, null);
+			        arCandidates, collVectorsToF1, collCandidates, greedyPartialSolution, greedyVectorsToF1Incr, greedyCandidates, keepNEOnly, null);
 
 			if (entityFilterGatherer != null)
 				entityFilterGatherer.addExample(goldBoolToDouble(efVectorsToPresence), efCandidates, goldStandard);
@@ -82,6 +91,9 @@ public class GenerateTrainingAndTest {
 				collectiveGatherer.addExample(collVectorsToF1, collCandidates, goldStandardAnn);
 			if (annotationRegressorGatherer != null)
 				annotationRegressorGatherer.addExample(goldBoolToDouble(arVectorsToPresence), arCandidates, goldStandardAnn);
+			if (greedyGatherer != null)
+				greedyGatherer.addExample(greedyVectorsToF1Incr, greedyCandidates, goldStandardAnn);
+
 			plog.lightUpdate();
 		}
 		plog.done();
@@ -104,10 +116,13 @@ public class GenerateTrainingAndTest {
 			ExampleGatherer<Annotation, HashSet<Annotation>> develAnnotationRegressorGatherer,
 			ExampleGatherer<HashSet<Annotation>, HashSet<Annotation>> trainCollectiveGatherer,
 			ExampleGatherer<HashSet<Annotation>, HashSet<Annotation>> develCollectiveGatherer,
+			HashSet<Annotation> greedyPartialSolution,
+			ExampleGatherer<Annotation, HashSet<Annotation>> trainGreedyGatherer,
+			ExampleGatherer<Annotation, HashSet<Annotation>> develGreedyGatherer,
 			List<String> trainInstances, List<String> develInstances,
 			WikipediaInterface wikiApi, WikipediaToFreebase w2f,
 			OptDataset opt) throws Exception {
-		if (trainEntityFilterGatherer != null || trainAnnotationRegressorGatherer != null || trainCollectiveGatherer != null) {
+		if (trainEntityFilterGatherer != null || trainAnnotationRegressorGatherer != null || trainCollectiveGatherer != null || trainGreedyGatherer != null) {
 
 			if (opt == OptDataset.ERD_CHALLENGE) {
 
@@ -115,29 +130,29 @@ public class GenerateTrainingAndTest {
 				A2WDataset smaphTrainA = new ERDDatasetFilter(DatasetBuilder.getGerdaqTrainA(wikiApi), wikiApi, w2f);
 				gatherExamples(smaph, smaphTrainA,
 						trainEntityFilterGatherer, trainAnnotationRegressorGatherer,
-						trainCollectiveGatherer, keepNEOnly);
+						trainCollectiveGatherer, greedyPartialSolution, trainGreedyGatherer, keepNEOnly);
 
 				A2WDataset smaphTrainB = new ERDDatasetFilter(DatasetBuilder.getGerdaqTrainB(wikiApi), wikiApi, w2f);
 				gatherExamples(smaph, smaphTrainB,
 						trainEntityFilterGatherer, trainAnnotationRegressorGatherer,
-						trainCollectiveGatherer, keepNEOnly);
+						trainCollectiveGatherer, greedyPartialSolution, trainGreedyGatherer, keepNEOnly);
 
 				A2WDataset smaphTest = new ERDDatasetFilter(DatasetBuilder.getGerdaqTest(wikiApi), wikiApi, w2f);
 				gatherExamples(smaph, smaphTest,
 						trainEntityFilterGatherer, trainAnnotationRegressorGatherer,
-						trainCollectiveGatherer, keepNEOnly);
+						trainCollectiveGatherer, greedyPartialSolution, trainGreedyGatherer, keepNEOnly);
 
 				A2WDataset smaphDevel = new ERDDatasetFilter(DatasetBuilder.getGerdaqDevel(wikiApi), wikiApi, w2f);
 				gatherExamples(smaph, smaphDevel,
 						trainEntityFilterGatherer, trainAnnotationRegressorGatherer,
-						trainCollectiveGatherer, keepNEOnly);
+						trainCollectiveGatherer, greedyPartialSolution, trainGreedyGatherer, keepNEOnly);
 
 				A2WDataset yahoo = new ERDDatasetFilter(
 						new YahooWebscopeL24Dataset(
 								classLoader.getResource("datasets/yahoo_webscope_L24/ydata-search-query-log-to-entities-v1_0.xml").getFile()),
 								wikiApi, w2f);
 				gatherExamples(smaph, yahoo, trainEntityFilterGatherer, trainAnnotationRegressorGatherer,
-						trainCollectiveGatherer, keepNEOnly);
+						trainCollectiveGatherer, greedyPartialSolution, trainGreedyGatherer, keepNEOnly);
 
 				if (trainInstances != null){
 					trainInstances.addAll(smaphTrainA.getTextInstanceList());
@@ -152,12 +167,12 @@ public class GenerateTrainingAndTest {
 				A2WDataset smaphTrainA = DatasetBuilder.getGerdaqTrainA(wikiApi);
 				gatherExamples(smaph, smaphTrainA,
 						trainEntityFilterGatherer, trainAnnotationRegressorGatherer,
-						trainCollectiveGatherer, keepNEOnly);
+						trainCollectiveGatherer, greedyPartialSolution, trainGreedyGatherer, keepNEOnly);
 
 				A2WDataset smaphTrainB = DatasetBuilder.getGerdaqTrainB(wikiApi);
 				gatherExamples(smaph, smaphTrainB,
 						trainEntityFilterGatherer, trainAnnotationRegressorGatherer,
-						trainCollectiveGatherer, keepNEOnly);
+						trainCollectiveGatherer, greedyPartialSolution, trainGreedyGatherer, keepNEOnly);
 
 				if (trainInstances != null){
 					trainInstances.addAll(smaphTrainA.getTextInstanceList());
@@ -165,7 +180,7 @@ public class GenerateTrainingAndTest {
 				}
 			}
 		}
-		if (develEntityFilterGatherer != null || develAnnotationRegressorGatherer != null || develCollectiveGatherer != null) {
+		if (develEntityFilterGatherer != null || develAnnotationRegressorGatherer != null || develCollectiveGatherer != null || develGreedyGatherer != null) {
 			if (opt == OptDataset.ERD_CHALLENGE) {
 				boolean keepNEOnly = true;
 				A2WDataset smaphDevel = new ERDDatasetFilter(DatasetBuilder.getGerdaqDevel(wikiApi), wikiApi, w2f);
@@ -173,6 +188,8 @@ public class GenerateTrainingAndTest {
 						develEntityFilterGatherer,
 						develAnnotationRegressorGatherer,
 						develCollectiveGatherer,
+						greedyPartialSolution,
+						develGreedyGatherer, 
 						keepNEOnly);
 				if (develInstances != null){
 					develInstances.addAll(smaphDevel.getTextInstanceList());
@@ -181,9 +198,8 @@ public class GenerateTrainingAndTest {
 			else if (opt == OptDataset.SMAPH_DATASET){
 				boolean keepNEOnly = false;
 				A2WDataset smaphDevel = DatasetBuilder.getGerdaqDevel(wikiApi);
-				gatherExamples(smaph, smaphDevel,
-						develEntityFilterGatherer, develAnnotationRegressorGatherer,
-						develCollectiveGatherer,  keepNEOnly);
+				gatherExamples(smaph, smaphDevel, develEntityFilterGatherer, develAnnotationRegressorGatherer,
+				        develCollectiveGatherer, greedyPartialSolution, develGreedyGatherer, keepNEOnly);
 				if (develInstances != null){
 					develInstances.addAll(smaphDevel.getTextInstanceList());
 				}

@@ -236,7 +236,7 @@ public class BindingFeaturePack extends FeaturePack<HashSet<Annotation>> {
 		return bindingFeatures;
 	}
 
-	private static Pair<Double, Double> getLpSumAvg(String query) {
+	public static Pair<Double, Double> getLpSumAvg(String query) {
 		List<String> segments = SmaphUtils.findSegmentsStrings(query.toLowerCase());
 		double sum = 0;
 		int count = 0;

@@ -60,7 +60,7 @@ public class SmaphBuilder {
 	public static final Websearch DEFAULT_WEBSEARCH = Websearch.GOOGLE_CSE;
 
 	public enum SmaphVersion {
-		ENTITY_FILTER("ef"), ANNOTATION_REGRESSOR("ar"), COLLECTIVE("coll");
+		ENTITY_FILTER("ef"), ANNOTATION_REGRESSOR("ar"), COLLECTIVE("coll"), GREEDY("greedy");
 
 		private String label;
 

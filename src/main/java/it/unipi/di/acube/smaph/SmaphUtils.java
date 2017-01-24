@@ -765,7 +765,6 @@ public class SmaphUtils {
 		populateBindingsRec(chosenCandidates, candidates, bindings, maxBindings);
 		return bindings;
 	}
-	
 
 	public static String getDBPediaURI(String title) {
 		return BASE_DBPEDIA_URI + WikipediaInterface.normalize(title);
@@ -773,10 +772,10 @@ public class SmaphUtils {
 
 	public static String getWikipediaURI(String title) {
 		try {
-	        return BASE_WIKIPEDIA_URI + URLEncoder.encode(title, "utf8").replace("+", "%20");
-        } catch (UnsupportedEncodingException e) {
-	        throw new RuntimeException(e);
-        }
+			return BASE_WIKIPEDIA_URI + URLEncoder.encode(title, "utf8").replace("+", "%20");
+		} catch (UnsupportedEncodingException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	public static void exportToNif(A2WDataset ds, String baseUri, WikipediaInterface wikiApi, OutputStream outputStream) {

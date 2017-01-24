@@ -61,11 +61,13 @@ public class GenerateProblemFiles {
 		Options options = new Options();
 
 		options.addOption(OptionBuilder.withLongOpt("dump-entity-filter")
-		        .withDescription("Dump feature file for annotation regressor").create("a"));
+		        .withDescription("Dump feature file for entity filter").create("a"));
 		options.addOption(OptionBuilder.withLongOpt("dump-annotation-regressor")
 		        .withDescription("Dump feature file for annotation regressor").create("e"));
 		options.addOption(OptionBuilder.withLongOpt("dump-collective-rank")
-		        .withDescription("Dump feature file for annotation regressor").create("c"));
+		        .withDescription("Dump feature file for collective ranker").create("c"));
+		options.addOption(OptionBuilder.withLongOpt("dump-greedy")
+		        .withDescription("Dump feature file for greedy annotator (first step only!)").create("c"));
 		options.addOption(OptionBuilder.withLongOpt("websearch-piggyback").hasArg().withArgName("WEBSEARCH")
 		        .withDescription("What web search engine to piggyback on. Can be either `bing' or `google'.").create("w"));
 		options.addOption("exclude_s1", false, "Exclude entity source 1.");
@@ -94,6 +96,8 @@ public class GenerateProblemFiles {
 			generateAnnotationRegressorModel(ws, s1, s2, s3, c);
 		if (line.hasOption("dump-collective-rank"))
 			generateCollectiveModel(ws, s1, s2, s3, c);
+		if (line.hasOption("dump-greedy"))
+			generateGreedyModel(ws, s1, s2, s3, c, new HashSet<>());
 
 		CachedWATAnnotator.flush();
 		WATRelatednessComputer.flush();
@@ -106,7 +110,7 @@ public class GenerateProblemFiles {
 		ExampleGatherer<Tag, HashSet<Tag>> trainEntityFilterGatherer = new ExampleGatherer<Tag, HashSet<Tag>>();
 		ExampleGatherer<Tag, HashSet<Tag>> develEntityFilterGatherer = new ExampleGatherer<Tag, HashSet<Tag>>();
 		GenerateTrainingAndTest.gatherExamplesTrainingAndDevel(smaphGatherer, trainEntityFilterGatherer,
-		        develEntityFilterGatherer, null, null, null, null, null, null, wikiApi, wikiToFreeb, opt);
+		        develEntityFilterGatherer, null, null, null, null, null, null, null, null, null, wikiApi, wikiToFreeb, opt);
 
 		String label = SmaphBuilder.getDefaultLabel(SmaphVersion.ENTITY_FILTER, ws, s1, s2, s3);
 		LOG.info("Building Z-score normalizer over training set...");
@@ -134,9 +138,8 @@ public class GenerateProblemFiles {
 		ExampleGatherer<Annotation, HashSet<Annotation>> trainAnnotationRegressorGatherer = new ExampleGatherer<Annotation, HashSet<Annotation>>();
 		ExampleGatherer<Annotation, HashSet<Annotation>> develAnnotationRegressorGatherer = new ExampleGatherer<Annotation, HashSet<Annotation>>();
 		List<String> develInstances = new Vector<>();
-		GenerateTrainingAndTest.gatherExamplesTrainingAndDevel(smaphGatherer, null, null, trainAnnotationRegressorGatherer, develAnnotationRegressorGatherer,
-		        null, null, null, develInstances, wikiApi, wikiToFreeb,
-		        opt);
+		GenerateTrainingAndTest.gatherExamplesTrainingAndDevel(smaphGatherer, null, null, trainAnnotationRegressorGatherer,
+		        develAnnotationRegressorGatherer, null, null, null, null, null, null, develInstances, wikiApi, wikiToFreeb, opt);
 
 		String label = SmaphBuilder.getDefaultLabel(SmaphVersion.ANNOTATION_REGRESSOR, ws, s1, s2, s3);
 		LOG.info("Building Z-score normalizer over training set...");
@@ -156,6 +159,31 @@ public class GenerateProblemFiles {
 		        new NoFeatureNormalizer());
 	}
 
+	public static void generateGreedyModel(SmaphBuilder.Websearch ws, boolean s1, boolean s2, boolean s3, SmaphConfig c, HashSet<Annotation> greedyPartialSolution)
+	        throws Exception {
+		OptDataset opt = OptDataset.SMAPH_DATASET;
+		SmaphAnnotator smaphGatherer = SmaphBuilder.getSmaphGatherer(wikiApi, wikiToFreeb, e2a, s1, s2, s3, ws, c);
+
+		ExampleGatherer<Annotation, HashSet<Annotation>> trainGreedyGatherer = new ExampleGatherer<Annotation, HashSet<Annotation>>();
+		ExampleGatherer<Annotation, HashSet<Annotation>> develGreedyGatherer = new ExampleGatherer<Annotation, HashSet<Annotation>>();
+		List<String> develInstances = new Vector<>();
+		GenerateTrainingAndTest.gatherExamplesTrainingAndDevel(smaphGatherer, null, null, null, null, null, null,
+		        greedyPartialSolution, trainGreedyGatherer, develGreedyGatherer, null, develInstances, wikiApi, wikiToFreeb, opt);
+
+		String label = String.format("%s.%d", SmaphBuilder.getDefaultLabel(SmaphVersion.GREEDY, ws, s1, s2, s3), greedyPartialSolution.size());
+		LOG.info("Building Z-score normalizer over training set...");
+		ZScoreFeatureNormalizer fNormAR = ZScoreFeatureNormalizer.fromGatherer(trainGreedyGatherer);
+		fNormAR.dump(new File(String.format("train_%s.zscore", label)));
+		LOG.info("Dumping annotation regressor training problems (scaled)...");
+		trainGreedyGatherer.dumpExamplesLibSvm(String.format("train_zscore_%s.dat", label), fNormAR);
+		LOG.info("Dumping annotation regressor training problems (original values)...");
+		trainGreedyGatherer.dumpExamplesLibSvm(String.format("train_%s.dat", label), new NoFeatureNormalizer());
+		LOG.info("Dumping annotation regressor development problems (scaled)...");
+		develGreedyGatherer.dumpExamplesLibSvm(String.format("devel_zscore_%s.dat", label), fNormAR);
+		LOG.info("Dumping annotation regressor development problems (original values)...");
+		develGreedyGatherer.dumpExamplesLibSvm(String.format("devel_%s.dat", label), new NoFeatureNormalizer());
+	}
+
 	public static void generateCollectiveModel(SmaphBuilder.Websearch ws, boolean s1, boolean s2, boolean s3, SmaphConfig c) throws Exception {
 		OptDataset opt = OptDataset.SMAPH_DATASET;
 
@@ -164,8 +192,8 @@ public class GenerateProblemFiles {
 
 		ExampleGatherer<HashSet<Annotation>, HashSet<Annotation>> trainCollectiveGatherer = new ExampleGatherer<HashSet<Annotation>, HashSet<Annotation>>();
 		ExampleGatherer<HashSet<Annotation>, HashSet<Annotation>> develCollectiveGatherer = new ExampleGatherer<HashSet<Annotation>, HashSet<Annotation>>();
-		GenerateTrainingAndTest.gatherExamplesTrainingAndDevel(smaphGatherer, null, null, null,
-		        null, trainCollectiveGatherer, develCollectiveGatherer, null, null, wikiApi, wikiToFreeb, opt);
+		GenerateTrainingAndTest.gatherExamplesTrainingAndDevel(smaphGatherer, null, null, null, null, trainCollectiveGatherer,
+		        develCollectiveGatherer, null, null, null, null, null, wikiApi, wikiToFreeb, opt);
 
 		String label = SmaphBuilder.getDefaultLabel(SmaphVersion.COLLECTIVE, ws, s1, s2, s3);
 		LOG.info("Dumping annotation regressor training problems (original values)...");
