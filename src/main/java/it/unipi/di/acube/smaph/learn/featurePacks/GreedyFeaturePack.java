@@ -26,8 +26,8 @@ public class GreedyFeaturePack extends FeaturePack<Annotation> {
 	
 	private static final long serialVersionUID = 1L;
 
-	public GreedyFeaturePack(Annotation a, String query, QueryInformation qi, HashSet<Annotation> partialSolution, WikipediaInterface wikiApi,
-	        WikipediaToFreebase w2f, EntityToAnchors e2a) {
+	public <A extends Annotation> GreedyFeaturePack(Annotation a, String query, QueryInformation qi, HashSet<A> partialSolution,
+	        WikipediaInterface wikiApi, WikipediaToFreebase w2f, EntityToAnchors e2a) {
 		super(getFeaturesStatic(a, query, qi, partialSolution, wikiApi, w2f, e2a));
 	}
 	
@@ -35,8 +35,9 @@ public class GreedyFeaturePack extends FeaturePack<Annotation> {
 		super(null);
 	}
 	
-	public static HashMap<String, Double> getFeaturesStatic(Annotation a, String query, QueryInformation qi, HashSet<Annotation> partialSolution,
-	        WikipediaInterface wikiApi, WikipediaToFreebase w2f, EntityToAnchors e2a) {
+	public static <A extends Annotation> HashMap<String, Double> getFeaturesStatic(Annotation a, String query,
+	        QueryInformation qi, HashSet<A> partialSolution, WikipediaInterface wikiApi, WikipediaToFreebase w2f,
+	        EntityToAnchors e2a) {
 		HashMap<String, Double> annotationFeatures = AnnotationFeaturePack.getFeaturesStatic(a, query, qi, wikiApi, w2f, e2a);
 
 		int queryTokens = SmaphUtils.tokenize(query).size();
@@ -61,80 +62,65 @@ public class GreedyFeaturePack extends FeaturePack<Annotation> {
 		
 		if (partialSolution.size() >= 1) {
 			// Features: Annotation -- partial solution
-			{
-				Vector<Double> relatednessPairsJaccardBefore = new Vector<>();
-				Vector<Double> relatednessPairsMWBefore = new Vector<>();
-				for (Annotation a1 : partialSolution)
-					for (Annotation a2 : partialSolution)
-						if (a1 != a2) {
-							relatednessPairsJaccardBefore
-							.add(WATRelatednessComputer.getJaccardRelatedness(a1.getConcept(), a2.getConcept()));
-							relatednessPairsMWBefore.add(WATRelatednessComputer.getMwRelatedness(a1.getConcept(), a2.getConcept()));
-						}
+			Vector<Double> relatednessPairsJaccardBefore = new Vector<>();
+			Vector<Double> relatednessPairsMWBefore = new Vector<>();
+			for (Annotation a1 : partialSolution)
+				for (Annotation a2 : partialSolution)
+					if (a1 != a2) {
+						relatednessPairsJaccardBefore
+						.add(WATRelatednessComputer.getJaccardRelatedness(a1.getConcept(), a2.getConcept()));
+						relatednessPairsMWBefore.add(WATRelatednessComputer.getMwRelatedness(a1.getConcept(), a2.getConcept()));
+					}
 
-				Triple<Double, Double, Double> minMaxAvgRelJaccard = SmaphUtils.getMinMaxAvg(relatednessPairsJaccardBefore);
-				annotationFeatures.put("min_relatedness_before", minMaxAvgRelJaccard.getLeft());
-				annotationFeatures.put("max_relatedness_before", minMaxAvgRelJaccard.getMiddle());
-				annotationFeatures.put("avg_relatedness_before", minMaxAvgRelJaccard.getRight());
+			Triple<Double, Double, Double> minMaxAvgRelJaccardPS = SmaphUtils.getMinMaxAvg(relatednessPairsJaccardBefore);
+			double minRelBefore = minMaxAvgRelJaccardPS.getLeft();
+			double maxRelBefore = minMaxAvgRelJaccardPS.getMiddle();
+			double avgRelBefore = minMaxAvgRelJaccardPS.getRight();
+			annotationFeatures.put("max_relatedness_before", maxRelBefore);
+			annotationFeatures.put("avg_relatedness_before", avgRelBefore);
 
-				Triple<Double, Double, Double> minMaxAvgRelMW = SmaphUtils.getMinMaxAvg(relatednessPairsMWBefore);
-				annotationFeatures.put("min_relatedness_mw_before", minMaxAvgRelMW.getLeft());
-				annotationFeatures.put("max_relatedness_mw_before", minMaxAvgRelMW.getMiddle());
-				annotationFeatures.put("avg_relatedness_mw_before", minMaxAvgRelMW.getRight());
-			}
-			
+			Triple<Double, Double, Double> minMaxAvgRelMWPS = SmaphUtils.getMinMaxAvg(relatednessPairsMWBefore);
+			double minRelMwBefore = minMaxAvgRelMWPS.getLeft();
+			double maxRelMwBefore = minMaxAvgRelMWPS.getMiddle();
+			annotationFeatures.put("max_relatedness_mw_before", maxRelMwBefore);
+
 			// Features: partial solution
-			{
-				Vector<Double> relatednessPairsJaccardThisA = new Vector<>();
-				Vector<Double> relatednessPairsMWThisA = new Vector<>();
-				for (Annotation aS : partialSolution) {
-					relatednessPairsJaccardThisA.add(WATRelatednessComputer.getJaccardRelatedness(a.getConcept(), aS.getConcept()));
-					relatednessPairsMWThisA.add(WATRelatednessComputer.getMwRelatedness(a.getConcept(), aS.getConcept()));
-				}
-
-
-				Triple<Double, Double, Double> minMaxAvgRelJaccard = SmaphUtils.getMinMaxAvg(relatednessPairsJaccardThisA);
-				annotationFeatures.put("min_relatedness", minMaxAvgRelJaccard.getLeft());
-				annotationFeatures.put("max_relatedness", minMaxAvgRelJaccard.getMiddle());
-				annotationFeatures.put("avg_relatedness", minMaxAvgRelJaccard.getRight());
-
-				Triple<Double, Double, Double> minMaxAvgRelMW = SmaphUtils.getMinMaxAvg(relatednessPairsMWThisA);
-				annotationFeatures.put("min_relatedness_mw", minMaxAvgRelMW.getLeft());
-				annotationFeatures.put("max_relatedness_mw", minMaxAvgRelMW.getMiddle());
-				annotationFeatures.put("avg_relatedness_mw", minMaxAvgRelMW.getRight());
+			Vector<Double> relatednessPairsJaccardThisA = new Vector<>();
+			Vector<Double> relatednessPairsMWThisA = new Vector<>();
+			for (Annotation aS : partialSolution) {
+				relatednessPairsJaccardThisA.add(WATRelatednessComputer.getJaccardRelatedness(a.getConcept(), aS.getConcept()));
+				relatednessPairsMWThisA.add(WATRelatednessComputer.getMwRelatedness(a.getConcept(), aS.getConcept()));
 			}
+
+			Triple<Double, Double, Double> minMaxAvgRelJaccard = SmaphUtils.getMinMaxAvg(relatednessPairsJaccardThisA);
+			double minRel = minMaxAvgRelJaccard.getLeft();
+			double avgRel = minMaxAvgRelJaccard.getRight();
+
+			Triple<Double, Double, Double> minMaxAvgRelMW = SmaphUtils.getMinMaxAvg(relatednessPairsMWThisA);
+			double minRelMW = minMaxAvgRelMW.getLeft();
+			double maxRelMW = minMaxAvgRelMW.getMiddle();
+			annotationFeatures.put("min_relatedness_mw", minRelMW);
+			annotationFeatures.put("max_relatedness_mw", maxRelMW);
 			
 			// Features: difference wrt partial solution
-			double newMinRelatedness = Math.min(annotationFeatures.get("min_relatedness"), annotationFeatures.get("min_relatedness_before"));
-			double newMaxRelatedness = Math.max(annotationFeatures.get("max_relatedness"), annotationFeatures.get("max_relatedness_before"));
-			double newMinRelatednessMw = Math.min(annotationFeatures.get("min_relatedness_mw"), annotationFeatures.get("min_relatedness_mw_before"));
-			double newMaxRelatednessMw = Math.max(annotationFeatures.get("max_relatedness_mw"), annotationFeatures.get("max_relatedness_mw_before"));
-			annotationFeatures.put("min_relatedness_diff", newMinRelatedness - annotationFeatures.get("min_relatedness_before"));
-			annotationFeatures.put("max_relatedness_diff", newMaxRelatedness - annotationFeatures.get("max_relatedness_before"));
-			annotationFeatures.put("avg_relatedness_diff", annotationFeatures.get("avg_relatedness") - annotationFeatures.get("avg_relatedness_before"));
-			annotationFeatures.put("min_relatedness_mw_diff", newMinRelatednessMw - annotationFeatures.get("min_relatedness_mw_before"));
-			annotationFeatures.put("max_relatedness_mw_diff", newMaxRelatednessMw - annotationFeatures.get("max_relatedness_mw_before"));
-			annotationFeatures.put("avg_relatedness_mw_diff", annotationFeatures.get("avg_relatedness_mw") - annotationFeatures.get("avg_relatedness_mw_before"));
+			double newMinRelatedness = Math.min(minRel, minRelBefore);
+			double newMinRelatednessMw = Math.min(minRelMW, minRelMwBefore);
+			double newMaxRelatednessMw = Math.max(maxRelMW, maxRelMwBefore);
+			annotationFeatures.put("min_relatedness_diff", newMinRelatedness - minRelBefore);
+			annotationFeatures.put("avg_relatedness_diff", avgRel - avgRelBefore);
+			annotationFeatures.put("min_relatedness_mw_diff", newMinRelatednessMw - minRelMwBefore);
+			annotationFeatures.put("max_relatedness_mw_diff", newMaxRelatednessMw - maxRelMwBefore);
 		} else {
 			// In case the partial solution is empty (first step), these features get the same values and will be discarded.
-			annotationFeatures.put("min_relatedness_before", 0.0);
 			annotationFeatures.put("max_relatedness_before", 0.0);
 			annotationFeatures.put("avg_relatedness_before", 0.0);
-			annotationFeatures.put("min_relatedness_mw_before", 0.0);
 			annotationFeatures.put("max_relatedness_mw_before", 0.0);
-			annotationFeatures.put("avg_relatedness_mw_before", 0.0);
-			annotationFeatures.put("min_relatedness", 0.0);
-			annotationFeatures.put("max_relatedness", 0.0);
-			annotationFeatures.put("avg_relatedness", 0.0);
 			annotationFeatures.put("min_relatedness_mw", 0.0);
 			annotationFeatures.put("max_relatedness_mw", 0.0);
-			annotationFeatures.put("avg_relatedness_mw", 0.0);
 			annotationFeatures.put("min_relatedness_diff", 0.0);
-			annotationFeatures.put("max_relatedness_diff", 0.0);
 			annotationFeatures.put("avg_relatedness_diff", 0.0);
 			annotationFeatures.put("min_relatedness_mw_diff", 0.0);
 			annotationFeatures.put("max_relatedness_mw_diff", 0.0);
-			annotationFeatures.put("avg_relatedness_mw_diff", 0.0);
 		}
 
 		return annotationFeatures;
@@ -155,24 +141,15 @@ public class GreedyFeaturePack extends FeaturePack<Annotation> {
 			v.add("segments_lp_sum");
 			v.add("segments_lp_avg");
 			v.add("segments_lp_ratio");
-			v.add("min_relatedness_before");
 			v.add("max_relatedness_before");
 			v.add("avg_relatedness_before");
-			v.add("min_relatedness_mw_before");
 			v.add("max_relatedness_mw_before");
-			v.add("avg_relatedness_mw_before");
-			v.add("min_relatedness");
-			v.add("max_relatedness");
-			v.add("avg_relatedness");
 			v.add("min_relatedness_mw");
 			v.add("max_relatedness_mw");
-			v.add("avg_relatedness_mw");
 			v.add("min_relatedness_diff");
-			v.add("max_relatedness_diff");
 			v.add("avg_relatedness_diff");
 			v.add("min_relatedness_mw_diff");
 			v.add("max_relatedness_mw_diff");
-			v.add("avg_relatedness_mw_diff");
 			ftrNames = v.toArray(new String[] {});
 		}
 		return ftrNames;

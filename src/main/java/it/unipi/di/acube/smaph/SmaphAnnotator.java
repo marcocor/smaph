@@ -656,6 +656,7 @@ public class SmaphAnnotator implements Sa2WSystem {
 	 * @param efCandidates 
 	 * @param arCandidates 
 	 * @param collCandidates 
+	 * @param greedyStep 
 	 * @param greedyCandidates 
 	 * @param greedyVectorsToF1Incr 
 	 * @param keepNEOnly
@@ -683,7 +684,7 @@ public class SmaphAnnotator implements Sa2WSystem {
 			List<Pair<FeaturePack<HashSet<Annotation>>, Double>> collVectorsToF1,
 			List<HashSet<Annotation>> collCandidates,
 			HashSet<Annotation> greedyPartialSolution,
-			List<Pair<FeaturePack<Annotation>, Double>> greedyVectorsToF1Incr,
+			int greedyStep, List<Pair<FeaturePack<Annotation>, Double>> greedyVectorsToF1Incr,
 			List<Annotation> greedyCandidates,
 			boolean keepNEOnly,
 	        SmaphDebugger debugger) throws Exception {
@@ -751,7 +752,7 @@ public class SmaphAnnotator implements Sa2WSystem {
 		}
 
 		// Generate examples for greedy regressor
-		if (greedyVectorsToF1Incr != null) {
+		if (greedyVectorsToF1Incr != null && greedyPartialSolution.size() == greedyStep) {
 			List<Triple<Annotation, GreedyFeaturePack, Double>> annotationsAndFtrAndIncrements = getGreedyAnnotationToFtrsAndIncrement(
 					query, qi, goldStandardAnn, greedyPartialSolution, new StrongAnnotationMatch(wikiApi));
 			for (Triple<Annotation, GreedyFeaturePack, Double> annotationsAndFtrAndIncrement : annotationsAndFtrAndIncrements) {

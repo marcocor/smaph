@@ -16,19 +16,30 @@
 
 package it.unipi.di.acube.smaph.learn;
 
-import it.unipi.di.acube.batframework.utils.Pair;
-import it.unipi.di.acube.smaph.SmaphUtils;
-import it.unipi.di.acube.smaph.learn.featurePacks.FeaturePack;
-import it.unipi.di.acube.smaph.learn.models.LibSvmModel;
-import it.unipi.di.acube.smaph.learn.models.RankLibModel;
-import it.unipi.di.acube.smaph.learn.normalizer.FeatureNormalizer;
-
-import java.io.*;
-import java.util.*;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.Serializable;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Vector;
 
 import org.apache.commons.lang.ArrayUtils;
 
-import libsvm.*;
+import com.google.common.primitives.Doubles;
+
+import de.bwaldvogel.liblinear.Feature;
+import de.bwaldvogel.liblinear.Problem;
+import it.unipi.di.acube.batframework.utils.Pair;
+import it.unipi.di.acube.smaph.SmaphUtils;
+import it.unipi.di.acube.smaph.learn.featurePacks.FeaturePack;
+import it.unipi.di.acube.smaph.learn.models.LibLinearModel;
+import it.unipi.di.acube.smaph.learn.models.LibSvmModel;
+import it.unipi.di.acube.smaph.learn.models.RankLibModel;
+import it.unipi.di.acube.smaph.learn.normalizer.FeatureNormalizer;
+import libsvm.svm_node;
+import libsvm.svm_problem;
 
 public class ExampleGatherer<T extends Serializable, G extends Serializable> {
 	private List<List<Pair<FeaturePack<T>, Double>>> featureVectorsAndTargetGroups = new Vector<>();
@@ -70,6 +81,15 @@ public class ExampleGatherer<T extends Serializable, G extends Serializable> {
 		for (List<Pair<FeaturePack<T>, Double>> featureVectorAndGold : featureVectorsAndTargetGroups)
 			count += featureVectorAndGold.size();
 		return count;
+	}
+	
+	public double getHighestTarget(){
+		double highest = Double.NEGATIVE_INFINITY;
+		for (List<Pair<FeaturePack<T>, Double>> featureVectorAndGold : featureVectorsAndTargetGroups)
+			for (Pair<FeaturePack<T>, Double> p : featureVectorAndGold)
+				if (p.second > highest)
+					highest = p.second;
+		return highest;
 	}
 
 	public List<FeaturePack<T>> getAllFeaturePacks() {
@@ -123,6 +143,26 @@ public class ExampleGatherer<T extends Serializable, G extends Serializable> {
 			targets.add(vectAndGold.second);
 		}
 		return createProblem(targets, ftrVectors);
+	}
+	
+
+
+	public Problem generateLibLinearProblem(int[] features, FeatureNormalizer fn) {
+		Problem problem = new Problem();
+		Vector<Double> targets = new Vector<Double>();
+		Vector<Feature[]> ftrVectors = new Vector<Feature[]>();
+		List<Pair<FeaturePack<T>, Double>> plainVectors = getPlain();
+		for (Pair<FeaturePack<T>, Double> vectAndGold : plainVectors) {
+			ftrVectors.add(LibLinearModel.featureMapToFeatures(
+					fn.ftrToNormalizedFtrArray(vectAndGold.first), features));
+			targets.add(vectAndGold.second);
+		}
+
+		problem.l = ftrVectors.size();
+		problem.n = features.length;
+		problem.x = ftrVectors.toArray(new Feature[][]{});
+		problem.y = Doubles.toArray(targets);
+		return problem;
 	}
 
 	/**
@@ -195,6 +235,21 @@ public class ExampleGatherer<T extends Serializable, G extends Serializable> {
 		}
 		return res;
 		
+	}
+
+	public List<Vector<Pair<FeaturePack<T>, T>>> getDataAndFeaturePacksOnePerInstance() {
+		List<Vector<Pair<FeaturePack<T>, T>>> res = new Vector<>();
+		for (int i = 0; i < featureVectorsAndTargetGroups.size(); i++) {
+			List<Pair<FeaturePack<T>, Double>> ftrPackAndTargets = featureVectorsAndTargetGroups.get(i);
+			List<T> data = groupDatas.get(i);
+			Vector<Pair<FeaturePack<T>, T>> ftrVectors = new Vector<Pair<FeaturePack<T>, T>>();
+			for (int j = 0; j < ftrPackAndTargets.size(); j++) {
+				Pair<FeaturePack<T>, Double> ftrPackAndTarget = ftrPackAndTargets.get(j);
+				ftrVectors.add(new Pair<FeaturePack<T>, T>(ftrPackAndTarget.first, data.get(j)));
+			}
+			res.add(new Vector<Pair<FeaturePack<T>, T>>(ftrVectors));
+		}
+		return res;
 	}
 
 	private svm_problem createProblem(Vector<Double> targets,

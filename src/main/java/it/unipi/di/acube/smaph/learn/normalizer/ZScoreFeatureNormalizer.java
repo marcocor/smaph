@@ -20,7 +20,7 @@ import it.unipi.di.acube.smaph.SmaphUtils;
 import it.unipi.di.acube.smaph.learn.ExampleGatherer;
 import it.unipi.di.acube.smaph.learn.featurePacks.FeaturePack;
 
-public class ZScoreFeatureNormalizer extends FeatureNormalizer {
+public class ZScoreFeatureNormalizer extends FeatureNormalizer implements Serializable {
 
 	private HashMap<String, Double> avgs = new HashMap<>();
 	private HashMap<String, Double> stdDevs = new HashMap<>();

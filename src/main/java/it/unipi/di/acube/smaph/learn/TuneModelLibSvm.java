@@ -20,6 +20,7 @@ import java.io.File;
 import java.io.Serializable;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -40,7 +41,13 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import de.bwaldvogel.liblinear.Linear;
+import de.bwaldvogel.liblinear.Model;
+import de.bwaldvogel.liblinear.Parameter;
+import de.bwaldvogel.liblinear.Problem;
+import de.bwaldvogel.liblinear.SolverType;
 import it.unipi.di.acube.batframework.data.Annotation;
+import it.unipi.di.acube.batframework.data.ScoredAnnotation;
 import it.unipi.di.acube.batframework.data.Tag;
 import it.unipi.di.acube.batframework.systemPlugins.CachedWATAnnotator;
 import it.unipi.di.acube.batframework.utils.Pair;
@@ -48,20 +55,25 @@ import it.unipi.di.acube.batframework.utils.WikipediaInterface;
 import it.unipi.di.acube.batframework.utils.WikipediaLocalInterface;
 import it.unipi.di.acube.smaph.SmaphAnnotator;
 import it.unipi.di.acube.smaph.SmaphBuilder;
+import it.unipi.di.acube.smaph.SmaphBuilder.SmaphVersion;
+import it.unipi.di.acube.smaph.SmaphBuilder.Websearch;
 import it.unipi.di.acube.smaph.SmaphConfig;
 import it.unipi.di.acube.smaph.SmaphUtils;
 import it.unipi.di.acube.smaph.WATRelatednessComputer;
-import it.unipi.di.acube.smaph.SmaphBuilder.SmaphVersion;
 import it.unipi.di.acube.smaph.datasets.wikiAnchors.EntityToAnchors;
 import it.unipi.di.acube.smaph.datasets.wikitofreebase.WikipediaToFreebase;
 import it.unipi.di.acube.smaph.learn.GenerateTrainingAndTest.OptDataset;
 import it.unipi.di.acube.smaph.learn.ParameterTester.ParameterTesterAR;
 import it.unipi.di.acube.smaph.learn.ParameterTester.ParameterTesterEF;
+import it.unipi.di.acube.smaph.learn.ParameterTester.ParameterTesterGreedy;
 import it.unipi.di.acube.smaph.learn.featurePacks.AnnotationFeaturePack;
 import it.unipi.di.acube.smaph.learn.featurePacks.EntityFeaturePack;
+import it.unipi.di.acube.smaph.learn.featurePacks.FeaturePack;
+import it.unipi.di.acube.smaph.learn.featurePacks.GreedyFeaturePack;
 import it.unipi.di.acube.smaph.learn.models.entityfilters.LibSvmEntityFilter;
 import it.unipi.di.acube.smaph.learn.models.linkback.annotationRegressor.LibSvmAnnotationRegressor;
 import it.unipi.di.acube.smaph.learn.normalizer.ZScoreFeatureNormalizer;
+import it.unipi.di.acube.smaph.linkback.GreedyLinkback;
 
 public class TuneModelLibSvm {
 	private final static Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -96,6 +108,7 @@ public class TuneModelLibSvm {
 
 		options.addOption(OptionBuilder.withLongOpt("opt-annotation-regressor").withDescription("Optimize single-annotation regressor.").create("a"));
 		options.addOption(OptionBuilder.withLongOpt("opt-entity-filter").withDescription("Optimize single-entity filter.").create("e"));
+		options.addOption(OptionBuilder.withLongOpt("opt-greedy-regressor").withDescription("Optimize greedy regressors.").create("g"));
 		options.addOption(OptionBuilder.withLongOpt("ftr-sel-method").hasArg().withArgName("FTR_SEL_METHOD").withDescription("Feature selection method. Can be either `ablation' (default), `oneshot' or `increment'").create("m"));
 		options.addOption(OptionBuilder.withLongOpt("restrict-ftr-set").hasArgs().withArgName("RESTRICT_FTR_SET").withDescription("Feature restriction set (initial features for `ablation' and `oneshot' methods, pool of selectable features for `increment'), e.g. `1,3,6,7,8'. Multiple sets can be defined (separated by a space). Defaults to all features.").create("f"));
 		options.addOption(OptionBuilder.withLongOpt("initial-ftr-set").hasArgs().withArgName("INIT_FTR_SET").withDescription("Initial feature set. Considered for `increment' method only. Defaults to no features.").create("i"));
@@ -135,8 +148,8 @@ public class TuneModelLibSvm {
 		OptDataset opt = OptDataset.SMAPH_DATASET;
 
 		String ftrSelMethod = line.getOptionValue("ftr-sel-method", "ablation");
-		if (!ftrSelMethod.equals("ablation") && !ftrSelMethod.equals("increment") && !ftrSelMethod.equals("oneshot"))
-			throw new IllegalArgumentException("ftr-sel-method must be either `ablation', `oneshot' or `increment'.");
+		if (!ftrSelMethod.equals("ablation") && !ftrSelMethod.equals("ablation-rank") && !ftrSelMethod.equals("increment") && !ftrSelMethod.equals("oneshot"))
+			throw new IllegalArgumentException("ftr-sel-method must be either `ablation', `ablation-rank', `oneshot' or `increment'.");
 
 		int[][] ftrRestriction = null;
 		if (line.hasOption("restrict-ftr-set")) {
@@ -192,6 +205,24 @@ public class TuneModelLibSvm {
 						readableBestModels.add(smaphGatherer.getName() + modelAndStats.second.getReadable());
 					}
 		}
+		
+		if (line.hasOption("opt-greedy-regressor")) {
+			for (int topKS1i : topKS1)
+				for (int topKS2i : topKS2)
+					for (int topKS3i : topKS3) {
+						String label = SmaphBuilder.getSourceLabel(SmaphVersion.GREEDY, ws, topKS1i, topKS2i, topKS3i);
+						SmaphAnnotator smaphGatherer = SmaphBuilder
+						        .getSmaphGatherer(wikiApi, w2f, e2a, true, topKS1i, true, topKS2i, true, topKS3i, ws, c)
+						        .appendName("-" + label);
+						Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult> modelAndStats = trainIterativeGreedy(
+						        smaphGatherer, opt, OptimizaionProfiles.MAXIMIZE_MACRO_F1, -1.0, ftrSelMethod,
+						        ftrRestriction, initialFtrSet, ws, topKS1i, topKS2i, topKS3i);
+						System.gc();
+						for (ModelConfigurationResult res : modelAndStats.first)
+							LOG.info(res.getReadable());
+						readableBestModels.add(smaphGatherer.getName() + modelAndStats.second.getReadable());
+					}
+		}
 		for (String readable : readableBestModels)
 			LOG.info("Overall best model: {}", readable);
 
@@ -220,7 +251,7 @@ public class TuneModelLibSvm {
 		ExampleGatherer<Tag, HashSet<Tag>> develGatherer = new ExampleGatherer<Tag, HashSet<Tag>>();
 
 		GenerateTrainingAndTest.gatherExamplesTrainingAndDevel(annotator, trainGatherer, develGatherer, null, null, null, null,
-				null, null, null, null, null, wikiApi, w2f, optDs);
+				null, null, -1, null, null, null, null, wikiApi, w2f, optDs);
 
 		int[] allFtrs = SmaphUtils.getAllFtrVect(new EntityFeaturePack().getFeatureCount());
 
@@ -318,7 +349,8 @@ public class TuneModelLibSvm {
 					if (ftrSelMethod.equals("ablation"))
 						new AblationFeatureSelector<Tag, HashSet<Tag>>(pt, optProfile, optProfileThreshold,
 						        scoreboardFtrSelection).run();
-
+					else if (ftrSelMethod.equals("ablation-rank"))
+						new AblationRankFeatureSelector<Tag, HashSet<Tag>>(pt, scoreboardFtrSelection).run();
 					else if (ftrSelMethod.equals("increment"))
 						new IncrementalFeatureSelector<Tag, HashSet<Tag>>(pt, bestFeatures, restrictFeaturesI, optProfile,
 						        optProfileThreshold, scoreboardFtrSelection).run();
@@ -368,7 +400,7 @@ public class TuneModelLibSvm {
 		ExampleGatherer<Annotation, HashSet<Annotation>> develGatherer = new ExampleGatherer<>();
 
 		GenerateTrainingAndTest.gatherExamplesTrainingAndDevel(annotator, null, null, trainGatherer, develGatherer, null, null,
-		        null, null, null, null, null, wikiApi, w2f, optDs);
+		        null, null, -1, null, null, null, null, wikiApi, w2f, optDs);
 
 		int[] allFtrs = SmaphUtils.getAllFtrVect(new AnnotationFeaturePack().getFeatureCount());
 
@@ -453,6 +485,8 @@ public class TuneModelLibSvm {
 					if (ftrSelMethod.equals("ablation"))
 						new AblationFeatureSelector<Annotation, HashSet<Annotation>>(pt, optProfile, optProfileThreshold,
 						        scoreboardFtrSelection).run();
+					else if (ftrSelMethod.equals("ablation-rank"))
+						new AblationRankFeatureSelector<Annotation, HashSet<Annotation>>(pt, scoreboardFtrSelection).run();
 					else if (ftrSelMethod.equals("increment"))
 						new IncrementalFeatureSelector<Annotation, HashSet<Annotation>>(pt, bestFeatures, restrictedFeaturesI,
 						        optProfile, optProfileThreshold, scoreboardFtrSelection).run();
@@ -496,6 +530,230 @@ public class TuneModelLibSvm {
 		return new Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult>(globalScoreboard, globalBest);
 	}
 
+	private static Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult> trainIterativeGreedy(SmaphAnnotator annotator,
+	        OptDataset optDs, OptimizaionProfiles optProfile, double optProfileThreshold, String ftrSelMethod,
+	        int[][] restrictFeatures, int[] initFeatures, Websearch ws, int topKS1, int topKS2, int topKS3) throws Exception {
+		
+		{
+			int step = 0;
+			while (SmaphBuilder.getModelFile(SmaphVersion.GREEDY, ws, topKS1, topKS2, topKS3, step).exists()) {
+				File model = SmaphBuilder.getModelFile(SmaphVersion.GREEDY, ws, topKS1, topKS2, topKS3, step);
+				File fn = SmaphBuilder.getZscoreNormalizerFile(SmaphVersion.GREEDY, ws, topKS1, topKS2, topKS3, step);
+				LOG.info("Deleting file {}", model.getAbsolutePath());
+				model.delete();
+				LOG.info("Deleting file {}", fn.getAbsolutePath());
+				fn.delete();
+				step++;
+			}
+		}
+		
+		int step = 0;
+		List<HashSet<Annotation>> partialSolutionsTrain = new Vector<>();
+		List<HashSet<Annotation>> partialSolutionsDevel = new Vector<>();
+		Vector<ModelConfigurationResult> allModels = new Vector<>();
+		ModelConfigurationResult previousBest = null;
+		do {
+			Pair<Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult>, Pair<ZScoreFeatureNormalizer, LibSvmAnnotationRegressor>> p = trainIterativeGreedyStep(annotator, partialSolutionsTrain, partialSolutionsDevel, step, optDs, optProfile, optProfileThreshold, ftrSelMethod, restrictFeatures, initFeatures, previousBest);
+			if (p == null) {
+				LOG.info("Greedy step {}. No improvement is possible, stopping.", step);
+				break;
+			}
+			ModelConfigurationResult bestConfigurationStep = p.first.second;
+			Vector<ModelConfigurationResult> allModelsStep = p.first.first;
+			ZScoreFeatureNormalizer fnStep = p.second.first;
+			LibSvmAnnotationRegressor bestModelStep = p.second.second;
+			
+			allModels.addAll(allModelsStep);
+			
+			if (previousBest == null || previousBest.worseThan(bestConfigurationStep, optProfile, optProfileThreshold)) {
+				LOG.info("Greedy step {}. Found a better model: {}", step, bestConfigurationStep.getReadable());
+				File modelFile = SmaphBuilder.getModelFile(SmaphVersion.GREEDY, ws, topKS1, topKS2, topKS3, step);
+				File normFile = SmaphBuilder.getZscoreNormalizerFile(SmaphVersion.GREEDY, ws, topKS1, topKS2, topKS3, step);
+				fnStep.dump(normFile);
+				bestModelStep.toFile(modelFile);
+				previousBest = bestConfigurationStep;
+			} else {
+				LOG.info("Greedy step {} did not improve previous step. Stopping.");
+				break;
+			}
+			step++;
+		} while (true);
+		
+		return new Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult>(allModels,
+				ModelConfigurationResult.findBest(allModels, optProfile, optProfileThreshold));
+	}
+
+	private static boolean improvementPossibleGreedy(ExampleGatherer<Annotation, HashSet<Annotation>> gatherer) {
+		return gatherer.getHighestTarget() > 0;
+	}
+
+	private static Pair<Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult>, Pair<ZScoreFeatureNormalizer, LibSvmAnnotationRegressor>> trainIterativeGreedyStep(SmaphAnnotator annotator,
+			List<HashSet<Annotation>> partialSolutionsTrain, List<HashSet<Annotation>> partialSolutionsDevel, int step,
+	        OptDataset optDs, OptimizaionProfiles optProfile, double optProfileThreshold, String ftrSelMethod,
+	        int[][] restrictFeatures, int[] initFeatures, ModelConfigurationResult previousBest)
+	        throws Exception {
+		Vector<ModelConfigurationResult> globalScoreboard = new Vector<>();
+		int stepsCGamma = 6;
+		int fineStepsCGamma = 6;
+		int maxIterations = 10;
+		int fineTuneIterations = 3;
+		int thrSteps = 30;
+
+		ExampleGatherer<Annotation, HashSet<Annotation>> trainGatherer = new ExampleGatherer<>();
+		ExampleGatherer<Annotation, HashSet<Annotation>> develGatherer = new ExampleGatherer<>();
+
+		GenerateTrainingAndTest.gatherExamplesTrainingAndDevel(annotator, null, null, null, null, null, null,
+				partialSolutionsTrain, partialSolutionsDevel, step, trainGatherer, develGatherer, null, null, wikiApi, w2f, optDs);
+
+		if (!improvementPossibleGreedy(trainGatherer) || !improvementPossibleGreedy(develGatherer))
+			return null;
+		
+		int[] allFtrs = SmaphUtils.getAllFtrVect(new GreedyFeaturePack().getFeatureCount());
+
+		if (restrictFeatures == null)
+			restrictFeatures = new int[][] { allFtrs };
+
+		for (int[] restrictedFeaturesI : restrictFeatures) {
+			Vector<ModelConfigurationResult> restrictedFeaturesScoreboard = new Vector<>();
+			ModelConfigurationResult bestResult = null;
+
+			int[] bestFeatures = ftrSelMethod.equals("increment") ? initFeatures : restrictedFeaturesI;
+
+			double bestC = 1;
+			double bestGamma = 1.0 / (bestFeatures == null ? allFtrs : bestFeatures).length;
+			for (int iteration = 0; iteration < maxIterations; iteration++) {
+				int[] gammaCFeatures = bestFeatures == null ? allFtrs : bestFeatures;
+
+				// Broad-tune C and Gamma
+				ModelConfigurationResult bestCGammaResult = null;
+				{
+					double cMin = bestC * 0.7;
+					double cMax = bestC * 1.8;
+					double gammaMin = bestGamma * 0.7;
+					double gammaMax = bestGamma * 1.8;
+
+					Vector<ModelConfigurationResult> scoreboardGammaCTuning = new Vector<>();
+					ParameterTesterGreedy pt = new ParameterTesterGreedy(partialSolutionsDevel, gammaCFeatures, trainGatherer,
+					        develGatherer, bestGamma, bestC, optProfile, optProfileThreshold, thrSteps, wikiApi, step);
+					
+					new GammaCSelector<Annotation, HashSet<Annotation>>(cMin, cMax, bestC, (cMax - cMin) / stepsCGamma / 10.0,
+					        gammaMin, gammaMax, bestGamma, (gammaMax - gammaMin) / stepsCGamma / 10.0, stepsCGamma, pt,
+					        scoreboardGammaCTuning).run();
+					bestCGammaResult = ModelConfigurationResult.findBest(scoreboardGammaCTuning, optProfile, optProfileThreshold);
+
+					bestC = bestCGammaResult.getC();
+					bestGamma = bestCGammaResult.getGamma();
+					if (!ftrSelMethod.equals("increment"))
+						restrictedFeaturesScoreboard.addAll(scoreboardGammaCTuning);
+					LOG.info("Greedy step {}. Done broad gamma-C tuning (iteration {}) best gamma/C: {}/{}", step, iteration, bestGamma, bestC);
+				}
+
+				// Fine-tune C and Gamma
+				Vector<ModelConfigurationResult> scoreboardGammaCTuning = new Vector<>();
+				for (int i = 0; i < fineTuneIterations; i++) {
+					double fineCMin = bestC * 0.85;
+					double fineGammaMin = bestGamma * 0.85;
+					double fineCMax = bestC * 1.20;
+					double fineGammaMax = bestGamma * 1.20;
+					ParameterTesterGreedy pt = new ParameterTesterGreedy(partialSolutionsDevel, gammaCFeatures, trainGatherer,
+					        develGatherer, bestGamma, bestC, optProfile, optProfileThreshold, thrSteps, wikiApi, step);
+
+					new GammaCSelector<Annotation, HashSet<Annotation>>(fineCMin, fineCMax, bestC,
+					        (fineCMax - fineCMin) / fineStepsCGamma / 5.0, fineGammaMin, fineGammaMax, bestGamma,
+					        (fineGammaMax - fineGammaMin) / fineStepsCGamma / 5.0, fineStepsCGamma, pt, scoreboardGammaCTuning).run();
+					ModelConfigurationResult newBestCGammaResult = ModelConfigurationResult.findBest(scoreboardGammaCTuning,
+					        optProfile, optProfileThreshold);
+
+					if (bestCGammaResult.worseThan(newBestCGammaResult, optProfile, optProfileThreshold)) {
+						bestCGammaResult = newBestCGammaResult;
+						bestC = bestCGammaResult.getC();
+						bestGamma = bestCGammaResult.getGamma();
+
+						LOG.info("Greedy step {}. Done fine gamma-C tuning (outer iteration {}, inner iteration {}) best gamma/C: {}/{}",
+						        step, iteration, i, bestGamma, bestC);
+					} else {
+						LOG.info(
+						        "Greedy step {}. No advances in inner gamma-C iteration (outer iteration {}, inner iteration {}) best gamma/C: {}/{}",
+						        step, iteration, i, bestGamma, bestC);
+						break;
+					}
+				}
+				if (!ftrSelMethod.equals("increment"))
+					restrictedFeaturesScoreboard.addAll(scoreboardGammaCTuning);
+
+				// Do feature selection
+				if (!ftrSelMethod.equals("oneshot")) {
+					Vector<ModelConfigurationResult> scoreboardFtrSelection = new Vector<>();
+
+					ParameterTesterGreedy pt = new ParameterTesterGreedy(partialSolutionsDevel, bestFeatures, trainGatherer,
+					        develGatherer, bestGamma, bestC, optProfile, optProfileThreshold, thrSteps, wikiApi, step);
+
+					if (ftrSelMethod.equals("ablation"))
+						new AblationFeatureSelector<Annotation, HashSet<Annotation>>(pt, optProfile, optProfileThreshold,
+						        scoreboardFtrSelection).run();
+					else if (ftrSelMethod.equals("ablation-rank"))
+						new AblationRankFeatureSelector<Annotation, HashSet<Annotation>>(pt, scoreboardFtrSelection).run();
+					else if (ftrSelMethod.equals("increment"))
+						new IncrementalFeatureSelector<Annotation, HashSet<Annotation>>(pt, bestFeatures, restrictedFeaturesI,
+						        optProfile, optProfileThreshold, scoreboardFtrSelection).run();
+
+					ModelConfigurationResult newBest = ModelConfigurationResult.findBest(scoreboardFtrSelection, optProfile, optProfileThreshold);
+					if (newBest != null)
+						bestFeatures = newBest.getFeatures();
+
+					restrictedFeaturesScoreboard.addAll(scoreboardFtrSelection);
+					LOG.info("Greedy step {}. Done feature selection (iteration {}).", step, iteration);
+				}
+
+				// Fine-tune threshold
+				{
+					int finalThrSteps = 100;
+					restrictedFeaturesScoreboard.add(new ParameterTesterGreedy(partialSolutionsDevel, bestFeatures, trainGatherer,
+					        develGatherer, bestGamma, bestC, optProfile, optProfileThreshold, finalThrSteps, wikiApi, step).call());
+					LOG.info("Greedy step {}. Done fine threshold selection (iteration {}).", step, iteration);
+				}
+
+				ModelConfigurationResult newBest = ModelConfigurationResult.findBest(restrictedFeaturesScoreboard, optProfile,
+				        optProfileThreshold);
+				if (bestResult != null && newBest.equalResult(bestResult, optProfile, optProfileThreshold)) {
+					LOG.info("Greedy step {}. Not improving, stopping on iteration {}.", step, iteration);
+					break;
+				}
+				bestResult = newBest;
+			}
+			globalScoreboard.addAll(restrictedFeaturesScoreboard);
+			LOG.info("Greedy step {}. Best result for restricted features iteration: {}", step, bestResult.getReadable());
+		}
+
+		ModelConfigurationResult globalBest = ModelConfigurationResult.findBest(globalScoreboard, optProfile,
+		        optProfileThreshold);
+
+		ZScoreFeatureNormalizer scaleFn = ZScoreFeatureNormalizer.fromGatherer(trainGatherer);
+		LibSvmAnnotationRegressor bestGreedy = ParameterTesterGreedy.getRegressor(trainGatherer, scaleFn, globalBest.getFeatures(),
+		        globalBest.getGamma(), globalBest.getC(), globalBest.getThreshold());
+
+		// Update partial solutions
+		List<Vector<Pair<FeaturePack<Annotation>, Annotation>>> ftrPacksAndAnnotationsTrain = trainGatherer.getDataAndFeaturePacksOnePerInstance();
+		List<Vector<Pair<FeaturePack<Annotation>, Annotation>>> ftrPacksAndAnnotationsDevel = develGatherer.getDataAndFeaturePacksOnePerInstance();
+		
+		if (ftrPacksAndAnnotationsTrain.size() != partialSolutionsTrain.size() || ftrPacksAndAnnotationsDevel.size() != partialSolutionsDevel.size())
+			throw new IllegalStateException();
+
+		for (int i=0; i<ftrPacksAndAnnotationsTrain.size(); i++){
+			ScoredAnnotation a = GreedyLinkback.getStepAnnotation(ftrPacksAndAnnotationsTrain.get(i), bestGreedy, scaleFn);
+			if (a != null)
+				partialSolutionsTrain.get(i).add(a);
+		}
+
+		for (int i=0; i<ftrPacksAndAnnotationsDevel.size(); i++){
+			ScoredAnnotation a = GreedyLinkback.getStepAnnotation(ftrPacksAndAnnotationsDevel.get(i), bestGreedy, scaleFn);
+			if (a != null)
+				partialSolutionsDevel.get(i).add(a);
+		}
+
+		return new Pair<Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult>, Pair<ZScoreFeatureNormalizer, LibSvmAnnotationRegressor>>(new Pair<>(globalScoreboard, globalBest), new Pair<>(scaleFn, bestGreedy));
+	}
+	
 	private static class GammaCSelector<E extends Serializable, G extends Serializable> implements Runnable {
 		private double gammaMin, gammaMax, cMin, cMax;
 		private double kappaC, kappaGamma;
@@ -652,14 +910,12 @@ public class TuneModelLibSvm {
 			while (bestBase.getFeatures().length > 1) {
 				ExecutorService execServ = Executors.newFixedThreadPool(THREADS_NUM);
 				List<Future<ModelConfigurationResult>> futures = new Vector<>();
-				HashMap<Future<ModelConfigurationResult>, Integer> futureToFtrId = new HashMap<>();
 
 				for (int testFtrId : bestBase.getFeatures()) {
 					int[] pickedFtrsIteration = SmaphUtils.removeFtrVect(bestBase.getFeatures(), testFtrId);
 					try {
 						Future<ModelConfigurationResult> future = execServ.submit(pt.cloneWithFeatures(pickedFtrsIteration));
 						futures.add(future);
-						futureToFtrId.put(future, testFtrId);
 
 					} catch (Exception | Error e) {
 						e.printStackTrace();
@@ -684,6 +940,69 @@ public class TuneModelLibSvm {
 				else
 					bestBase = bestIter;
 			}
+		}
+	}
+
+	private static class AblationRankFeatureSelector<E extends Serializable, G extends Serializable> implements Runnable {
+		private Vector<ModelConfigurationResult> scoreboard;
+		private ParameterTester<E, G> pt;
+
+		public AblationRankFeatureSelector(ParameterTester<E, G> pt, Vector<ModelConfigurationResult> scoreboard) {
+			this.scoreboard = scoreboard;
+			this.pt = pt;
+		}
+
+		@Override
+		public void run() {
+			ExecutorService execServ = Executors.newFixedThreadPool(THREADS_NUM);
+			List<Future<ModelConfigurationResult>> futures = new Vector<>();
+
+			int[] ftrImportance = getFeatureImportance(pt.getTrainGatherer(), pt.getFeatures());
+			
+			while (ftrImportance.length > 0) {
+				try {
+					Future<ModelConfigurationResult> future = execServ.submit(pt.cloneWithFeatures(ftrImportance));
+					futures.add(future);
+				} catch (Exception | Error e) {
+					e.printStackTrace();
+					throw new RuntimeException(e);
+				}
+				ftrImportance = ArrayUtils.remove(ftrImportance, 0);
+			}
+
+			for (Future<ModelConfigurationResult> future : futures)
+				try {
+					ModelConfigurationResult res = future.get();
+					scoreboard.add(res);
+				} catch (InterruptedException | ExecutionException | Error e) {
+					throw new RuntimeException(e);
+				}
+			execServ.shutdown();
+		}
+		
+
+
+		/**
+		 * @param gatherer 
+		 * @param features 
+		 * @return an array of feature IDs (>=1), ordered by feature importance, without zero-importance features.
+		 */
+		private static <T extends Serializable, G extends Serializable> int[] getFeatureImportance(ExampleGatherer<T, G> gatherer,
+		        int[] features) {
+			ZScoreFeatureNormalizer scaleFn = ZScoreFeatureNormalizer.fromGatherer(gatherer);
+			Parameter param = new Parameter(SolverType.L2R_L2LOSS_SVR, 0.01, 0.001);
+			Problem problem = gatherer.generateLibLinearProblem(features, scaleFn);
+			Model m = Linear.train(problem, param);
+			double[] weights = m.getFeatureWeights();
+
+			int[] ftrImportance = Arrays.stream(features).boxed().sorted(new Comparator<Integer>() {
+				@Override
+				public int compare(Integer fId0, Integer fId1) {
+					return Double.compare(Math.abs(weights[ArrayUtils.indexOf(features, fId0)]), Math.abs(ArrayUtils.indexOf(features, fId1)));
+				}
+			}).filter(fId -> weights[ArrayUtils.indexOf(features, fId)] != 0.0).mapToInt(fId -> fId.intValue()).toArray();
+
+			return ftrImportance;
 		}
 	}
 

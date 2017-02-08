@@ -70,7 +70,7 @@ public abstract class LibSvmModel<T> implements Serializable {
 		return res;
 	}
 
-	public double predictScore(FeaturePack<T> fp, FeatureNormalizer fn) {
+	public <T2 extends T> double predictScore(FeaturePack<T2> fp, FeatureNormalizer fn) {
 		svm_node[] ftrVect = featuresArrayToNode(fn.ftrToNormalizedFtrArray(fp), getUsedFtr());
 		return svm.svm_predict(model, ftrVect);
 	}

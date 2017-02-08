@@ -10,6 +10,7 @@ import it.unipi.di.acube.batframework.metrics.StrongTagMatch;
 import it.unipi.di.acube.batframework.utils.Pair;
 import it.unipi.di.acube.batframework.utils.ProblemReduction;
 import it.unipi.di.acube.batframework.utils.WikipediaInterface;
+import it.unipi.di.acube.smaph.SmaphUtils;
 import it.unipi.di.acube.smaph.linkback.IndividualAnnotationLinkBack;
 
 import java.io.IOException;
@@ -27,20 +28,22 @@ import java.util.Vector;
  * @param <G> the type of the gold standard
  */
 public abstract class SolutionComputer <T extends Serializable, G extends Object> {
-	public abstract MetricsResultSet getResults(List<List<Pair<T, Double>>> candidateAndPred, List<G> gold) throws IOException;
-	public abstract double candidateScore(T candidate, G gold) throws IOException;
+	public abstract MetricsResultSet getResults() throws IOException;
 
 	public static class TagSetSolutionComputer extends SolutionComputer<Tag, HashSet<Tag>>{
 		private StrongTagMatch stm;
-			
-		public  TagSetSolutionComputer(WikipediaInterface wikiApi){
-			stm = new StrongTagMatch(wikiApi);
+		private List<HashSet<Tag>> gold;
+		private List<List<Pair<Tag, Double>>> candidateAndPreds;
+
+		public TagSetSolutionComputer(WikipediaInterface wikiApi, List<List<Pair<Tag, Double>>> candidateAndPreds,
+		        List<HashSet<Tag>> gold) {
+			this.stm = new StrongTagMatch(wikiApi);
+			this.gold = gold;
+			this.candidateAndPreds = candidateAndPreds;
 		}
-		
+
 		@Override
-		public MetricsResultSet getResults(
-				List<List<Pair<Tag, Double>>> candidateAndPreds,
-				List<HashSet<Tag>> gold) throws IOException {
+		public MetricsResultSet getResults() throws IOException {
 			List<HashSet<Tag>> solutionList = new Vector<>();
 			for (List<Pair<Tag, Double>> candidateAndPred : candidateAndPreds) {
 				HashSet<Tag> computedSolution = new HashSet<>();
@@ -56,29 +59,25 @@ public abstract class SolutionComputer <T extends Serializable, G extends Object
 			return m.getResult(solutionList, gold, stm);
 		}
 
-		@Override
-		public double candidateScore(Tag candidate, HashSet<Tag> gold) {
-			for (Tag t : gold)
-				if (stm.match(candidate, t))
-					return 1;
-			return 0;
-		}
-
 	}
 	
 	public static class AnnotationSetSolutionComputer extends SolutionComputer<Annotation, HashSet<Annotation>>{
 		private double threshold;
 		private MatchRelation<Annotation> am;
+		private List<List<Pair<Annotation, Double>>> candidateAndPreds;
+		private List<HashSet<Annotation>> gold;
 			
-		public  AnnotationSetSolutionComputer(WikipediaInterface wikiApi, double threshold){
+		public  AnnotationSetSolutionComputer(WikipediaInterface wikiApi, double threshold,
+				List<List<Pair<Annotation, Double>>> candidateAndPreds,
+		        List<HashSet<Annotation>> gold) {
 			this.threshold = threshold;
 			this.am = new StrongAnnotationMatch(wikiApi);
+			this.candidateAndPreds = candidateAndPreds;
+			this.gold = gold;
 		}
 		
 		@Override
-		public MetricsResultSet getResults(
-				List<List<Pair<Annotation, Double>>> candidateAndPreds,
-				List<HashSet<Annotation>> gold) throws IOException {
+		public MetricsResultSet getResults() throws IOException {
 			
 			List<HashSet<Annotation>> solutionList = new Vector<>();
 			for (List<Pair<Annotation, Double>> candidateAndPred : candidateAndPreds) {
@@ -98,25 +97,71 @@ public abstract class SolutionComputer <T extends Serializable, G extends Object
 					return 1;
 			return 0;
 		}
+	}
 
+	public static class GreedySolutionComputer extends SolutionComputer<Annotation, HashSet<Annotation>>{
+		private double threshold;
+		private MatchRelation<Annotation> am;
+		private List<HashSet<Annotation>> greedyPartialSolutions;
+		private List<HashSet<Annotation>> gold;
+		private List<List<Pair<Annotation, Double>>> candidateAndPreds;
+			
+		public  GreedySolutionComputer(WikipediaInterface wikiApi, double threshold, List<HashSet<Annotation>> greedyPartialSolutions,
+				List<List<Pair<Annotation, Double>>> candidateAndPreds,
+				List<HashSet<Annotation>> gold){
+			this.threshold = threshold;
+			this.am = new StrongAnnotationMatch(wikiApi);
+			this.greedyPartialSolutions = greedyPartialSolutions;
+			this.candidateAndPreds = candidateAndPreds;
+			this.gold = gold;
+		}
+		
 		@Override
-		public double candidateScore(Annotation candidate, HashSet<Annotation> gold) {
-			return candidateScoreStatic(candidate, gold, am);
+		public MetricsResultSet getResults() throws IOException {
+			
+			List<HashSet<Annotation>> solutionList = new Vector<>();
+			for (int i=0; i<gold.size(); i++) {
+				List<Pair<Annotation, Double>> candidateAndPred = candidateAndPreds.get(i);
+				HashSet<Annotation> computedSolution = new HashSet<>(greedyPartialSolutions.get(i));
+				if (!candidateAndPred.isEmpty()) {
+					Pair<Annotation, Double> highestPred = candidateAndPred.stream()
+					        .max(new SmaphUtils.ComparePairsBySecondElement<Annotation, Double>()).get();
+					if (highestPred.second >= threshold)
+						computedSolution.add(highestPred.first);
+				}
+				solutionList.add(computedSolution);
+			}
+
+            if (gold.size() != solutionList.size())
+                throw new RuntimeException();
+			Metrics<Annotation> m = new Metrics<>();
+			return m.getResult(solutionList, gold, am);
 		}
 
+		public static double candidateScoreStatic(HashSet<Annotation> partialSolution, Annotation candidate,
+		        HashSet<Annotation> gold, MatchRelation<Annotation> am) {
+			HashSet<Annotation> newSolution = new HashSet<>(partialSolution);
+			newSolution.add(candidate);
+			Metrics<Annotation> m = new Metrics<>();
+			return m.getSingleF1(gold, newSolution, am) - m.getSingleF1(gold, partialSolution, am);
+		}
 	}
 
 	public static class BindingSolutionComputer extends SolutionComputer<HashSet<Annotation>, HashSet<Annotation>> {
 		private MatchRelation<Annotation> sam;
+		private List<List<Pair<HashSet<Annotation>, Double>>> candidateAndPreds;
+		private List<HashSet<Annotation>> gold;
 
-		public  BindingSolutionComputer(WikipediaInterface wikiApi){
+		public  BindingSolutionComputer(WikipediaInterface wikiApi,
+				List<List<Pair<HashSet<Annotation>, Double>>> candidateAndPreds,
+				List<HashSet<Annotation>> gold){
 			this.sam = new StrongAnnotationMatch(wikiApi);
+			this.gold = gold;
+			this.candidateAndPreds = candidateAndPreds;
 		}
 		
 		@Override
-		public MetricsResultSet getResults(
-				List<List<Pair<HashSet<Annotation>, Double>>> candidateAndPreds,
-				List<HashSet<Annotation>> gold) throws IOException {
+		public MetricsResultSet getResults() throws IOException {
 			
 			List<HashSet<Annotation>> solutionList = new Vector<>();
 			for (List<Pair<HashSet<Annotation>, Double>> candidateAndPred : candidateAndPreds) {
@@ -136,16 +181,5 @@ public abstract class SolutionComputer <T extends Serializable, G extends Object
 			Metrics<Annotation> m = new Metrics<>();
 			return m.getResult(solutionList, gold, sam);
 		}
-
-		@Override
-		public double candidateScore(HashSet<Annotation> candidate, HashSet<Annotation> gold) throws IOException {
-			List<HashSet<Annotation>> lC = new Vector<HashSet<Annotation>>();
-			lC.add(candidate);
-			List<HashSet<Annotation>> lG = new Vector<HashSet<Annotation>>();
-			lG.add(gold);
-
-			return new Metrics<Annotation>().getResult(lC, lG, sam).getF1s(0);
-		}
-
 	}
 }

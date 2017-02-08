@@ -6,7 +6,9 @@ import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Paths;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Vector;
 
 import org.apache.commons.lang.NotImplementedException;
 
@@ -21,6 +23,8 @@ import it.unipi.di.acube.smaph.datasets.wikiAnchors.EntityToAnchors;
 import it.unipi.di.acube.smaph.datasets.wikitofreebase.WikipediaToFreebase;
 import it.unipi.di.acube.smaph.learn.featurePacks.AnnotationFeaturePack;
 import it.unipi.di.acube.smaph.learn.featurePacks.EntityFeaturePack;
+import it.unipi.di.acube.smaph.learn.featurePacks.FeaturePack;
+import it.unipi.di.acube.smaph.learn.featurePacks.GreedyFeaturePack;
 import it.unipi.di.acube.smaph.learn.models.entityfilters.EntityFilter;
 import it.unipi.di.acube.smaph.learn.models.entityfilters.LibSvmEntityFilter;
 import it.unipi.di.acube.smaph.learn.models.entityfilters.NoEntityFilter;
@@ -34,6 +38,7 @@ import it.unipi.di.acube.smaph.learn.normalizer.ZScoreFeatureNormalizer;
 import it.unipi.di.acube.smaph.linkback.AdvancedIndividualLinkback;
 import it.unipi.di.acube.smaph.linkback.CollectiveLinkBack;
 import it.unipi.di.acube.smaph.linkback.DummyLinkBack;
+import it.unipi.di.acube.smaph.linkback.GreedyLinkback;
 import it.unipi.di.acube.smaph.linkback.LinkBack;
 import it.unipi.di.acube.smaph.linkback.bindingGenerator.BindingGenerator;
 import it.unipi.di.acube.smaph.linkback.bindingGenerator.DefaultBindingGenerator;
@@ -149,31 +154,54 @@ public class SmaphBuilder {
 	public static SmaphAnnotator getSmaph(SmaphVersion v, WikipediaInterface wikiApi, WikipediaToFreebase wikiToFreeb,
 	        WATAnnotator auxAnnotator, EntityToAnchors e2a, boolean includeS2, Websearch ws, SmaphConfig c)
 	        throws FileNotFoundException, ClassNotFoundException, IOException {
-		URL model = getDefaultModel(v, ws, true, includeS2, true);
-		URL zscore = getDefaultZscoreNormalizer(v, ws, true, includeS2, true);
+		URL model = getDefaultModel(v, ws, true, includeS2, true, -1);
+		URL zscore = getDefaultZscoreNormalizer(v, ws, true, includeS2, true, -1);
 
 		SmaphAnnotator a = null;
 		switch (v) {
-		case ANNOTATION_REGRESSOR:
+		case ANNOTATION_REGRESSOR: {
 			AnnotationRegressor ar = getCachedAnnotationRegressor(model);
+			FeatureNormalizer fn = getCachedFeatureNormalizer(zscore, new GreedyFeaturePack());
 			a = getDefaultSmaphParam(wikiApi, wikiToFreeb, auxAnnotator, e2a, new NoEntityFilter(), null,
-			        new AdvancedIndividualLinkback(ar, ZScoreFeatureNormalizer.fromUrl(zscore, new AnnotationFeaturePack()),
-			                wikiApi, wikiToFreeb, e2a, DEFAULT_ANCHOR_MENTION_ED),
-			        true, includeS2, true, ws, c);
+			        new AdvancedIndividualLinkback(ar, fn, wikiApi, wikiToFreeb, e2a, DEFAULT_ANCHOR_MENTION_ED), true, includeS2,
+			        true, ws, c);
+		}
 			break;
-		case ENTITY_FILTER:
+		case ENTITY_FILTER: {
 			EntityFilter ef = getCachedSvmEntityFilter(model);
 			FeatureNormalizer norm = getCachedFeatureNormalizer(zscore, new EntityFeaturePack());
 			a = getDefaultSmaphParam(wikiApi, wikiToFreeb, auxAnnotator, e2a, ef, norm, new DummyLinkBack(), true, includeS2,
 			        true, ws, c);
+		}
 			break;
-		case COLLECTIVE:
+		case COLLECTIVE: {
 			BindingRegressor bindingRegressor = getCachedBindingRegressor(model);
 			CollectiveLinkBack lb = new CollectiveLinkBack(wikiApi, wikiToFreeb, e2a, new DefaultBindingGenerator(),
 			        bindingRegressor, new NoFeatureNormalizer());
 			a = getDefaultSmaphParam(wikiApi, wikiToFreeb, auxAnnotator, e2a, new NoEntityFilter(), null, lb, true, includeS2,
 			        true, ws, c);
+		}
 			break;
+		case GREEDY: {
+			List<AnnotationRegressor> regressors = new Vector<>();
+			List<FeatureNormalizer> fns = new Vector<>();
+			int nGreedySteps = 0;
+			while (getDefaultModel(v, ws, true, includeS2, true, nGreedySteps) != null)
+				nGreedySteps++;
+			for (int i = 0; i < nGreedySteps; i++) {
+				URL modelI = getDefaultModel(v, ws, true, includeS2, true, i);
+				URL zscoreI = getDefaultZscoreNormalizer(v, ws, true, includeS2, true, i);
+				AnnotationRegressor arI = getCachedAnnotationRegressor(modelI);
+				FeatureNormalizer fnI = getCachedFeatureNormalizer(zscoreI, new GreedyFeaturePack());
+				regressors.add(arI);
+				fns.add(fnI);
+			}
+			GreedyLinkback lbGreedy = new GreedyLinkback(regressors, fns, wikiApi, wikiToFreeb, e2a, DEFAULT_ANCHOR_MENTION_ED);
+			a = getDefaultSmaphParam(wikiApi, wikiToFreeb, auxAnnotator, e2a, new NoEntityFilter(), null, lbGreedy, true,
+			        includeS2, true, ws, c);
+		}
+			break;
+
 		default:
 			throw new NotImplementedException();
 		}
@@ -194,7 +222,7 @@ public class SmaphBuilder {
 		return urlToEntityFilter.get(model);
 	}
 
-	private static FeatureNormalizer getCachedFeatureNormalizer(URL zscore, EntityFeaturePack fp) {
+	private static <T> FeatureNormalizer getCachedFeatureNormalizer(URL zscore, FeaturePack<T> fp) {
 		if (!urlToNormalizer.containsKey(zscore))
 			urlToNormalizer.put(zscore, ZScoreFeatureNormalizer.fromUrl(zscore, fp));
 		return urlToNormalizer.get(zscore);
@@ -217,37 +245,48 @@ public class SmaphBuilder {
 		        s3 ? DEFAULT_ANNOTATED_SNIPPETS : 0);
 	}
 
-	private static URL getBestModelFileBase(String label, String extension) {
-		return SmaphBuilder.class.getClassLoader().getResource(String.format("models/best_%s.%s", label, extension));
+	private static URL getBestModelFileBase(String label, String extension, int greedyStep) {
+		String stepStr = greedyStep < 0 ? "" : String.format("_%d", greedyStep);
+		return SmaphBuilder.class.getClassLoader().getResource(String.format("models/best_%s%s.%s", label, stepStr, extension));
 	}
 
-	public static URL getDefaultModel(SmaphVersion v, Websearch ws, boolean s1, boolean s2, boolean s3) {
-		return getBestModelFileBase(getDefaultLabel(v, ws, s1, s2, s3), "model");
+	private static URL getDefaultModel(SmaphVersion v, Websearch ws, boolean s1, boolean s2, boolean s3, int greedyStep) {
+		return getBestModelFileBase(getDefaultLabel(v, ws, s1, s2, s3), "model", greedyStep);
 	}
 
-	public static URL getDefaultZscoreNormalizer(SmaphVersion v, Websearch ws, boolean s1, boolean s2, boolean s3) {
-		return getBestModelFileBase(getDefaultLabel(v, ws, s1, s2, s3), "zscore");
+	public static URL getDefaultZscoreNormalizer(SmaphVersion v, Websearch ws, boolean s1, boolean s2, boolean s3, int greedyStep) {
+		return getBestModelFileBase(getDefaultLabel(v, ws, s1, s2, s3), "zscore", greedyStep);
 	}
 
-	public static URL getModel(SmaphVersion v, Websearch ws, int topKS1, int topKS2, int topKS3) {
-		return getBestModelFileBase(getSourceLabel(v, ws, topKS1, topKS2, topKS3), "model");
+	public static URL getModel(SmaphVersion v, Websearch ws, int topKS1, int topKS2, int topKS3, int greedyStep) {
+		return getBestModelFileBase(getSourceLabel(v, ws, topKS1, topKS2, topKS3), "model", greedyStep);
 	}
 
-	public static URL getZscoreNormalizer(SmaphVersion v, Websearch ws, int topKS1, int topKS2, int topKS3) {
-		return getBestModelFileBase(getSourceLabel(v, ws, topKS1, topKS2, topKS3), "zscore");
+	public static URL getZscoreNormalizer(SmaphVersion v, Websearch ws, int topKS1, int topKS2, int topKS3, int greedyStep) {
+		return getBestModelFileBase(getSourceLabel(v, ws, topKS1, topKS2, topKS3), "zscore", greedyStep);
 	}
 
 	public static String getSourceLabel(SmaphVersion v, Websearch ws, int topKS1, int topKS2, int topKS3) {
 		return String.format("%s_%s-S1=%d_S2=%d_S3=%d", v, ws, topKS1, topKS2, topKS3);
 	}
 
-	public static File getModelFile(SmaphVersion v, Websearch ws, int topKS1, int topKS2, int topKS3) {
+	public static File getModelFile(SmaphVersion v, Websearch ws, int topKS1, int topKS2, int topKS3, int step) {
 		String label = getSourceLabel(v, ws, topKS1, topKS2, topKS3);
-		return Paths.get("src", "main", "resources", "models", String.format("best_%s.model", label)).toFile();
+		String stepStr = step < 0 ? "" : String.format("_%d", step);
+		return Paths.get("src", "main", "resources", "models", String.format("best_%s%s.model", label, stepStr)).toFile();
 	}
 
-	public static File getZscoreNormalizerFile(SmaphVersion v, Websearch ws, int topKS1, int topKS2, int topKS3) {
+	public static File getModelFile(SmaphVersion v, Websearch ws, int topKS1, int topKS2, int topKS3) {
+		return getModelFile(v, ws, topKS1, topKS2, topKS3, -1);
+	}
+
+	public static File getZscoreNormalizerFile(SmaphVersion v, Websearch ws, int topKS1, int topKS2, int topKS3, int step) {
 		String label = getSourceLabel(v, ws, topKS1, topKS2, topKS3);
-		return Paths.get("src", "main", "resources", "models", String.format("best_%s.zscore", label)).toFile();
+		String stepStr = step == -1 ? "" : String.format("_%d", step);
+		return Paths.get("src", "main", "resources", "models", String.format("best_%s%s.zscore", label, stepStr)).toFile();
+	}
+	
+	public static File getZscoreNormalizerFile(SmaphVersion v, Websearch ws, int topKS1, int topKS2, int topKS3) {
+		return getModelFile(v, ws, topKS1, topKS2, topKS3, -1);
 	}
 }

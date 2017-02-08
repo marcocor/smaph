@@ -26,11 +26,18 @@ public abstract class LibLinearModel<T> {
 		return Linear.predict(model, featureMapToFeatures(fn.ftrToNormalizedFtrArray(fp)));
 	}
 
-	private Feature[] featureMapToFeatures(
-			double[] ftrArray) {
+	public Feature[] featureMapToFeatures(double[] ftrArray) {
 		Feature[] llFtrArray = new Feature[ftrArray.length];
 		for (int i = 0; i < llFtrArray.length; i++)
 			llFtrArray[i] = new FeatureNode(i + 1, ftrArray[i]);
+		return llFtrArray;
+	}
+
+	public static Feature[] featureMapToFeatures(double[] ftrArray, int[] ftrList) {
+		Feature[] llFtrArray = new Feature[ftrList.length];
+		int j = 0;
+		for (int i = 0; i < ftrList.length; i++)
+			llFtrArray[j++] = new FeatureNode(i + 1, ftrArray[ftrList[i] - 1]);
 		return llFtrArray;
 	}
 }

@@ -5,6 +5,6 @@ import it.unipi.di.acube.smaph.learn.featurePacks.FeaturePack;
 import it.unipi.di.acube.smaph.learn.normalizer.FeatureNormalizer;
 
 public interface AnnotationRegressor {
-	public double predictScore(FeaturePack<Annotation> fp, FeatureNormalizer fn);	
+	public <A extends Annotation> double predictScore(FeaturePack<A> fp, FeatureNormalizer fn);	
 	public double threshold();	
 }
