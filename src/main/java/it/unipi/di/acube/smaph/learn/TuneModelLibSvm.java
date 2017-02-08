@@ -147,7 +147,7 @@ public class TuneModelLibSvm {
 
 		OptDataset opt = OptDataset.SMAPH_DATASET;
 
-		String ftrSelMethod = line.getOptionValue("ftr-sel-method", "ablation");
+		String ftrSelMethod = line.getOptionValue("ftr-sel-method", "ablation-rank");
 		if (!ftrSelMethod.equals("ablation") && !ftrSelMethod.equals("ablation-rank") && !ftrSelMethod.equals("increment") && !ftrSelMethod.equals("oneshot"))
 			throw new IllegalArgumentException("ftr-sel-method must be either `ablation', `ablation-rank', `oneshot' or `increment'.");
 
