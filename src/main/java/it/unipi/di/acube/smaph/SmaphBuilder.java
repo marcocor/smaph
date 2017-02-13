@@ -120,7 +120,7 @@ public class SmaphBuilder {
 		return null;
 	}
 
-	private static SmaphAnnotator getDefaultSmaphParamTopk(WikipediaInterface wikiApi, WikipediaToFreebase wikiToFreeb,
+	public static SmaphAnnotator getDefaultSmaphParamTopk(WikipediaInterface wikiApi, WikipediaToFreebase wikiToFreeb,
 	        WATAnnotator auxAnnotator, EntityToAnchors e2a, EntityFilter entityFilter, FeatureNormalizer efNorm, LinkBack lb,
 	        boolean s1, int topkS1, boolean s2, int topkS2, boolean s3, int topkS3, Websearch ws, SmaphConfig c)
 	        throws FileNotFoundException, ClassNotFoundException, IOException {
@@ -188,6 +188,9 @@ public class SmaphBuilder {
 			int nGreedySteps = 0;
 			while (getDefaultModel(v, ws, true, includeS2, true, nGreedySteps) != null)
 				nGreedySteps++;
+			if (nGreedySteps == 0)
+				throw new IllegalArgumentException("Could not find models.");
+
 			for (int i = 0; i < nGreedySteps; i++) {
 				URL modelI = getDefaultModel(v, ws, true, includeS2, true, i);
 				URL zscoreI = getDefaultZscoreNormalizer(v, ws, true, includeS2, true, i);
@@ -287,6 +290,6 @@ public class SmaphBuilder {
 	}
 	
 	public static File getZscoreNormalizerFile(SmaphVersion v, Websearch ws, int topKS1, int topKS2, int topKS3) {
-		return getModelFile(v, ws, topKS1, topKS2, topKS3, -1);
+		return getZscoreNormalizerFile(v, ws, topKS1, topKS2, topKS3, -1);
 	}
 }
