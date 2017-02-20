@@ -59,7 +59,7 @@ public class SmaphBuilder {
 	private static Map<URL, BindingRegressor> urlToBindingRegressor = new HashMap<>();
 	public static final int DEFAULT_NORMALSEARCH_RESULTS = 5;
 	public static final int DEFAULT_WIKISEARCH_RESULTS = 10;
-	public static final int DEFAULT_ANNOTATED_SNIPPETS = 20;
+	public static final int DEFAULT_ANNOTATED_SNIPPETS = 15;
 	public static final double DEFAULT_ANNOTATIONFILTER_RATIO = 0.03;
 	public static final double DEFAULT_ANCHOR_MENTION_ED = 0.7;
 	public static final Websearch DEFAULT_WEBSEARCH = Websearch.GOOGLE_CSE;
