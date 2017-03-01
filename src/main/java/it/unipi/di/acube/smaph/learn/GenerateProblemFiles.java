@@ -67,7 +67,7 @@ public class GenerateProblemFiles {
 		options.addOption(OptionBuilder.withLongOpt("dump-collective-rank")
 		        .withDescription("Dump feature file for collective ranker").create("c"));
 		options.addOption(OptionBuilder.withLongOpt("dump-greedy")
-		        .withDescription("Dump feature file for greedy annotator (first step only!)").create("c"));
+		        .withDescription("Dump feature file for greedy annotator (first step only!)").create("g"));
 		options.addOption(OptionBuilder.withLongOpt("websearch-piggyback").hasArg().withArgName("WEBSEARCH")
 		        .withDescription("What web search engine to piggyback on. Can be either `bing' or `google'.").create("w"));
 		options.addOption("exclude_s1", false, "Exclude entity source 1.");
