@@ -39,13 +39,23 @@ public class AdvancedIndividualLinkback implements LinkBack {
 		this.e2a = e2a;
 	}
 
-	public static List<Annotation> getAnnotations(String query, Set<Tag> acceptedEntities, double anchorMaxED, EntityToAnchors e2a) {
+	public static List<Annotation> getAnnotations(String query, Set<Tag> acceptedEntities, double anchorMaxED, EntityToAnchors e2a, WikipediaInterface wikiApi) {
 		List<Pair<Integer, Integer>> segments = SmaphUtils.findSegments(query);
 		List<Annotation> annotations = new Vector<>();
 		for (Tag t : acceptedEntities) {
-			if (!e2a.containsId(t.getConcept()))
-				continue;
-			List<Pair<String, Integer>> entityAnchors = e2a.getAnchors(t.getConcept());
+			//if (!e2a.containsId(t.getConcept()))
+			//	continue;
+			List<Pair<String, Integer>> entityAnchors;
+			try {
+				if (e2a.containsId(t.getConcept()))
+					entityAnchors = e2a.getAnchors(t.getConcept());
+				else if (wikiApi.getTitlebyId(t.getConcept()) != null)
+					entityAnchors = AnnotationFeaturePack.getFakeAnchors(wikiApi.getTitlebyId(t.getConcept()));
+				else continue;
+			} catch (IOException e) {
+				e.printStackTrace();
+				throw new RuntimeException(e);
+			}
 			for (Pair<Integer, Integer> segment : segments) {
 				String segmentStr = query.substring(segment.first, segment.second);
 				if (entityAnchors.stream().anyMatch(anchor -> SmaphUtils.getNormEditDistance(anchor.first, segmentStr) < anchorMaxED))
@@ -59,7 +69,7 @@ public class AdvancedIndividualLinkback implements LinkBack {
 	public HashSet<ScoredAnnotation> linkBack(String query, HashSet<Tag> acceptedEntities, QueryInformation qi) {
 
 		List<Pair<Annotation, Double>> scoreAndAnnotations = new Vector<>();
-		for (Annotation a : getAnnotations(query, acceptedEntities, edthreshold, e2a)) {
+		for (Annotation a : getAnnotations(query, acceptedEntities, edthreshold, e2a, wikiApi)) {
 			double score = ar.predictScore(new AnnotationFeaturePack(a, query, qi, wikiApi, w2f, e2a),
 					annFn);
 			scoreAndAnnotations.add(new Pair<Annotation, Double>(a, score));

@@ -776,7 +776,7 @@ public class SmaphAnnotator implements Sa2WSystem {
 	private List<Triple<Annotation, GreedyFeaturePack, Double>> getGreedyAnnotationToFtrsAndIncrement(String query,
 	        QueryInformation qi, HashSet<Annotation> goldStandardAnn, HashSet<Annotation> greedyPartialSolution,
 	        StrongAnnotationMatch annotationMatch) {
-		List<Annotation> candidates = AdvancedIndividualLinkback.getAnnotations(query, qi.allCandidates(), anchorMaxED, e2a)
+		List<Annotation> candidates = AdvancedIndividualLinkback.getAnnotations(query, qi.allCandidates(), anchorMaxED, e2a, wikiApi)
 		        .stream().filter(a -> !greedyPartialSolution.stream().anyMatch(aPS -> aPS.overlaps(a)))
 		        .collect(Collectors.toList());
 
@@ -784,15 +784,15 @@ public class SmaphAnnotator implements Sa2WSystem {
 		
 		List<Triple<Annotation, GreedyFeaturePack, Double>> annAndFtrsAndIncrement = new Vector<>();
 		for (Annotation a : candidates) {
-			if (e2a.containsId(a.getConcept())) {
+			//if (e2a.containsId(a.getConcept())) {
 				HashSet<Annotation> stepCandidateSolution = new HashSet<Annotation>(greedyPartialSolution);
 				stepCandidateSolution.add(a);
 				double f1After= new Metrics<Annotation>().getSingleF1(goldStandardAnn, stepCandidateSolution, annotationMatch);
 				
 				GreedyFeaturePack features = new GreedyFeaturePack(a, query, qi, greedyPartialSolution, wikiApi, wikiToFreeb, e2a);
 				annAndFtrsAndIncrement.add(new ImmutableTriple<Annotation, GreedyFeaturePack, Double>(a, features, f1After - f1Before));
-			} else
-				LOG.warn("No anchors found for id={}", a.getConcept());
+			//} else
+			//	LOG.warn("No anchors found for id={}", a.getConcept());
 		}
 
 		return annAndFtrsAndIncrement;
@@ -805,18 +805,18 @@ public class SmaphAnnotator implements Sa2WSystem {
 
 		List<Triple<Annotation, AnnotationFeaturePack, Boolean>> annAndFtrsAndPresence = new Vector<>();
 		for (Annotation a : AdvancedIndividualLinkback.getAnnotations(query,
-				qi.allCandidates(), anchorMaxED, e2a)) {
+				qi.allCandidates(), anchorMaxED, e2a, wikiApi)) {
 			boolean inGold = false;
 			for (Annotation goldAnn : goldStandardAnn)
 				if (annotationMatch.match(goldAnn, a)) {
 					inGold = true;
 					break;
 				}
-			if (e2a.containsId(a.getConcept())) {
+			//if (e2a.containsId(a.getConcept())) {
 				AnnotationFeaturePack features = new AnnotationFeaturePack(a, query, qi, wikiApi, wikiToFreeb, e2a);
 				annAndFtrsAndPresence.add(new ImmutableTriple<Annotation, AnnotationFeaturePack, Boolean>(a, features, inGold));
-			} else
-				LOG.warn("No anchors found for id={}", a.getConcept());
+			//} else
+			//	LOG.warn("No anchors found for id={}", a.getConcept());
 		}
 
 		return annAndFtrsAndPresence;
@@ -888,7 +888,7 @@ public class SmaphAnnotator implements Sa2WSystem {
 	        double maxAnchorEd, SmaphDebugger debugger) throws Exception {
 		QueryInformation qi = getQueryInformation(query, debugger);
 		List<Annotation> candidateAnnotations = AdvancedIndividualLinkback.getAnnotations(query, qi.allCandidates(),
-		        maxAnchorEd, e2a);
+		        maxAnchorEd, e2a, wikiApi);
 		StrongAnnotationMatch sam = new StrongAnnotationMatch(wikiApi);
 
 		HashSet<ScoredAnnotation> bestBindingScored = new HashSet<>();

@@ -41,13 +41,13 @@ public class GreedyLinkback implements LinkBack {
 		this.e2a = e2a;
 	}
 
-	public static List<Annotation> getAnnotations(String query, Set<Tag> acceptedEntities, double anchorMaxED, EntityToAnchors e2a) {
-		return AdvancedIndividualLinkback.getAnnotations(query, acceptedEntities, anchorMaxED, e2a);
+	public static List<Annotation> getAnnotations(String query, Set<Tag> acceptedEntities, double anchorMaxED, EntityToAnchors e2a, WikipediaInterface wikiApi) {
+		return AdvancedIndividualLinkback.getAnnotations(query, acceptedEntities, anchorMaxED, e2a, wikiApi);
 	}
 
 	@Override
 	public HashSet<ScoredAnnotation> linkBack(String query, HashSet<Tag> acceptedEntities, QueryInformation qi) {
-		List<Annotation> annotations = getAnnotations(query, acceptedEntities, edthreshold, e2a);
+		List<Annotation> annotations = getAnnotations(query, acceptedEntities, edthreshold, e2a, wikiApi);
 		
 		HashSet<ScoredAnnotation> solution = new HashSet<>();
 		for (int i = 0; i < ar.size(); i++) {

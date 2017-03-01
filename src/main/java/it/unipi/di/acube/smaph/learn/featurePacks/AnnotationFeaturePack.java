@@ -31,12 +31,17 @@ public class AnnotationFeaturePack extends FeaturePack<Annotation> {
 	public AnnotationFeaturePack() {
 		super(null);
 	}
-	
+
+	public static List<Pair<String, Integer>> getFakeAnchors(String title) {
+		List<Pair<String, Integer>> l = new Vector<>();
+		l.add(new Pair<>(title.toLowerCase(), 10));
+		return l;
+	}
+
 	public static HashMap<String, Double> getFeaturesStatic(Annotation a, String query, QueryInformation qi,
 	        WikipediaInterface wikiApi, WikipediaToFreebase w2f, EntityToAnchors e2a) {
 		Tag entity = new Tag(a.getConcept());
 		String mention = query.substring(a.getPosition(), a.getPosition() + a.getLength());
-		List<Pair<String, Integer>> anchorAndOccurrencies = e2a.getAnchors(a.getConcept());
 		HashMap<String, Double> entityFeatures = EntityFeaturePack.getFeatures(entity, query, qi, wikiApi, w2f);
 		List<String> bolds = null;
 		if (qi.entityToBoldsSA.containsKey(entity))
@@ -49,6 +54,15 @@ public class AnnotationFeaturePack extends FeaturePack<Annotation> {
 			throw new RuntimeException(e);
 		}
 		
+		//List<Pair<String, Integer>> anchorAndOccurrencies = e2a.containsId(a.getConcept()) ? e2a.getAnchors(a.getConcept())
+		  //      : getFakeAnchors(title.toLowerCase());
+
+		List<Pair<String, Integer>> anchorAndOccurrencies = null;
+		if (e2a.containsId(a.getConcept()))
+			anchorAndOccurrencies = e2a.getAnchors(a.getConcept());
+		else if (title != null)
+			anchorAndOccurrencies = AnnotationFeaturePack.getFakeAnchors(title);
+
 		HashMap<String, Double> features = new HashMap<String, Double>(entityFeatures);
 		features.put("edit_distance_anchor_segment_sqrt", edAnchorsWeightSqrt(mention, anchorAndOccurrencies));
 		features.put("edit_distance_anchor_segment_sqrt_comm", edAnchorsWeightSqrtComm(mention, anchorAndOccurrencies, a.getConcept(), e2a));
@@ -57,7 +71,7 @@ public class AnnotationFeaturePack extends FeaturePack<Annotation> {
 		features.put("edit_distance_title", (double) SmaphUtils.getNormEditDistanceLC(title, mention));
 		if (bolds != null)
 			features.put("min_edit_distance_bolds", minEdBold(mention, bolds));
-		features.put("commonness", e2a.getCommonness(mention, a.getConcept()));
+		features.put("commonness", e2a.containsId(a.getConcept())? e2a.getCommonness(mention, a.getConcept()) : 1.0);
 		features.put("link_prob", WATRelatednessComputer.getLp(mention));
 		
 		features.put("edit_distance_anchor_segment_sqrt_geometric_0.05", edAnchorsWeightSqrtGeom(mention, anchorAndOccurrencies, 0.05));
@@ -133,8 +147,8 @@ public class AnnotationFeaturePack extends FeaturePack<Annotation> {
 		double num = 0;
 		double denom = 0;
 		for (Pair<String, Integer> p: anchorAndOccurrencies){
-			num += Math.sqrt(e2a.getCommonness(p.first, entity, p.second))*SmaphUtils.getNormEditDistance(segmentStr.toLowerCase(), p.first);
-			denom += Math.sqrt(e2a.getCommonness(p.first, entity, p.second));
+			num += Math.sqrt((e2a.containsId(entity)? e2a.getCommonness(p.first, entity, p.second) : 1.0))*SmaphUtils.getNormEditDistance(segmentStr.toLowerCase(), p.first);
+			denom += Math.sqrt(e2a.containsId(entity)? e2a.getCommonness(p.first, entity, p.second) : 1.0);
 		}
 		return num/denom;
 	}
