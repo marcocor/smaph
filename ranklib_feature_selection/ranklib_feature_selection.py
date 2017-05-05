@@ -85,11 +85,13 @@ if __name__ == '__main__':
 	parser.add_argument('--startset', help="Feature set to start with (e.g. 1,3,5-10,24). Default: use all features (no features for 'increment' method)", required=False, default="")
 	parser.add_argument('--candidate_features', help="Feature set to try to add (increment) or remove (ablation) (e.g. 1,3,5-10,24). Default: use all features of the start set (ablation) or all valid features not in startset (increment)", required=False, default="")
 	parser.add_argument('--leaves', help="Number of tree leaves (e.g. 5,7,10-20). Default: 10.", required=False, default="10")
+	parser.add_argument('--trees', help="Number of trees in the ensemble (e.g. 500,1000,2000). Default: 1000.", required=False, default="1000")
 	parser.add_argument('--opt_vals', help="Values to optimize NDGC with. (e.g. 5,7,10-20). Default: 1-23.", required=False, default="1-23")
 	parser.add_argument('--cpus', help="Number of training processes to start in parallel.", required=False, default="")
 	args = parser.parse_args()
 
 	leaves = ftr_string_set(args.leaves)
+	trees = ftr_string_set(args.trees)
 	OPT_VALS = ftr_string_set(args.opt_vals)
 	cpus = None if not args.cpus else int(args.cpus)
 
@@ -98,6 +100,12 @@ if __name__ == '__main__':
 
 	if not os.path.exists("models"):
 		os.makedirs("models")
+
+	data_time = max(os.stat(TRAIN_DATA).st_mtime, os.stat(VALIDATE_DATA).st_mtime)
+	for f in os.listdir("models"):
+		if os.stat(os.path.join("models",f)).st_mtime < data_time:
+			print("Deleting {}".format(f), file=sys.stderr)
+			os.remove(os.path.join("models", f))
 
 	print("Loading solutions F1...", file=sys.stderr)
 	qid_cand_to_score = load_f1s(VALIDATE_DATA)
@@ -134,13 +142,12 @@ if __name__ == '__main__':
 
 	print("Parameter tuning", file=sys.stderr)
 	overall_best_f1, overall_best_model = -1, None
-	for l in leaves:
-		model, best_f1, employed_ftrs = generate_and_test_model(good_ftr, qid_cand_to_score, OPT_VALS, RANKER, TRAIN_DATA, VALIDATE_DATA, args.dataset, leaf=[l], cpus=cpus)
-		if best_f1 > overall_best_f1:
-			overall_best_f1, overall_best_model = best_f1, model
-		print("Tuning - Overall best model: {}".format(model), file=sys.stderr)
-		print("Tuning - Overall best score: {}".format(best_f1), file=sys.stderr)
-		print("Tuning - Features actually employed by these models ({} features): {}".format(len(employed_ftrs), ftr_set_string(employed_ftrs)), file=sys.stderr)
+	model, best_f1, employed_ftrs = generate_and_test_model(good_ftr, qid_cand_to_score, OPT_VALS, RANKER, TRAIN_DATA, VALIDATE_DATA, args.dataset, tree=trees, leaf=leaves, cpus=cpus)
+	if best_f1 > overall_best_f1:
+		overall_best_f1, overall_best_model = best_f1, model
+	print("Tuning - Overall best model: {}".format(model), file=sys.stderr)
+	print("Tuning - Overall best score: {}".format(best_f1), file=sys.stderr)
+	print("Tuning - Features actually employed by these models ({} features): {}".format(len(employed_ftrs), ftr_set_string(employed_ftrs)), file=sys.stderr)
 
 	if overall_best_model:
 		bestmodel_name = "../src/main/resources/models/best_{}".format(get_model_base_name(args.dataset))
