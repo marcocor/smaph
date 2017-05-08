@@ -70,7 +70,7 @@ import it.unipi.di.acube.smaph.learn.featurePacks.FeaturePack;
 import it.unipi.di.acube.smaph.learn.featurePacks.GreedyFeaturePack;
 import it.unipi.di.acube.smaph.learn.models.entityfilters.EntityFilter;
 import it.unipi.di.acube.smaph.learn.normalizer.FeatureNormalizer;
-import it.unipi.di.acube.smaph.linkback.AdvancedIndividualLinkback;
+import it.unipi.di.acube.smaph.linkback.IndividualLinkback;
 import it.unipi.di.acube.smaph.linkback.CollectiveLinkBack;
 import it.unipi.di.acube.smaph.linkback.LinkBack;
 import it.unipi.di.acube.smaph.linkback.bindingGenerator.BindingGenerator;
@@ -776,7 +776,7 @@ public class SmaphAnnotator implements Sa2WSystem {
 	private List<Triple<Annotation, GreedyFeaturePack, Double>> getGreedyAnnotationToFtrsAndIncrement(String query,
 	        QueryInformation qi, HashSet<Annotation> goldStandardAnn, HashSet<Annotation> greedyPartialSolution,
 	        StrongAnnotationMatch annotationMatch) {
-		List<Annotation> candidates = AdvancedIndividualLinkback.getAnnotations(query, qi.allCandidates(), anchorMaxED, e2a, wikiApi)
+		List<Annotation> candidates = IndividualLinkback.getAnnotations(query, qi.allCandidates(), anchorMaxED, e2a, wikiApi)
 		        .stream().filter(a -> !greedyPartialSolution.stream().anyMatch(aPS -> aPS.overlaps(a)))
 		        .collect(Collectors.toList());
 
@@ -804,7 +804,7 @@ public class SmaphAnnotator implements Sa2WSystem {
 			MatchRelation<Annotation> annotationMatch) {
 
 		List<Triple<Annotation, AnnotationFeaturePack, Boolean>> annAndFtrsAndPresence = new Vector<>();
-		for (Annotation a : AdvancedIndividualLinkback.getAnnotations(query,
+		for (Annotation a : IndividualLinkback.getAnnotations(query,
 				qi.allCandidates(), anchorMaxED, e2a, wikiApi)) {
 			boolean inGold = false;
 			for (Annotation goldAnn : goldStandardAnn)
@@ -887,7 +887,7 @@ public class SmaphAnnotator implements Sa2WSystem {
 	public Pair<HashSet<ScoredAnnotation>, Integer> getLBUpperBound3(String query, HashSet<Annotation> goldStandardAnn,
 	        double maxAnchorEd, SmaphDebugger debugger) throws Exception {
 		QueryInformation qi = getQueryInformation(query, debugger);
-		List<Annotation> candidateAnnotations = AdvancedIndividualLinkback.getAnnotations(query, qi.allCandidates(),
+		List<Annotation> candidateAnnotations = IndividualLinkback.getAnnotations(query, qi.allCandidates(),
 		        maxAnchorEd, e2a, wikiApi);
 		StrongAnnotationMatch sam = new StrongAnnotationMatch(wikiApi);
 

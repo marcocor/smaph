@@ -35,7 +35,7 @@ import it.unipi.di.acube.smaph.learn.models.linkback.bindingRegressor.RankLibBin
 import it.unipi.di.acube.smaph.learn.normalizer.FeatureNormalizer;
 import it.unipi.di.acube.smaph.learn.normalizer.NoFeatureNormalizer;
 import it.unipi.di.acube.smaph.learn.normalizer.ZScoreFeatureNormalizer;
-import it.unipi.di.acube.smaph.linkback.AdvancedIndividualLinkback;
+import it.unipi.di.acube.smaph.linkback.IndividualLinkback;
 import it.unipi.di.acube.smaph.linkback.CollectiveLinkBack;
 import it.unipi.di.acube.smaph.linkback.DummyLinkBack;
 import it.unipi.di.acube.smaph.linkback.GreedyLinkback;
@@ -163,7 +163,7 @@ public class SmaphBuilder {
 			AnnotationRegressor ar = getCachedAnnotationRegressor(model);
 			FeatureNormalizer fn = getCachedFeatureNormalizer(zscore, new GreedyFeaturePack());
 			a = getDefaultSmaphParam(wikiApi, wikiToFreeb, auxAnnotator, e2a, new NoEntityFilter(), null,
-			        new AdvancedIndividualLinkback(ar, fn, wikiApi, wikiToFreeb, e2a, DEFAULT_ANCHOR_MENTION_ED), true, includeS2,
+			        new IndividualLinkback(ar, fn, wikiApi, wikiToFreeb, e2a, DEFAULT_ANCHOR_MENTION_ED), true, includeS2,
 			        true, ws, c);
 		}
 			break;

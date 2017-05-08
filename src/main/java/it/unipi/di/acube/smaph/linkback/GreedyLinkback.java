@@ -42,7 +42,7 @@ public class GreedyLinkback implements LinkBack {
 	}
 
 	public static List<Annotation> getAnnotations(String query, Set<Tag> acceptedEntities, double anchorMaxED, EntityToAnchors e2a, WikipediaInterface wikiApi) {
-		return AdvancedIndividualLinkback.getAnnotations(query, acceptedEntities, anchorMaxED, e2a, wikiApi);
+		return IndividualLinkback.getAnnotations(query, acceptedEntities, anchorMaxED, e2a, wikiApi);
 	}
 
 	@Override
