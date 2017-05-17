@@ -784,15 +784,12 @@ public class SmaphAnnotator implements Sa2WSystem {
 		
 		List<Triple<Annotation, GreedyFeaturePack, Double>> annAndFtrsAndIncrement = new Vector<>();
 		for (Annotation a : candidates) {
-			//if (e2a.containsId(a.getConcept())) {
-				HashSet<Annotation> stepCandidateSolution = new HashSet<Annotation>(greedyPartialSolution);
-				stepCandidateSolution.add(a);
-				double f1After= new Metrics<Annotation>().getSingleF1(goldStandardAnn, stepCandidateSolution, annotationMatch);
-				
-				GreedyFeaturePack features = new GreedyFeaturePack(a, query, qi, greedyPartialSolution, wikiApi, wikiToFreeb, e2a);
-				annAndFtrsAndIncrement.add(new ImmutableTriple<Annotation, GreedyFeaturePack, Double>(a, features, f1After - f1Before));
-			//} else
-			//	LOG.warn("No anchors found for id={}", a.getConcept());
+			HashSet<Annotation> stepCandidateSolution = new HashSet<Annotation>(greedyPartialSolution);
+			stepCandidateSolution.add(a);
+			double f1After= new Metrics<Annotation>().getSingleF1(goldStandardAnn, stepCandidateSolution, annotationMatch);
+			
+			GreedyFeaturePack features = new GreedyFeaturePack(a, query, qi, greedyPartialSolution, wikiApi, wikiToFreeb, e2a);
+			annAndFtrsAndIncrement.add(new ImmutableTriple<Annotation, GreedyFeaturePack, Double>(a, features, f1After - f1Before));
 		}
 
 		return annAndFtrsAndIncrement;

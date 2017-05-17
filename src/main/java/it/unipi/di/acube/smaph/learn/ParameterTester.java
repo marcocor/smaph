@@ -231,11 +231,23 @@ public abstract class ParameterTester<E extends Serializable, G extends Serializ
 			thrMin = bestThr - 2.0 * stepSize;
 			thrMax = bestThr + 2.0 * stepSize;
 
-			scanThresholdRange(thrSteps, thrMin, thrMax, thrConfigurations, candidateAndPreds, golds);
+			List<ModelConfigurationResult> thrConfigurations2 = new Vector<>();
+			scanThresholdRange(thrSteps, thrMin, thrMax, thrConfigurations2, candidateAndPreds, golds);
+			ModelConfigurationResult oneBestMcr = ModelConfigurationResult.findBest(thrConfigurations2, optProfile,
+			        optProfileThr);
 
-			ModelConfigurationResult bestMcr = ModelConfigurationResult.findBest(thrConfigurations, optProfile, optProfileThr);
+			// Find middle of thresholds that achieve best score.
+			int first = 0;
+			while (thrConfigurations2.get(first).worseThan(oneBestMcr, optProfile, optProfileThr))
+				first++;
+			int last = first + 1;
+			while (last < thrConfigurations2.size()
+			        && !thrConfigurations2.get(last).worseThan(oneBestMcr, optProfile, optProfileThr))
+				last++;
 
-			LOG.debug("Best threshold: {}.", bestMcr.getReadable());
+			ModelConfigurationResult bestMcr = thrConfigurations2.get((last + first) / 2);
+
+			LOG.info("Best threshold: {}.", bestMcr.getReadable());
 
 			return bestMcr;
 		}
@@ -316,14 +328,19 @@ public abstract class ParameterTester<E extends Serializable, G extends Serializ
 			svm_problem trainProblem = trainGatherer.generateLibSvmProblem(features, scaleFn);
 			svm_parameter param = getParametersRegressor(gamma, C);
 			svm_model model = trainModel(param, trainProblem);
+			
+			if (model.SV.length == 0)
+				return null;
 
 			return new LibSvmAnnotationRegressor(model, threshold);
 		}
 
 		@Override
 		public ModelConfigurationResult call() throws Exception {
-			ZScoreFeatureNormalizer scaleFn = ZScoreFeatureNormalizer.fromGatherer(trainGatherer);
-			LibSvmAnnotationRegressor ar = getRegressor(trainGatherer, scaleFn, features, gamma, C, -1);
+			ZScoreFeatureNormalizer scaleFn = ZScoreFeatureNormalizer.fromGatherer(trainGatherer, false);
+			LibSvmAnnotationRegressor ar = getRegressor(trainGatherer, scaleFn, features, gamma, C, -1.0);
+			if (ar == null)
+				return null;
 
 			List<HashSet<Annotation>> golds = new Vector<>();
 			List<List<Pair<Annotation, Double>>> candidateAndPreds = new Vector<>();
@@ -356,11 +373,22 @@ public abstract class ParameterTester<E extends Serializable, G extends Serializ
 			thrMin = bestThr - 2.0 * stepSize;
 			thrMax = bestThr + 2.0 * stepSize;
 
-			scanThresholdRange(thrSteps, thrMin, thrMax, thrConfigurations, candidateAndPreds, golds, partialSolutionsTest, greedyStep);
+			List<ModelConfigurationResult> thrConfigurations2 = new Vector<>();
+			scanThresholdRange(thrSteps, thrMin, thrMax, thrConfigurations2, candidateAndPreds, golds, partialSolutionsTest, greedyStep);
 
-			ModelConfigurationResult bestMcr = ModelConfigurationResult.findBest(thrConfigurations, optProfile, optProfileThr);
-
-			LOG.debug("Best threshold: {}.", bestMcr.getReadable());
+			ModelConfigurationResult oneBestMcr = ModelConfigurationResult.findBest(thrConfigurations2, optProfile, optProfileThr);
+			
+			//Find middle of thresholds that achieve best score.
+			int first = 0;
+			while (thrConfigurations2.get(first).worseThan(oneBestMcr, optProfile, optProfileThr))
+				first++;
+			int last = first+1;
+			while (last < thrConfigurations2.size() && !thrConfigurations2.get(last).worseThan(oneBestMcr, optProfile, optProfileThr))
+				last++;
+			
+			ModelConfigurationResult bestMcr = thrConfigurations2.get((last + first) / 2);
+			
+			LOG.info("Best threshold: {}.", bestMcr.getReadable());
 
 			return bestMcr;
 		}

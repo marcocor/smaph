@@ -728,7 +728,7 @@ public class TuneModelLibSvm {
 		ModelConfigurationResult globalBest = ModelConfigurationResult.findBest(globalScoreboard, optProfile,
 		        optProfileThreshold);
 
-		ZScoreFeatureNormalizer scaleFn = ZScoreFeatureNormalizer.fromGatherer(trainGatherer);
+		ZScoreFeatureNormalizer scaleFn = ZScoreFeatureNormalizer.fromGatherer(trainGatherer, false);
 		LibSvmAnnotationRegressor bestGreedy = ParameterTesterGreedy.getRegressor(trainGatherer, scaleFn, globalBest.getFeatures(),
 		        globalBest.getGamma(), globalBest.getC(), globalBest.getThreshold());
 

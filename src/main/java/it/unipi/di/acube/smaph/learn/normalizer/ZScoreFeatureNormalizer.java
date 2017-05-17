@@ -27,18 +27,32 @@ public class ZScoreFeatureNormalizer extends FeatureNormalizer implements Serial
 	private static Mean meanComputer = new Mean();
 	private static StandardDeviation stdDevComputer = new StandardDeviation();
 	private double defaultValue = 0.0; // Default value for missing features. 0.0 is the average value.
+	private boolean strict;
 
 	private ZScoreFeatureNormalizer() {
 	}
 
-	public static ZScoreFeatureNormalizer fromUrl(URL zscore, FeaturePack<?> fp) {
+	/**
+	 * @param zscore
+	 * @param fp
+	 * @param strict decides behavior in case a call tries to normalize a value that has never been observed.
+	 * if true, throws an exception, if false, returns a default value.
+	 * @return
+	 */
+	public static ZScoreFeatureNormalizer fromUrl(URL zscore, FeaturePack<?> fp, boolean strict) {
 		ZScoreFeatureNormalizer fn = new ZScoreFeatureNormalizer();
+		fn.strict = strict;
 		fn.load(zscore, fp);
 		return fn;
 	}
 
-	public static <E extends Serializable, G extends Serializable> ZScoreFeatureNormalizer fromGatherer(ExampleGatherer<E, G> exampleGatherer) {
+	public static ZScoreFeatureNormalizer fromUrl(URL zscore, FeaturePack<?> fp) {
+		return fromUrl(zscore, fp, true);
+	}
+
+	public static <E extends Serializable, G extends Serializable> ZScoreFeatureNormalizer fromGatherer(ExampleGatherer<E, G> exampleGatherer, boolean strict) {
 		ZScoreFeatureNormalizer fn = new ZScoreFeatureNormalizer();
+		fn.strict = strict;
 		List<FeaturePack<E>> ftrPacks = exampleGatherer.getAllFeaturePacks();
 		for (String ftrName : ftrPacks.get(0).getFeatureNames()) {
 			Vector<Double> ftrValues = new Vector<>();
@@ -55,6 +69,10 @@ public class ZScoreFeatureNormalizer extends FeatureNormalizer implements Serial
 		return fn;
 	}
 
+	public static <E extends Serializable, G extends Serializable> ZScoreFeatureNormalizer fromGatherer(ExampleGatherer<E, G> exampleGatherer) {
+		return fromGatherer(exampleGatherer, true);
+	}
+
 	@Override
 	public double normalizeFeature(FeaturePack<?> fp, String ftrName) {
 		if (!fp.featureIsSet(ftrName))
@@ -64,8 +82,10 @@ public class ZScoreFeatureNormalizer extends FeatureNormalizer implements Serial
 		double avg = avgs.get(ftrName);
 		double stdDev = stdDevs.get(ftrName);
 		if (Double.isNaN(avg) || Double.isNaN(stdDev))
-			throw new RuntimeException(
-			        "You are trying to normalize feature " + ftrName + " that has never been observed before.");
+			if (strict)
+				throw new RuntimeException(
+						"You are trying to normalize feature " + ftrName + " that has never been observed before.");
+			else return defaultValue;
 		if (stdDev == 0.0)
 			return fp.getFeature(ftrName) - avg;
 		return (fp.getFeature(ftrName) - avg) / stdDev;

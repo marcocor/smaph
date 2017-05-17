@@ -227,7 +227,7 @@ public class SmaphBuilder {
 
 	private static <T> FeatureNormalizer getCachedFeatureNormalizer(URL zscore, FeaturePack<T> fp) {
 		if (!urlToNormalizer.containsKey(zscore))
-			urlToNormalizer.put(zscore, ZScoreFeatureNormalizer.fromUrl(zscore, fp));
+			urlToNormalizer.put(zscore, ZScoreFeatureNormalizer.fromUrl(zscore, fp, false));
 		return urlToNormalizer.get(zscore);
 	}
 
