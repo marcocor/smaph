@@ -59,6 +59,7 @@ public class SourceCoverage {
 		annotators.add(SmaphBuilder.getSmaphGatherer(wikiApi, w2f, e2a, false, false, true, ws, c).appendName("-" + wsStr + "-S3-def"));
 		annotators.add(SmaphBuilder.getSmaphGatherer(wikiApi, w2f, e2a, true, true, true, ws, c).appendName("-" + wsStr + "-S123-def"));
 		annotators.add(SmaphBuilder.getSmaphGatherer(wikiApi, w2f, e2a, true, false, true, ws, c).appendName("-" + wsStr + "-S13-def"));
+		annotators.add(SmaphBuilder.getSmaphGatherer(wikiApi, w2f, e2a, false, true, true, ws, c).appendName("-" + wsStr + "-S23-def"));
 
 		for (int topKS1 : new int[] { 0, 1, 2, 3, 4, 5, 10, 20 })
 			annotators.add(SmaphBuilder.getSmaphGatherer(wikiApi, w2f, e2a, true, topKS1, false, 0, false, 0, ws, c)
