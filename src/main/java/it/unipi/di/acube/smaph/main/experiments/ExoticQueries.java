@@ -43,15 +43,15 @@ public class ExoticQueries {
 		WikipediaToFreebase w2f = WikipediaToFreebase.open(c.getDefaultWikipediaToFreebaseStorage());
 		EntityToAnchors e2a = EntityToAnchors.fromDB(c.getDefaultEntityToAnchorsStorage());
 		WATRelatednessComputer.setCache("relatedness.cache");
-		A2WDataset ds = DatasetBuilder.getGerdaqDevel(wikiApi);
+		A2WDataset ds = DatasetBuilder.getGerdaqTest(wikiApi);
 		CachedWATAnnotator.setCache("wikisense.cache");
 
 		System.out.println("Printing basic information about dataset " + ds.getName());
 		TestDataset.dumpInfo(ds, wikiApi);
 
 		SmaphBuilder.Websearch ws = SmaphBuilder.websearchFromString(line.getOptionValue("websearch-piggyback"));
-		SmaphAnnotator smaph = SmaphBuilder.getSmaph(SmaphVersion.ANNOTATION_REGRESSOR, wikiApi, w2f,
-		        SmaphBuilder.DEFAULT_CACHED_AUX_ANNOTATOR, e2a, false, ws, c);
+		SmaphAnnotator smaph = SmaphBuilder.getSmaph(SmaphVersion.GREEDY, wikiApi, w2f,
+		        SmaphBuilder.DEFAULT_CACHED_AUX_ANNOTATOR, e2a, true, ws, c, -1);
 
 		Metrics<Tag> metrics = new Metrics<Tag>();
 		StrongTagMatch sam = new StrongTagMatch(wikiApi);
