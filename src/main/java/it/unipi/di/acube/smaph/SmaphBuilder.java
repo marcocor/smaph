@@ -152,7 +152,7 @@ public class SmaphBuilder {
 	}
 
 	public static SmaphAnnotator getSmaph(SmaphVersion v, WikipediaInterface wikiApi, WikipediaToFreebase wikiToFreeb,
-	        WATAnnotator auxAnnotator, EntityToAnchors e2a, boolean includeS2, Websearch ws, SmaphConfig c)
+	        WATAnnotator auxAnnotator, EntityToAnchors e2a, boolean includeS2, Websearch ws, SmaphConfig c, int greedyStepLimit)
 	        throws FileNotFoundException, ClassNotFoundException, IOException {
 		URL model = getDefaultModel(v, ws, true, includeS2, true, -1);
 		URL zscore = getDefaultZscoreNormalizer(v, ws, true, includeS2, true, -1);
@@ -191,6 +191,9 @@ public class SmaphBuilder {
 			if (nGreedySteps == 0)
 				throw new IllegalArgumentException("Could not find models.");
 
+			if (greedyStepLimit >= 0 && nGreedySteps > greedyStepLimit)
+				nGreedySteps = greedyStepLimit;
+			
 			for (int i = 0; i < nGreedySteps; i++) {
 				URL modelI = getDefaultModel(v, ws, true, includeS2, true, i);
 				URL zscoreI = getDefaultZscoreNormalizer(v, ws, true, includeS2, true, i);
@@ -240,7 +243,7 @@ public class SmaphBuilder {
 	public static SmaphAnnotator getSmaph(SmaphVersion v, WikipediaInterface wikiApi, WikipediaToFreebase wikiToFreeb,
 	        WATAnnotator auxAnnotator, EntityToAnchors e2a, SmaphConfig c)
 	        throws FileNotFoundException, ClassNotFoundException, IOException {
-		return getSmaph(v, wikiApi, wikiToFreeb, auxAnnotator, e2a, false, DEFAULT_WEBSEARCH, c);
+		return getSmaph(v, wikiApi, wikiToFreeb, auxAnnotator, e2a, false, DEFAULT_WEBSEARCH, c, -1);
 	}
 
 	public static String getDefaultLabel(SmaphVersion v, Websearch ws, boolean s1, boolean s2, boolean s3) {
