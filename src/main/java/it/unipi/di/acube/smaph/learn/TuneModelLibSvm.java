@@ -593,10 +593,7 @@ public class TuneModelLibSvm {
 	        int[][] restrictFeatures, int[] initFeatures, ModelConfigurationResult previousBest)
 	        throws Exception {
 		Vector<ModelConfigurationResult> globalScoreboard = new Vector<>();
-		int stepsCGamma = 6;
-		int fineStepsCGamma = 6;
 		int maxIterations = 10;
-		int fineTuneIterations = 3;
 		int thrSteps = 30;
 
 		ExampleGatherer<Annotation, HashSet<Annotation>> trainGatherer = new ExampleGatherer<>();
@@ -622,65 +619,7 @@ public class TuneModelLibSvm {
 			double bestC = 1;
 			double bestGamma = 1.0 / (bestFeatures == null ? allFtrs : bestFeatures).length;
 			for (int iteration = 0; iteration < maxIterations; iteration++) {
-				int[] gammaCFeatures = bestFeatures == null ? allFtrs : bestFeatures;
-
-				// Broad-tune C and Gamma
-				ModelConfigurationResult bestCGammaResult = null;
-				{
-					double cMin = bestC * 0.7;
-					double cMax = bestC * 1.8;
-					double gammaMin = bestGamma * 0.7;
-					double gammaMax = bestGamma * 1.8;
-
-					Vector<ModelConfigurationResult> scoreboardGammaCTuning = new Vector<>();
-					ParameterTesterGreedy pt = new ParameterTesterGreedy(partialSolutionsDevel, gammaCFeatures, trainGatherer,
-					        develGatherer, bestGamma, bestC, optProfile, optProfileThreshold, thrSteps, wikiApi, step);
-					
-					new GammaCSelector<Annotation, HashSet<Annotation>>(cMin, cMax, bestC, (cMax - cMin) / stepsCGamma / 10.0,
-					        gammaMin, gammaMax, bestGamma, (gammaMax - gammaMin) / stepsCGamma / 10.0, stepsCGamma, pt,
-					        scoreboardGammaCTuning).run();
-					bestCGammaResult = ModelConfigurationResult.findBest(scoreboardGammaCTuning, optProfile, optProfileThreshold);
-
-					bestC = bestCGammaResult.getC();
-					bestGamma = bestCGammaResult.getGamma();
-					if (!ftrSelMethod.equals("increment"))
-						restrictedFeaturesScoreboard.addAll(scoreboardGammaCTuning);
-					LOG.info("Greedy step {}. Done broad gamma-C tuning (iteration {}) best gamma/C: {}/{}", step, iteration, bestGamma, bestC);
-				}
-
-				// Fine-tune C and Gamma
-				Vector<ModelConfigurationResult> scoreboardGammaCTuning = new Vector<>();
-				for (int i = 0; i < fineTuneIterations; i++) {
-					double fineCMin = bestC * 0.85;
-					double fineGammaMin = bestGamma * 0.85;
-					double fineCMax = bestC * 1.20;
-					double fineGammaMax = bestGamma * 1.20;
-					ParameterTesterGreedy pt = new ParameterTesterGreedy(partialSolutionsDevel, gammaCFeatures, trainGatherer,
-					        develGatherer, bestGamma, bestC, optProfile, optProfileThreshold, thrSteps, wikiApi, step);
-
-					new GammaCSelector<Annotation, HashSet<Annotation>>(fineCMin, fineCMax, bestC,
-					        (fineCMax - fineCMin) / fineStepsCGamma / 5.0, fineGammaMin, fineGammaMax, bestGamma,
-					        (fineGammaMax - fineGammaMin) / fineStepsCGamma / 5.0, fineStepsCGamma, pt, scoreboardGammaCTuning).run();
-					ModelConfigurationResult newBestCGammaResult = ModelConfigurationResult.findBest(scoreboardGammaCTuning,
-					        optProfile, optProfileThreshold);
-
-					if (bestCGammaResult.worseThan(newBestCGammaResult, optProfile, optProfileThreshold)) {
-						bestCGammaResult = newBestCGammaResult;
-						bestC = bestCGammaResult.getC();
-						bestGamma = bestCGammaResult.getGamma();
-
-						LOG.info("Greedy step {}. Done fine gamma-C tuning (outer iteration {}, inner iteration {}) best gamma/C: {}/{}",
-						        step, iteration, i, bestGamma, bestC);
-					} else {
-						LOG.info(
-						        "Greedy step {}. No advances in inner gamma-C iteration (outer iteration {}, inner iteration {}) best gamma/C: {}/{}",
-						        step, iteration, i, bestGamma, bestC);
-						break;
-					}
-				}
-				if (!ftrSelMethod.equals("increment"))
-					restrictedFeaturesScoreboard.addAll(scoreboardGammaCTuning);
-
+				
 				// Do feature selection
 				if (!ftrSelMethod.equals("oneshot")) {
 					Vector<ModelConfigurationResult> scoreboardFtrSelection = new Vector<>();
@@ -704,7 +643,7 @@ public class TuneModelLibSvm {
 					restrictedFeaturesScoreboard.addAll(scoreboardFtrSelection);
 					LOG.info("Greedy step {}. Done feature selection (iteration {}).", step, iteration);
 				}
-
+				
 				// Fine-tune threshold
 				{
 					int finalThrSteps = 100;
