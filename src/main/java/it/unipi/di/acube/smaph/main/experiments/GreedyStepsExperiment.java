@@ -5,14 +5,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.GnuParser;
-import org.apache.commons.cli.Options;
-
 import it.unipi.di.acube.batframework.cache.BenchmarkCache;
 import it.unipi.di.acube.batframework.data.Annotation;
 import it.unipi.di.acube.batframework.data.Tag;
 import it.unipi.di.acube.batframework.datasetPlugins.DatasetBuilder;
+import it.unipi.di.acube.batframework.metrics.MatchRelation;
 import it.unipi.di.acube.batframework.metrics.Metrics;
 import it.unipi.di.acube.batframework.metrics.MetricsResultSet;
 import it.unipi.di.acube.batframework.metrics.StrongAnnotationMatch;
@@ -26,6 +23,7 @@ import it.unipi.di.acube.batframework.utils.WikipediaLocalInterface;
 import it.unipi.di.acube.smaph.SmaphAnnotator;
 import it.unipi.di.acube.smaph.SmaphBuilder;
 import it.unipi.di.acube.smaph.SmaphBuilder.SmaphVersion;
+import it.unipi.di.acube.smaph.SmaphBuilder.Websearch;
 import it.unipi.di.acube.smaph.SmaphConfig;
 import it.unipi.di.acube.smaph.WATRelatednessComputer;
 import it.unipi.di.acube.smaph.datasets.wikiAnchors.EntityToAnchors;
@@ -35,10 +33,6 @@ public class GreedyStepsExperiment {
 	private static final Locale LOCALE = Locale.US;
 
 	public static void main(String[] args) throws Exception {
-		Options options = new Options().addOption("w", "websearch-piggyback", true,
-		        "What web search engine to piggyback on. Can be either `bing' or `google'.");
-		CommandLine line = new GnuParser().parse(options, args);
-
 		java.security.Security.setProperty("networkaddress.cache.ttl", "0");
 		Locale.setDefault(LOCALE);
 
@@ -53,46 +47,73 @@ public class GreedyStepsExperiment {
 		System.out.println("Printing basic information about dataset " + ds.getName());
 		TestDataset.dumpInfo(ds, wikiApi);
 
-		SmaphBuilder.Websearch ws = SmaphBuilder.websearchFromString(line.getOptionValue("websearch-piggyback"));
+		Metrics<Annotation> mA = new Metrics<>();
+		Metrics<Tag> mT = new Metrics<>();
+		MatchRelation<Annotation> sam = new StrongAnnotationMatch(wikiApi);
+		MatchRelation<Tag> stm = new StrongTagMatch(wikiApi);
 
-		HashMap<A2WSystem, MetricsResultSet> C2WRes = new HashMap<>();
-		HashMap<A2WSystem, MetricsResultSet> samRes = new HashMap<>();
+		HashMap<A2WSystem, List<HashSet<Tag>>> C2WRes = new HashMap<>();
+		HashMap<A2WSystem, List<HashSet<Annotation>>> A2WRes = new HashMap<>();
+		int stepsGoogle = SmaphBuilder.getGreedyRegressors(Websearch.GOOGLE_CSE, true, true, true).getFirst().size();
+		int stepsBing = SmaphBuilder.getGreedyRegressors(Websearch.BING, true, true, true).getFirst().size();
+		SmaphAnnotator[] googleAnnotators = new SmaphAnnotator[stepsGoogle + 1];
+		SmaphAnnotator[] bingAnnotators = new SmaphAnnotator[stepsBing + 1];
+		int[] stepCountGoogle = new int[stepsGoogle + 1];
+		int[] stepCountBing = new int[stepsBing + 1];
 
-		int[] stepCount;
+		for (Websearch ws : new Websearch[] { Websearch.GOOGLE_CSE, Websearch.BING }) {
+			SmaphAnnotator[] annotatorsStep = (ws == Websearch.GOOGLE_CSE) ? googleAnnotators : bingAnnotators;
 
-		int annCount = 0;
-		int steps = 0;
-		while (true) {
-			SmaphAnnotator ann = SmaphBuilder.getSmaph(SmaphVersion.GREEDY, wikiApi, w2f,
-			        SmaphBuilder.DEFAULT_CACHED_AUX_ANNOTATOR, e2a, true, ws, c, steps).appendName("-Steps=" + steps);
+			for (int steps = 0; steps < annotatorsStep.length; steps++) {
+				SmaphAnnotator ann = SmaphBuilder.getSmaph(SmaphVersion.GREEDY, wikiApi, w2f,
+				        SmaphBuilder.DEFAULT_CACHED_AUX_ANNOTATOR, e2a, true, ws, c, steps)
+				        .appendName("-" + ws + "-Steps=" + steps);
+				annotatorsStep[steps] = ann;
 
-			List<HashSet<Tag>> resTag = BenchmarkCache.doC2WTags(ann, ds);
-			List<HashSet<Annotation>> resAnn = BenchmarkCache.doA2WAnnotations(ann, ds);
-			C2WRes.put(ann, new Metrics<Tag>().getResult(resTag, ds.getC2WGoldStandardList(), new StrongTagMatch(wikiApi)));
-			samRes.put(ann,
-			        new Metrics<Annotation>().getResult(resAnn, ds.getA2WGoldStandardList(), new StrongAnnotationMatch(wikiApi)));
-			BenchmarkCache.flush();
+				List<HashSet<Tag>> resTag = BenchmarkCache.doC2WTags(ann, ds);
+				List<HashSet<Annotation>> resAnn = BenchmarkCache.doA2WAnnotations(ann, ds);
+				C2WRes.put(ann, resTag);
+				A2WRes.put(ann, resAnn);
+				BenchmarkCache.flush();
 
-			int thisAnnCount = resAnn.stream().mapToInt(res -> res.size()).sum();
+				if (steps == annotatorsStep.length - 1) {
+					int[] stepCount = (ws == Websearch.GOOGLE_CSE) ? stepCountGoogle : stepCountBing;
+					for (HashSet<Annotation> res : resAnn)
+						stepCount[res.size()]++;
+				}
+			}
 
-			if (annCount == thisAnnCount && steps != 0) {
-				stepCount = new int[steps];
-				for (HashSet<Annotation> res : resAnn)
-					stepCount[res.size()]++;
-				break;
-			} else {
-				annCount = thisAnnCount;
-				steps++;
+		}
+
+		for (Websearch ws : new Websearch[] { Websearch.GOOGLE_CSE, Websearch.BING }) {
+			SmaphAnnotator[] annotatorsStep = (ws == Websearch.GOOGLE_CSE) ? googleAnnotators : bingAnnotators;
+			for (A2WSystem ann : annotatorsStep) {
+				MetricsResultSet res = mT.getResult(C2WRes.get(ann), ds.getC2WGoldStandardList(), stm);
+				printMetricsResultSet("C2W", res, ann.getName());
+			}
+			for (A2WSystem ann : annotatorsStep) {
+				MetricsResultSet res = mA.getResult(A2WRes.get(ann), ds.getA2WGoldStandardList(), sam);
+				printMetricsResultSet("SAM", res, ann.getName());
+			}
+			int[] stepCount = (ws == Websearch.GOOGLE_CSE) ? stepCountGoogle : stepCountBing;
+			for (int i = 0; i < stepCount.length; i++) {
+				System.out.printf("%s: %d queries received a negative judgment at step %d%n", ws, stepCount[i], i);
 			}
 		}
 
-		for (A2WSystem ann : C2WRes.keySet())
-			printMetricsResultSet("C2W", C2WRes.get(ann), ann.getName());
-		for (A2WSystem ann : samRes.keySet())
-			printMetricsResultSet("SAM", samRes.get(ann), ann.getName());
-
-		for (int i = 0; i < steps; i++) {
-			System.out.printf("%d queries received a negative judgment at step %d%n", stepCount[i], i);
+		for (int step = 0; step < Math.max(googleAnnotators.length, bingAnnotators.length); step++) {
+			List<HashSet<Annotation>> resStepBing = A2WRes.get(bingAnnotators[Math.min(step, bingAnnotators.length - 1)]);
+			List<HashSet<Annotation>> resStepGoogle = A2WRes.get(googleAnnotators[Math.min(step, googleAnnotators.length - 1)]);
+			System.out.printf("Macro-sim at step %d: %.3f%n", step, mA.macroSimilarity(resStepBing, resStepGoogle, sam));
+		}
+		for (int step = 0; step < Math.max(googleAnnotators.length, bingAnnotators.length); step++) {
+			List<HashSet<Annotation>> resStepBing = A2WRes.get(bingAnnotators[Math.min(step, bingAnnotators.length - 1)]);
+			List<HashSet<Annotation>> resStepGoogle = A2WRes.get(googleAnnotators[Math.min(step, googleAnnotators.length - 1)]);
+			System.out.printf("TP Macro-sim at step %d: %.3f%n", step,
+			        mA.macroSimilarity(
+			        		mA.getTp(ds.getA2WGoldStandardList(), resStepBing, sam),
+			                mA.getTp(ds.getA2WGoldStandardList(), resStepGoogle, sam),
+			                sam));
 		}
 
 		wikiApi.flush();

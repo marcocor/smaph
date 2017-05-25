@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.Vector;
 
 import org.apache.commons.lang.NotImplementedException;
+import org.apache.commons.math3.util.Pair;
 
 import it.unipi.di.acube.batframework.systemPlugins.CachedWATAnnotator;
 import it.unipi.di.acube.batframework.systemPlugins.WATAnnotator;
@@ -21,7 +22,6 @@ import it.unipi.di.acube.searchapi.callers.BingSearchApiCaller;
 import it.unipi.di.acube.searchapi.callers.GoogleSearchApiCaller;
 import it.unipi.di.acube.smaph.datasets.wikiAnchors.EntityToAnchors;
 import it.unipi.di.acube.smaph.datasets.wikitofreebase.WikipediaToFreebase;
-import it.unipi.di.acube.smaph.learn.featurePacks.AnnotationFeaturePack;
 import it.unipi.di.acube.smaph.learn.featurePacks.EntityFeaturePack;
 import it.unipi.di.acube.smaph.learn.featurePacks.FeaturePack;
 import it.unipi.di.acube.smaph.learn.featurePacks.GreedyFeaturePack;
@@ -183,26 +183,18 @@ public class SmaphBuilder {
 		}
 			break;
 		case GREEDY: {
-			List<AnnotationRegressor> regressors = new Vector<>();
-			List<FeatureNormalizer> fns = new Vector<>();
-			int nGreedySteps = 0;
-			while (getDefaultModel(v, ws, true, includeS2, true, nGreedySteps) != null)
-				nGreedySteps++;
-			if (nGreedySteps == 0)
+			Pair<List<AnnotationRegressor>,List<FeatureNormalizer> > regressorsAndNormalizers = getGreedyRegressors(ws, true, includeS2, true);
+			List<AnnotationRegressor> regressors = regressorsAndNormalizers.getFirst();
+			List<FeatureNormalizer> normalizers = regressorsAndNormalizers.getSecond();
+			if (regressors.isEmpty())
 				throw new IllegalArgumentException("Could not find models.");
 
-			if (greedyStepLimit >= 0 && nGreedySteps > greedyStepLimit)
-				nGreedySteps = greedyStepLimit;
-			
-			for (int i = 0; i < nGreedySteps; i++) {
-				URL modelI = getDefaultModel(v, ws, true, includeS2, true, i);
-				URL zscoreI = getDefaultZscoreNormalizer(v, ws, true, includeS2, true, i);
-				AnnotationRegressor arI = getCachedAnnotationRegressor(modelI);
-				FeatureNormalizer fnI = getCachedFeatureNormalizer(zscoreI, new GreedyFeaturePack());
-				regressors.add(arI);
-				fns.add(fnI);
+			if (greedyStepLimit >= 0){
+				regressors = regressors.subList(0, greedyStepLimit);
+				normalizers = normalizers.subList(0, greedyStepLimit);
 			}
-			GreedyLinkback lbGreedy = new GreedyLinkback(regressors, fns, wikiApi, wikiToFreeb, e2a, DEFAULT_ANCHOR_MENTION_ED);
+			
+			GreedyLinkback lbGreedy = new GreedyLinkback(regressors, normalizers, wikiApi, wikiToFreeb, e2a, DEFAULT_ANCHOR_MENTION_ED);
 			a = getDefaultSmaphParam(wikiApi, wikiToFreeb, auxAnnotator, e2a, new NoEntityFilter(), null, lbGreedy, true,
 			        includeS2, true, ws, c);
 		}
@@ -214,6 +206,25 @@ public class SmaphBuilder {
 		a.appendName(String.format(" - %s, %s%s", v, ws, includeS2 ? "" : ", excl. S2"));
 
 		return a;
+	}
+
+	public static Pair<List<AnnotationRegressor>, List<FeatureNormalizer>> getGreedyRegressors(Websearch ws,
+	        boolean includeS1, boolean includeS2, boolean includeS3) {
+		List<AnnotationRegressor> regressors = new Vector<>();
+		List<FeatureNormalizer> fns = new Vector<>();
+		int i = 0;
+		while (true) {
+			URL modelI = getDefaultModel(SmaphVersion.GREEDY, ws, includeS1, includeS2, includeS3, i);
+			if (modelI == null)
+				break;
+			URL zscoreI = getDefaultZscoreNormalizer(SmaphVersion.GREEDY, ws, includeS1, includeS2, includeS3, i);
+			AnnotationRegressor arI = getCachedAnnotationRegressor(modelI);
+			FeatureNormalizer fnI = getCachedFeatureNormalizer(zscoreI, new GreedyFeaturePack());
+			regressors.add(arI);
+			fns.add(fnI);
+			i++;
+		}
+		return new Pair<>(regressors, fns);
 	}
 
 	private static AnnotationRegressor getCachedAnnotationRegressor(URL model) {
