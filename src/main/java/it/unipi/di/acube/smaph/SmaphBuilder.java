@@ -152,6 +152,12 @@ public class SmaphBuilder {
 	}
 
 	public static SmaphAnnotator getSmaph(SmaphVersion v, WikipediaInterface wikiApi, WikipediaToFreebase wikiToFreeb,
+	        WATAnnotator auxAnnotator, EntityToAnchors e2a, boolean includeS2, SmaphConfig c)
+	        throws FileNotFoundException, ClassNotFoundException, IOException {
+		return getSmaph(v, wikiApi, wikiToFreeb, auxAnnotator, e2a, includeS2, DEFAULT_WEBSEARCH, c, -1);
+	}
+
+	public static SmaphAnnotator getSmaph(SmaphVersion v, WikipediaInterface wikiApi, WikipediaToFreebase wikiToFreeb,
 	        WATAnnotator auxAnnotator, EntityToAnchors e2a, boolean includeS2, Websearch ws, SmaphConfig c, int greedyStepLimit)
 	        throws FileNotFoundException, ClassNotFoundException, IOException {
 		URL model = getDefaultModel(v, ws, true, includeS2, true, -1);
@@ -249,12 +255,6 @@ public class SmaphBuilder {
 		if (!urlToBindingRegressor.containsKey(model))
 			urlToBindingRegressor.put(model, RankLibBindingRegressor.fromUrl(model));
 		return urlToBindingRegressor.get(model);
-	}
-
-	public static SmaphAnnotator getSmaph(SmaphVersion v, WikipediaInterface wikiApi, WikipediaToFreebase wikiToFreeb,
-	        WATAnnotator auxAnnotator, EntityToAnchors e2a, SmaphConfig c)
-	        throws FileNotFoundException, ClassNotFoundException, IOException {
-		return getSmaph(v, wikiApi, wikiToFreeb, auxAnnotator, e2a, false, DEFAULT_WEBSEARCH, c, -1);
 	}
 
 	public static String getDefaultLabel(SmaphVersion v, Websearch ws, boolean s1, boolean s2, boolean s3) {

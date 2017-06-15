@@ -50,7 +50,6 @@ import it.unipi.di.acube.smaph.datasets.wikitofreebase.WikipediaToFreebase;
 @Path("/")
 public class SmaphServlet {
 	private final static Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-	private final static SmaphVersion DEFAULT_SMAPH_VERSION = SmaphBuilder.SmaphVersion.ANNOTATION_REGRESSOR;
 
 	@Context
 	ServletContext context;
@@ -62,11 +61,11 @@ public class SmaphServlet {
 	@Path("/debug")
 	@Produces({ MediaType.APPLICATION_JSON })
 	public Response debugSmaph(@QueryParam("Text") String text, @QueryParam("google-cse-id") String cseId,
-	        @QueryParam("google-api-key") String apiKey) {
+	        @QueryParam("google-api-key") String apiKey, @QueryParam("exclude-s2") String excludeS2) {
 		WikipediaInterface wikiApi = (WikipediaInterface) context.getAttribute("wikipedia-api");
 		SmaphDebugger debugger = new SmaphDebugger();
 		SmaphConfig c = getSmaphConfig(cseId, apiKey);
-		getAnnotatorByName("default", c).solveSa2W(text, debugger);
+		getAnnotatorByName("default", excludeS2 != null, c).solveSa2W(text, debugger);
 
 		try {
 			return Response.ok(debugger.toJson(wikiApi).toString()).build();
@@ -80,7 +79,7 @@ public class SmaphServlet {
 	@Path("/annotate-nif")
 	public Response annotateNif(String request, @QueryParam("q") String q,
 	        @QueryParam("annotator") @DefaultValue("default") String annotator, @QueryParam("google-cse-id") String cseId,
-	        @QueryParam("google-api-key") String apiKey) {
+	        @QueryParam("google-api-key") String apiKey, @QueryParam("exclude-s2") String excludeS2) {
 		if (q == null)
 			return Response.serverError().entity("Parameter q required.").build();
 		if (cseId == null)
@@ -88,14 +87,14 @@ public class SmaphServlet {
 		if (apiKey == null)
 			return Response.serverError().entity("Parameter google-api-key required.").build();
 		SmaphConfig c = getSmaphConfig(cseId, apiKey);
-		return Response.ok(encodeResponseNif(request, getAnnotatorByName(annotator, c))).build();
+		return Response.ok(encodeResponseNif(request, getAnnotatorByName(annotator, excludeS2 != null, c))).build();
 	}
 
 	@GET
 	@Path("/annotate")
 	@Produces({ MediaType.APPLICATION_JSON })
 	public Response annotateDefault(@QueryParam("q") String q, @QueryParam("annotator") @DefaultValue("default") String annotator,
-	        @QueryParam("google-cse-id") String cseId, @QueryParam("google-api-key") String apiKey) {
+	        @QueryParam("google-cse-id") String cseId, @QueryParam("google-api-key") String apiKey, @QueryParam("exclude-s2") String excludeS2) {
 		if (q == null)
 			return Response.serverError().entity("Parameter q required.").build();
 		if (cseId == null)
@@ -103,7 +102,7 @@ public class SmaphServlet {
 		if (apiKey == null)
 			return Response.serverError().entity("Parameter google-api-key required.").build();
 		SmaphConfig c = getSmaphConfig(cseId, apiKey);
-		SmaphAnnotator ann = getAnnotatorByName(annotator, c);
+		SmaphAnnotator ann = getAnnotatorByName(annotator, excludeS2 != null, c);
 		return Response.ok(encodeResponseJson(ann.solveSa2W(q), ann)).build();
 	}
 
@@ -111,29 +110,36 @@ public class SmaphServlet {
 		return new SmaphConfig(null, null, null, apiKey, cseId, null, null, null, null, null);
 	}
 
-	private SmaphAnnotator getAnnotatorByName(String annotator, SmaphConfig c) {
+	private SmaphAnnotator getAnnotatorByName(String annotator, boolean excludeS2, SmaphConfig c) {
 		WikipediaInterface wikiApi = (WikipediaInterface) context.getAttribute("wikipedia-api");
 		WikipediaToFreebase wikiToFreebase = (WikipediaToFreebase) context.getAttribute("wiki-to-freebase");
 		EntityToAnchors e2a = (EntityToAnchors) context.getAttribute("entity-to-anchors");
+		SmaphVersion version = null;
+		switch (annotator) {
+		case "smaph-1":
+		case "ef":
+			version = SmaphVersion.ENTITY_FILTER;
+			break;
+		case "smaph-s":
+		case "ar":
+			version = SmaphVersion.ANNOTATION_REGRESSOR;
+			break;
+		case "smaph-2":
+		case "coll":
+			version = SmaphVersion.COLLECTIVE;
+			break;
+		case "default":
+		case "smaph-3":
+		case "greedy":
+			version = SmaphVersion.GREEDY;
+			break;
+		}
 		try {
-			switch (annotator) {
-			case "default":
-				return SmaphBuilder.getSmaph(DEFAULT_SMAPH_VERSION, wikiApi, wikiToFreebase, SmaphBuilder.DEFAULT_AUX_ANNOTATOR,
-				        e2a, c);
-			case "ef":
-				return SmaphBuilder.getSmaph(SmaphVersion.ENTITY_FILTER, wikiApi, wikiToFreebase,
-				        SmaphBuilder.DEFAULT_AUX_ANNOTATOR, e2a, c);
-			case "ar":
-				return SmaphBuilder.getSmaph(SmaphVersion.ANNOTATION_REGRESSOR, wikiApi, wikiToFreebase,
-				        SmaphBuilder.DEFAULT_AUX_ANNOTATOR, e2a, c);
-			case "coll":
-				return SmaphBuilder.getSmaph(SmaphVersion.COLLECTIVE, wikiApi, wikiToFreebase, SmaphBuilder.DEFAULT_AUX_ANNOTATOR,
-				        e2a, c);
-			}
+			return SmaphBuilder.getSmaph(version, wikiApi, wikiToFreebase, SmaphBuilder.DEFAULT_AUX_ANNOTATOR,
+			        e2a, !excludeS2, c);
 		} catch (ClassNotFoundException | IOException e) {
 			throw new RuntimeException(e);
 		}
-		throw new IllegalArgumentException("Unrecognized annotator identifier " + annotator);
 	}
 
 	private String encodeResponseNif(String request, Sa2WSystem ann) {

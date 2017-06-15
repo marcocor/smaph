@@ -47,8 +47,9 @@ public class ServerMain {
 		ServletRegistration registration = context.addServlet("ServletContainer", new ServletContainer(rc));
 		registration.addMapping("/smaph/*");
 		context.addListener(SmaphContextListener.class);
-		context.setInitParameter(SmaphContextListener.WIKI_PAGES_DB, storageBase.resolve("mapdb/wikipedia_pages.mapdb").toString());
-		context.setInitParameter(SmaphContextListener.FREEBASE_DIR, storageBase.resolve("mapdb").toString());
+		context.setInitParameter(SmaphContextListener.WIKI_PAGES_DB, storageBase.resolve("mapdb/wikipedia_pages.db").toString());
+		context.setInitParameter(SmaphContextListener.FREEBASE_DIR, storageBase.resolve("mapdb/freebase.db").toString());
+		context.setInitParameter(SmaphContextListener.ENTITY_TO_ANCHORS_DB, storageBase.resolve("mapdb/e2a.db").toString());
 		context.deploy(httpServer);
 		try {
 			httpServer.start();

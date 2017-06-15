@@ -473,7 +473,7 @@ public class SmaphAnnotator implements Sa2WSystem {
 		double webTotalWS = Double.NaN;
 		HashMap<Integer, Integer> rankToIdWS = null;
 		HashMap<Integer, Integer> idToRankWS = null;
-		if (includeSourceWikiSearchResults | includeSourceWikiResults) {
+		if (includeSourceWikiSearchResults) {
 			resCountAndWebTotalWS = takeWebsearchData(query, boldsAndRankWS,
 					wikiSearchUrls, null, topKWikiSearch, true);
 			webTotalWS = resCountAndWebTotalWS.getMiddle();
