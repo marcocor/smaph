@@ -78,7 +78,7 @@
 		<dependency>
 			<groupId>it.unipi.di.acube</groupId>
 			<artifactId>bing-api-java</artifactId>
-			<version>0.4-SNAPSHOT</version>
+			<version>0.4</version>
 		</dependency>
 		<dependency>
 			<groupId>ranklib.plus</groupId>
