@@ -115,7 +115,7 @@ The servlet will need a few context parameters that must be passed e.g. through 
 ## Option 3. Call SMAPH as a Java library
 You can also access the SMAPH system directly by calling its Java methods. Install the library with
 
-`mvn install`
+`mvn install -DskipTests`
 
 and include it in your project's `pom.xml` with:
 
