@@ -13,6 +13,7 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<smaph.port>8080</smaph.port>
 		<smaph.host>localhost</smaph.host>
+		<smaph.storage_path>storage</smaph.storage_path>
 	</properties>
 
 	<profiles>
@@ -31,6 +32,8 @@
 								<argument>${smaph.host}</argument>
 								<argument>--port</argument>
 								<argument>${smaph.port}</argument>
+								<argument>--storage_path</argument>
+								<argument>${smaph.storage_path}</argument>
 							</arguments>
 						</configuration>
 					</plugin>
