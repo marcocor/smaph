@@ -39,7 +39,7 @@ In case you prefer to deploy SMAPH locally, you will need to first install a few
 3. Create a directory for data storage
 	* `mkdir -p storage/mapdb`
 
-4. Download the [SMAPH datasets](https://groviera1.di.unipi.it:5001/sharing/xtEQJlHVR) and unzip the files to `storage/mapdb`.
+4. Download the [SMAPH datasets](https://groviera1.di.unipi.it:5001/sharing/RBHB0Yxz5) and unzip the files to `storage/mapdb`.
 
 5. Verify datasets integrity with `md5sum storage/mapdb/*`. Should give:
 ```
