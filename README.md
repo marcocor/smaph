@@ -61,7 +61,7 @@ To change the default listening port (8080), hostname (`localhost`), or storage 
 You can now access SMAPH at:
 
 ```
-http://localhost:9090/smaph/annotate?google-cse-id=CSE_ID&google-api-key=API_KEY&q=armstrong moon landing
+http://localhost:8080/smaph/annotate?google-cse-id=CSE_ID&google-api-key=API_KEY&q=armstrong moon landing
 ```
 
 where `CSE_ID` and `API_KEY` are your Google CSE credentials (see above).
