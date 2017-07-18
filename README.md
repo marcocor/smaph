@@ -128,6 +128,13 @@ and include it in your project's `pom.xml` with:
 ```
 Take a look at the `annotateDefault` method in `SmaphServlet.java` to see how it's done. You will basically have to build an annotator with `SmaphBuilder` and call the annotator's `solveSa2W()` method.
 
+# Training models
+SMAPH comes with pre-trained models. However, if you need to retrain them, you can do so by launching (from the SMAPH base directory):
+```
+./scripts/train_models.sh
+```
+This will train models for SMAPH-1, SMAPH-S and SMAPH-3, for both Google and Bing, with and without Source 2, which may take a few hours. To train a subset of these configurations, you can hack your way into the script.
+
 # Citation and further reading
 You can read about SMAPH in [this paper](http://dl.acm.org/citation.cfm?id=2883061&CFID=942489270&CFTOKEN=37300508) published at WWW'16.
 You can cite SMAPH through the following bibitem:
