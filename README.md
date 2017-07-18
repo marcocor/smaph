@@ -39,7 +39,7 @@ In case you prefer to deploy SMAPH locally, you will need to first install a few
 3. Create a directory for data storage
 	* `mkdir -p storage/mapdb`
 
-4. Download the [SMAPH datasets](https://groviera1.di.unipi.it:5001/sharing/xtEQJlHVR) and unzip the files to `storage/mapdb`.
+4. Download the [SMAPH datasets](https://groviera1.di.unipi.it:5001/sharing/RBHB0Yxz5) and unzip the files to `storage/mapdb`.
 
 5. Verify datasets integrity with `md5sum storage/mapdb/*`. Should give:
 ```
@@ -61,7 +61,7 @@ To change the default listening port (8080), hostname (`localhost`), or storage 
 You can now access SMAPH at:
 
 ```
-http://localhost:9090/smaph/annotate?google-cse-id=CSE_ID&google-api-key=API_KEY&q=armstrong moon landing
+http://localhost:8080/smaph/annotate?google-cse-id=CSE_ID&google-api-key=API_KEY&q=armstrong moon landing
 ```
 
 where `CSE_ID` and `API_KEY` are your Google CSE credentials (see above).
