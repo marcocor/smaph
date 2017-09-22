@@ -27,7 +27,7 @@ import it.unipi.di.acube.smaph.WATRelatednessComputer;
 import it.unipi.di.acube.smaph.datasets.wikiAnchors.EntityToAnchors;
 import it.unipi.di.acube.smaph.datasets.wikitofreebase.WikipediaToFreebase;
 
-public class ExoticQueries {
+public class TailQueriesExperiment {
 	private static final Locale LOCALE = Locale.US;
 
 	public static void main(String[] args) throws Exception {
