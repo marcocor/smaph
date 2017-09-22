@@ -20,7 +20,7 @@ SMAPH is built on top of the information provided by search engines: it issues a
 - To use SMAPH with Bing, register to the [Bing Web Search API](https://azure.microsoft.com/en-us/pricing/details/cognitive-services/search-api/).
 
 # Using SMAPH deployment on SoBigData
-SMAPH is accessible as a web service hosted by the [SoBigData European Research Infrastructure](www.sobigdata.eu). For general use, we strongly recommend to use this deployment, which is the only one for which we guarantee technical support. Registration is free.
+SMAPH is accessible as a web service hosted by the [SoBigData European Research Infrastructure](http://www.sobigdata.eu). For general use, we strongly recommend to use this deployment, which is the only one for which we guarantee technical support. Registration is free.
 
 Access [SMAPH on SoBigData](https://sobigdata.d4science.org/group/smaph) now!
 
