@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.Vector;
 import java.util.concurrent.ExecutionException;
@@ -49,10 +50,12 @@ import de.bwaldvogel.liblinear.SolverType;
 import it.unipi.di.acube.batframework.data.Annotation;
 import it.unipi.di.acube.batframework.data.ScoredAnnotation;
 import it.unipi.di.acube.batframework.data.Tag;
-import it.unipi.di.acube.batframework.systemPlugins.CachedWATAnnotator;
+import it.unipi.di.acube.batframework.systemPlugins.CachedWAT2Annotator;
 import it.unipi.di.acube.batframework.utils.Pair;
 import it.unipi.di.acube.batframework.utils.WikipediaInterface;
+import it.unipi.di.acube.batframework.utils.WikipediaInterfaceWAT;
 import it.unipi.di.acube.batframework.utils.WikipediaLocalInterface;
+import it.unipi.di.acube.smaph.QueryInformation;
 import it.unipi.di.acube.smaph.SmaphAnnotator;
 import it.unipi.di.acube.smaph.SmaphBuilder;
 import it.unipi.di.acube.smaph.SmaphBuilder.SmaphVersion;
@@ -139,9 +142,11 @@ public class TuneModelLibSvm {
 
 		Locale.setDefault(Locale.US);
 		SmaphConfig c = SmaphConfig.fromConfigFile("smaph-config.xml");
-		CachedWATAnnotator.setCache("wikisense.cache");
-		WATRelatednessComputer.setCache("relatedness.cache");
-		wikiApi = WikipediaLocalInterface.open(c.getDefaultWikipagesStorage());
+		SmaphBuilder.initialize(c.getWatGcubeToken());
+		CachedWAT2Annotator.setCache("wat2.cache");
+		WATRelatednessComputer.setGcubeToken(c.getWatGcubeToken());
+		WATRelatednessComputer.setCache("relatedness_wat2.cache");
+		wikiApi = new WikipediaInterfaceWAT.WikipediaInterfaceWATBuilder().gcubeToken(c.getWatGcubeToken()).cache().build();
 		w2f = WikipediaToFreebase.open(c.getDefaultWikipediaToFreebaseStorage());
 		e2a = EntityToAnchors.fromDB(c.getDefaultEntityToAnchorsStorage());
 
@@ -162,6 +167,7 @@ public class TuneModelLibSvm {
 		int[] initialFtrSet = line.hasOption("initial-ftr-set")
 		        ? SmaphUtils.strToFeatureVector(line.getOptionValue("initial-ftr-set")) : null;
 
+		Map<String, QueryInformation> qiCache = new HashMap<>();
 		List<String> readableBestModels = new Vector<>();
 		if (line.hasOption("opt-entity-filter")) {
 			for (int topKS1i : topKS1)
@@ -175,7 +181,7 @@ public class TuneModelLibSvm {
 						        .appendName("-" + label);
 						Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult> modelAndStats = trainIterativeEF(
 						        smaphGatherer, opt, OptimizaionProfiles.MAXIMIZE_MACRO_F1, -1.0, ftrSelMethod, ftrRestriction,
-						        initialFtrSet, modelFile, normFile);
+						        initialFtrSet, modelFile, normFile, qiCache);
 						System.gc();
 						for (ModelConfigurationResult res : modelAndStats.first)
 							LOG.info(res.getReadable());
@@ -198,7 +204,7 @@ public class TuneModelLibSvm {
 						        .appendName("-" + label);
 						Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult> modelAndStats = trainIterativeAR(
 						        smaphGatherer, opt, OptimizaionProfiles.MAXIMIZE_MACRO_F1, -1.0, ftrSelMethod,
-						        ftrRestriction, initialFtrSet, modelFile, normFile);
+						        ftrRestriction, initialFtrSet, modelFile, normFile, qiCache);
 						System.gc();
 						for (ModelConfigurationResult res : modelAndStats.first)
 							LOG.info(res.getReadable());
@@ -216,7 +222,7 @@ public class TuneModelLibSvm {
 						        .appendName("-" + label);
 						Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult> modelAndStats = trainIterativeGreedy(
 						        smaphGatherer, opt, OptimizaionProfiles.MAXIMIZE_MACRO_F1, -1.0, ftrSelMethod,
-						        ftrRestriction, initialFtrSet, ws, topKS1i, topKS2i, topKS3i);
+						        ftrRestriction, initialFtrSet, ws, topKS1i, topKS2i, topKS3i, qiCache);
 						System.gc();
 						for (ModelConfigurationResult res : modelAndStats.first)
 							LOG.info(res.getReadable());
@@ -228,7 +234,7 @@ public class TuneModelLibSvm {
 
 		LOG.info("Flushing everything...");
 		wikiApi.flush();
-		CachedWATAnnotator.flush();
+		CachedWAT2Annotator.flush();
 		WATRelatednessComputer.flush();
 	}
 
@@ -238,7 +244,7 @@ public class TuneModelLibSvm {
 
 	private static Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult> trainIterativeEF(SmaphAnnotator annotator,
 	        OptDataset optDs, OptimizaionProfiles optProfile, double optProfileThreshold, String ftrSelMethod,
-	        int[][] restrictFeatures, int[] initialFeatures, File modelFile, File normFile)
+	        int[][] restrictFeatures, int[] initialFeatures, File modelFile, File normFile, Map<String, QueryInformation> qiCache)
 	                throws Exception {
 
 		Vector<ModelConfigurationResult> globalScoreboard = new Vector<>();
@@ -251,7 +257,7 @@ public class TuneModelLibSvm {
 		ExampleGatherer<Tag, HashSet<Tag>> develGatherer = new ExampleGatherer<Tag, HashSet<Tag>>();
 
 		GenerateTrainingAndTest.gatherExamplesTrainingAndDevel(annotator, trainGatherer, develGatherer, null, null, null, null,
-				null, null, -1, null, null, null, null, wikiApi, w2f, optDs);
+				null, null, -1, null, null, null, null, wikiApi, w2f, optDs, qiCache);
 
 		int[] allFtrs = SmaphUtils.getAllFtrVect(new EntityFeaturePack().getFeatureCount());
 
@@ -387,7 +393,7 @@ public class TuneModelLibSvm {
 
 	private static Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult> trainIterativeAR(SmaphAnnotator annotator,
 	        OptDataset optDs, OptimizaionProfiles optProfile, double optProfileThreshold, String ftrSelMethod,
-	        int[][] restrictFeatures, int[] initFeatures, File modelFile, File normFile)
+	        int[][] restrictFeatures, int[] initFeatures, File modelFile, File normFile, Map<String, QueryInformation> qiCache)
 	        throws Exception {
 		Vector<ModelConfigurationResult> globalScoreboard = new Vector<>();
 		int stepsCGamma = 6;
@@ -400,7 +406,7 @@ public class TuneModelLibSvm {
 		ExampleGatherer<Annotation, HashSet<Annotation>> develGatherer = new ExampleGatherer<>();
 
 		GenerateTrainingAndTest.gatherExamplesTrainingAndDevel(annotator, null, null, trainGatherer, develGatherer, null, null,
-		        null, null, -1, null, null, null, null, wikiApi, w2f, optDs);
+		        null, null, -1, null, null, null, null, wikiApi, w2f, optDs, qiCache);
 
 		int[] allFtrs = SmaphUtils.getAllFtrVect(new AnnotationFeaturePack().getFeatureCount());
 
@@ -532,7 +538,7 @@ public class TuneModelLibSvm {
 
 	private static Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult> trainIterativeGreedy(SmaphAnnotator annotator,
 	        OptDataset optDs, OptimizaionProfiles optProfile, double optProfileThreshold, String ftrSelMethod,
-	        int[][] restrictFeatures, int[] initFeatures, Websearch ws, int topKS1, int topKS2, int topKS3) throws Exception {
+	        int[][] restrictFeatures, int[] initFeatures, Websearch ws, int topKS1, int topKS2, int topKS3, Map<String, QueryInformation> qiCache) throws Exception {
 		
 		{
 			int step = 0;
@@ -553,7 +559,7 @@ public class TuneModelLibSvm {
 		Vector<ModelConfigurationResult> allModels = new Vector<>();
 		ModelConfigurationResult previousBest = null;
 		do {
-			Pair<Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult>, Pair<ZScoreFeatureNormalizer, LibSvmAnnotationRegressor>> p = trainIterativeGreedyStep(annotator, partialSolutionsTrain, partialSolutionsDevel, step, optDs, optProfile, optProfileThreshold, ftrSelMethod, restrictFeatures, initFeatures, previousBest);
+			Pair<Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult>, Pair<ZScoreFeatureNormalizer, LibSvmAnnotationRegressor>> p = trainIterativeGreedyStep(annotator, partialSolutionsTrain, partialSolutionsDevel, step, optDs, optProfile, optProfileThreshold, ftrSelMethod, restrictFeatures, initFeatures, previousBest, qiCache);
 			if (p == null) {
 				LOG.info("Greedy step {}. No improvement is possible, stopping.", step);
 				break;
@@ -590,7 +596,7 @@ public class TuneModelLibSvm {
 	private static Pair<Pair<Vector<ModelConfigurationResult>, ModelConfigurationResult>, Pair<ZScoreFeatureNormalizer, LibSvmAnnotationRegressor>> trainIterativeGreedyStep(SmaphAnnotator annotator,
 			List<HashSet<Annotation>> partialSolutionsTrain, List<HashSet<Annotation>> partialSolutionsDevel, int step,
 	        OptDataset optDs, OptimizaionProfiles optProfile, double optProfileThreshold, String ftrSelMethod,
-	        int[][] restrictFeatures, int[] initFeatures, ModelConfigurationResult previousBest)
+	        int[][] restrictFeatures, int[] initFeatures, ModelConfigurationResult previousBest, Map<String, QueryInformation> qiCache)
 	        throws Exception {
 		Vector<ModelConfigurationResult> globalScoreboard = new Vector<>();
 		int maxIterations = 10;
@@ -600,7 +606,7 @@ public class TuneModelLibSvm {
 		ExampleGatherer<Annotation, HashSet<Annotation>> develGatherer = new ExampleGatherer<>();
 
 		GenerateTrainingAndTest.gatherExamplesTrainingAndDevel(annotator, null, null, null, null, null, null,
-				partialSolutionsTrain, partialSolutionsDevel, step, trainGatherer, develGatherer, null, null, wikiApi, w2f, optDs);
+				partialSolutionsTrain, partialSolutionsDevel, step, trainGatherer, develGatherer, null, null, wikiApi, w2f, optDs, qiCache);
 
 		if (!improvementPossibleGreedy(trainGatherer) || !improvementPossibleGreedy(develGatherer))
 			return null;

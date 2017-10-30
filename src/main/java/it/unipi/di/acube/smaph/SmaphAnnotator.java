@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.Vector;
 import java.util.regex.Matcher;
@@ -53,7 +54,7 @@ import it.unipi.di.acube.batframework.metrics.StrongAnnotationMatch;
 import it.unipi.di.acube.batframework.metrics.StrongMentionAnnotationMatch;
 import it.unipi.di.acube.batframework.metrics.StrongTagMatch;
 import it.unipi.di.acube.batframework.problems.Sa2WSystem;
-import it.unipi.di.acube.batframework.systemPlugins.WATAnnotator;
+import it.unipi.di.acube.batframework.systemPlugins.WAT2Annotator;
 import it.unipi.di.acube.batframework.utils.AnnotationException;
 import it.unipi.di.acube.batframework.utils.Pair;
 import it.unipi.di.acube.batframework.utils.ProblemReduction;
@@ -78,11 +79,11 @@ import it.unipi.di.acube.smaph.main.ERDDatasetFilter;
 import it.unipi.di.acube.smaph.snippetannotationfilters.SnippetAnnotationFilter;
 
 public class SmaphAnnotator implements Sa2WSystem {
-	private final static Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+	private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 	private static final Pattern WIKI_URL_PATTERN = Pattern.compile("https?://en.wikipedia.org/wiki/(.+)");
 	private WikipediaInterface wikiApi;
 	private WebsearchApi websearchApi = null;
-	private WATAnnotator snippetAnnotator;
+	private WAT2Annotator snippetAnnotator;
 	private EntityFilter entityFilter;
 	private FeatureNormalizer entityFilterNormalizer;
 	private LinkBack linkBack;
@@ -130,7 +131,7 @@ public class SmaphAnnotator implements Sa2WSystem {
 	public SmaphAnnotator(boolean includeSourceWikiResults, int topKWikiResults, boolean includeSourceWikiSearchResults,
 	        int topKwikiSearch, boolean includeSourceSnippets, int topKSnippets, double anchorMaxED, boolean tagTitles,
 	        LinkBack linkBack, EntityFilter entityFilter, FeatureNormalizer entityFilterNormalizer, BindingGenerator bg,
-	        WATAnnotator snippetAnnotator, SnippetAnnotationFilter snippetAnnotationFilter, WikipediaInterface wikiApi,
+	        WAT2Annotator snippetAnnotator, SnippetAnnotationFilter snippetAnnotationFilter, WikipediaInterface wikiApi,
 	        WikipediaToFreebase wikiToFreeb, WebsearchApi searchApi, EntityToAnchors e2a) {
 		this.entityFilter = entityFilter;
 		this.entityFilterNormalizer = entityFilterNormalizer;
@@ -558,7 +559,8 @@ public class SmaphAnnotator implements Sa2WSystem {
 		for (int rank=0; rank<snippetAnnotations.size(); rank ++){
 			for (Pair<ScoredAnnotation, HashMap<String, Double>> annAndInfo : snippetAnnotations.get(rank)){
 				ScoredAnnotation ann = annAndInfo.first;
-				String mentionStr =  snippetsToBolds.get(rank).first.substring(ann.getPosition(), ann.getPosition()+ann.getLength());
+				String mentionStr;
+					mentionStr = ann.getMentionString(snippetsToBolds.get(rank).first);
 				Tag t = new Tag(ann.getConcept());
 				if (!res.containsKey(t))
 					res.put(t, new Vector<String>());
@@ -596,16 +598,19 @@ public class SmaphAnnotator implements Sa2WSystem {
 			List<Pair<ScoredAnnotation, HashMap<String, Double>>> resI = new Vector<>();
 			snippetAnnotations.add(resI);
 			String snippet = snippetAndBolds.first;
+			if (snippet.isEmpty())
+				continue;
 			Vector<Pair<Integer, Integer>> bolds = snippetAndBolds.second;
 			HashSet<Mention> boldMentions = new HashSet<>();
 			for (Pair<Integer, Integer> bold : bolds)
 				boldMentions.add(new Mention(bold.first, bold.second));
 
-			HashSet<ScoredAnnotation> annotations = snippetAnnotator
-					.solveSa2W(snippet);
-			HashMap<Mention, HashMap<String, Double>> addInfo = snippetAnnotator
-					.getLastQueryAdditionalInfo();
-
+			HashSet<ScoredAnnotation> annotations = null;
+			HashMap<Mention, HashMap<String, Double>> addInfo = null;
+			
+			annotations = snippetAnnotator.solveSa2W(snippet);
+			addInfo = snippetAnnotator.getLastQueryAdditionalInfo();
+			
 			// Prefetch wids (this is needed to resolve redirects).
 			List<Integer> widsToPrefetch = new Vector<Integer>();
 			for (ScoredAnnotation a : annotations)
@@ -620,9 +625,10 @@ public class SmaphAnnotator implements Sa2WSystem {
 			HashSet<ScoredAnnotation> resolvedAnns = new HashSet<ScoredAnnotation>();
 			for (ScoredAnnotation a : annotations) {
 				int wid = wikiApi.dereference(a.getConcept());
-				if (wid > 0)
+				if (wid > 0) {
 					resolvedAnns.add(new ScoredAnnotation(a.getPosition(), a
 							.getLength(), wid, a.getScore()));
+				}
 			}
 
 			HashSet<Annotation> filtered = new HashSet<>();
@@ -687,9 +693,12 @@ public class SmaphAnnotator implements Sa2WSystem {
 			int greedyStep, List<Pair<FeaturePack<Annotation>, Double>> greedyVectorsToF1Incr,
 			List<Annotation> greedyCandidates,
 			boolean keepNEOnly,
+			Map<String, QueryInformation> qiCache,
 	        SmaphDebugger debugger) throws Exception {
 
-		QueryInformation qi = getQueryInformation(query, debugger);
+		if (!qiCache.containsKey(query))
+			qiCache.put(query, getQueryInformation(query, debugger));	
+		QueryInformation qi = qiCache.get(query);
 
 		// Generate examples for entityFilter
 		if (efVectorsToPresence != null)

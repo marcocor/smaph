@@ -13,8 +13,8 @@ import java.util.Vector;
 import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.math3.util.Pair;
 
-import it.unipi.di.acube.batframework.systemPlugins.CachedWATAnnotator;
-import it.unipi.di.acube.batframework.systemPlugins.WATAnnotator;
+import it.unipi.di.acube.batframework.systemPlugins.CachedWAT2Annotator;
+import it.unipi.di.acube.batframework.systemPlugins.WAT2Annotator;
 import it.unipi.di.acube.batframework.utils.WikipediaInterface;
 import it.unipi.di.acube.searchapi.CachedWebsearchApi;
 import it.unipi.di.acube.searchapi.WebsearchApi;
@@ -35,10 +35,10 @@ import it.unipi.di.acube.smaph.learn.models.linkback.bindingRegressor.RankLibBin
 import it.unipi.di.acube.smaph.learn.normalizer.FeatureNormalizer;
 import it.unipi.di.acube.smaph.learn.normalizer.NoFeatureNormalizer;
 import it.unipi.di.acube.smaph.learn.normalizer.ZScoreFeatureNormalizer;
-import it.unipi.di.acube.smaph.linkback.IndividualLinkback;
 import it.unipi.di.acube.smaph.linkback.CollectiveLinkBack;
 import it.unipi.di.acube.smaph.linkback.DummyLinkBack;
 import it.unipi.di.acube.smaph.linkback.GreedyLinkback;
+import it.unipi.di.acube.smaph.linkback.IndividualLinkback;
 import it.unipi.di.acube.smaph.linkback.LinkBack;
 import it.unipi.di.acube.smaph.linkback.bindingGenerator.BindingGenerator;
 import it.unipi.di.acube.smaph.linkback.bindingGenerator.DefaultBindingGenerator;
@@ -47,10 +47,8 @@ import it.unipi.di.acube.smaph.snippetannotationfilters.FrequencyAnnotationFilte
 public class SmaphBuilder {
 
 	public static final BindingGenerator DEFAULT_BINDING_GENERATOR = new DefaultBindingGenerator();
-	public static final CachedWATAnnotator DEFAULT_CACHED_AUX_ANNOTATOR = new CachedWATAnnotator("wikisense.mkapp.it", 80, "base",
-	        "COMMONNESS", "mw", "0.2", "0.0");
-	public static final WATAnnotator DEFAULT_AUX_ANNOTATOR = new WATAnnotator("wikisense.mkapp.it", 80, "base", "COMMONNESS",
-	        "mw", "0.2", "0.0");
+	public static WAT2Annotator DEFAULT_AUX_ANNOTATOR = WAT2Annotator.WAT2AnnotatorBuilder.builder().baseUri("http://localhost:8080/wat-servlet").enableAdditionalInfo().tokenizer("lucene").build();
+	public static WAT2Annotator DEFAULT_CACHED_AUX_ANNOTATOR = CachedWAT2Annotator.CachedWAT2AnnotatorBuilder.builder().baseUri("http://localhost:8080/wat-servlet").enableAdditionalInfo().tokenizer("lucene").build();
 	public static WebsearchApi BING_WEBSEARCH_API = null;
 	public static WebsearchApi GOOGLE_WEBSEARCH_API = null;
 	private static Map<URL, FeatureNormalizer> urlToNormalizer = new HashMap<>();
@@ -63,6 +61,11 @@ public class SmaphBuilder {
 	public static final double DEFAULT_ANNOTATIONFILTER_RATIO = 0.03;
 	public static final double DEFAULT_ANCHOR_MENTION_ED = 0.7;
 	public static final Websearch DEFAULT_WEBSEARCH = Websearch.GOOGLE_CSE;
+	
+	public static void initialize(String watGcubeToken){
+		DEFAULT_AUX_ANNOTATOR = WAT2Annotator.WAT2AnnotatorBuilder.builder().gcubeToken(watGcubeToken).enableAdditionalInfo().tokenizer("lucene").build();
+		DEFAULT_CACHED_AUX_ANNOTATOR = CachedWAT2Annotator.CachedWAT2AnnotatorBuilder.builder().gcubeToken(watGcubeToken).enableAdditionalInfo().tokenizer("lucene").build();
+	}
 
 	public enum SmaphVersion {
 		ENTITY_FILTER("ef"), ANNOTATION_REGRESSOR("ar"), COLLECTIVE("coll"), GREEDY("greedy");
@@ -121,7 +124,7 @@ public class SmaphBuilder {
 	}
 
 	public static SmaphAnnotator getDefaultSmaphParamTopk(WikipediaInterface wikiApi, WikipediaToFreebase wikiToFreeb,
-	        WATAnnotator auxAnnotator, EntityToAnchors e2a, EntityFilter entityFilter, FeatureNormalizer efNorm, LinkBack lb,
+	        WAT2Annotator auxAnnotator, EntityToAnchors e2a, EntityFilter entityFilter, FeatureNormalizer efNorm, LinkBack lb,
 	        boolean s1, int topkS1, boolean s2, int topkS2, boolean s3, int topkS3, Websearch ws, SmaphConfig c)
 	        throws FileNotFoundException, ClassNotFoundException, IOException {
 		return new SmaphAnnotator(s1, topkS1, s2, topkS2, s3, topkS3, DEFAULT_ANCHOR_MENTION_ED, false, lb, entityFilter, efNorm,
@@ -130,7 +133,7 @@ public class SmaphBuilder {
 	}
 
 	private static SmaphAnnotator getDefaultSmaphParam(WikipediaInterface wikiApi, WikipediaToFreebase wikiToFreeb,
-	        WATAnnotator auxAnnotator, EntityToAnchors e2a, EntityFilter entityFilter, FeatureNormalizer efNorm, LinkBack lb,
+	        WAT2Annotator auxAnnotator, EntityToAnchors e2a, EntityFilter entityFilter, FeatureNormalizer efNorm, LinkBack lb,
 	        boolean s1, boolean s2, boolean s3, Websearch ws, SmaphConfig c)
 	        throws FileNotFoundException, ClassNotFoundException, IOException {
 		return getDefaultSmaphParamTopk(wikiApi, wikiToFreeb, auxAnnotator, e2a, entityFilter, efNorm, lb, s1,
@@ -152,13 +155,13 @@ public class SmaphBuilder {
 	}
 
 	public static SmaphAnnotator getSmaph(SmaphVersion v, WikipediaInterface wikiApi, WikipediaToFreebase wikiToFreeb,
-	        WATAnnotator auxAnnotator, EntityToAnchors e2a, boolean includeS2, SmaphConfig c)
+	        WAT2Annotator auxAnnotator, EntityToAnchors e2a, boolean includeS2, SmaphConfig c)
 	        throws FileNotFoundException, ClassNotFoundException, IOException {
 		return getSmaph(v, wikiApi, wikiToFreeb, auxAnnotator, e2a, includeS2, DEFAULT_WEBSEARCH, c, -1);
 	}
 
 	public static SmaphAnnotator getSmaph(SmaphVersion v, WikipediaInterface wikiApi, WikipediaToFreebase wikiToFreeb,
-	        WATAnnotator auxAnnotator, EntityToAnchors e2a, boolean includeS2, Websearch ws, SmaphConfig c, int greedyStepLimit)
+	        WAT2Annotator auxAnnotator, EntityToAnchors e2a, boolean includeS2, Websearch ws, SmaphConfig c, int greedyStepLimit)
 	        throws FileNotFoundException, ClassNotFoundException, IOException {
 		URL model = getDefaultModel(v, ws, true, includeS2, true, -1);
 		URL zscore = getDefaultZscoreNormalizer(v, ws, true, includeS2, true, -1);

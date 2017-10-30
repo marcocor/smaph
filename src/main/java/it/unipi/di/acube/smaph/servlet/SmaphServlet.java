@@ -107,7 +107,7 @@ public class SmaphServlet {
 	}
 
 	private SmaphConfig getSmaphConfig(String cseId, String apiKey) {
-		return new SmaphConfig(null, null, null, apiKey, cseId, null, null, null, null, null);
+		return new SmaphConfig(null, null, null, apiKey, cseId, null, null, null, null, null, null);
 	}
 
 	private SmaphAnnotator getAnnotatorByName(String annotator, boolean excludeS2, SmaphConfig c) {

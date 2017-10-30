@@ -38,10 +38,12 @@ public class SmaphConfig {
 	private String defaultWikipagesStorage;
 	private String defaultEntityToAnchorsStorage;
 	private String defaultWikipediaToFreebaseStorage;
+	private String watGcubeToken;
 
 	public SmaphConfig(String defaultStands4UserId, String defaultStands4Cache, String defaultStands4TokenId,
 	        String defaultGoogleApiKey, String defaultGoogleCseId, String defaultBingKey, String defaultWebsearchCache,
-	        String defaultWikipagesStorage, String defaultEntityToAnchorsStorage, String defaultWikipediaToFreebaseStorage) {
+	        String defaultWikipagesStorage, String defaultEntityToAnchorsStorage, String defaultWikipediaToFreebaseStorage,
+	        String watGcubeToken) {
 		this.defaultStands4UserId = defaultStands4UserId;
 		this.defaultStands4Cache = defaultStands4Cache;
 		this.defaultStands4TokenId = defaultStands4TokenId;
@@ -52,6 +54,7 @@ public class SmaphConfig {
 		this.defaultWikipagesStorage = defaultWikipagesStorage;
 		this.defaultEntityToAnchorsStorage = defaultEntityToAnchorsStorage;
 		this.defaultWikipediaToFreebaseStorage = defaultWikipediaToFreebaseStorage;
+		this.watGcubeToken = watGcubeToken;
 	}
 
 	/**
@@ -98,7 +101,8 @@ public class SmaphConfig {
 			        getConfigValue("stands4", "tokenid", doc), getConfigValue("google-cse", "api-key", doc),
 			        getConfigValue("google-cse", "cse-id", doc), getConfigValue("bing", "key", doc),
 			        getConfigValue("cache", "websearch-cache", doc), getConfigValue("wikipages", "storage", doc),
-			        getConfigValue("entity-to-anchors", "storage", doc), getConfigValue("wikipedia-to-freebase", "storage", doc));
+			        getConfigValue("entity-to-anchors", "storage", doc), getConfigValue("wikipedia-to-freebase", "storage", doc),
+			        getConfigValue("wat", "gcube-token", doc));
 		} catch (Exception e) {
 			e.printStackTrace();
 			throw new RuntimeException(e);
@@ -138,6 +142,10 @@ public class SmaphConfig {
 
 	public String getDefaultWikipediaToFreebaseStorage() {
 		return defaultWikipediaToFreebaseStorage;
+	}
+
+	public String getWatGcubeToken() {
+		return watGcubeToken;
 	}
 
 }

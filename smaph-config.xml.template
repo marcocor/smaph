@@ -20,4 +20,7 @@
 		<param name="tokenid" value="STANDS4_TOKENID" />
 		<param name="cache" value="stands4.cache" />
 	</setting>
+	<setting name="wat">
+        <param name="gcube-token" value="WAT_GCUBE_TOKEN" />
+    </setting>
 </smaph>

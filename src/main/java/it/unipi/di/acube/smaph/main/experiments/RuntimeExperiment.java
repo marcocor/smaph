@@ -9,10 +9,10 @@ import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import it.unipi.di.acube.batframework.cache.BenchmarkCache;
 import it.unipi.di.acube.batframework.datasetPlugins.DatasetBuilder;
 import it.unipi.di.acube.batframework.problems.A2WDataset;
-import it.unipi.di.acube.batframework.systemPlugins.CachedWATAnnotator;
+import it.unipi.di.acube.batframework.systemPlugins.CachedWAT2Annotator;
 import it.unipi.di.acube.batframework.utils.TestDataset;
 import it.unipi.di.acube.batframework.utils.WikipediaInterface;
-import it.unipi.di.acube.batframework.utils.WikipediaLocalInterface;
+import it.unipi.di.acube.batframework.utils.WikipediaInterfaceWAT;
 import it.unipi.di.acube.smaph.SmaphAnnotator;
 import it.unipi.di.acube.smaph.SmaphBuilder;
 import it.unipi.di.acube.smaph.SmaphBuilder.SmaphVersion;
@@ -30,13 +30,16 @@ public class RuntimeExperiment {
 		Locale.setDefault(LOCALE);
 
 		SmaphConfig c = SmaphConfig.fromConfigFile("smaph-config.xml");
-		WikipediaInterface wikiApi = WikipediaLocalInterface.open(c.getDefaultWikipagesStorage());
+		SmaphBuilder.initialize(c.getWatGcubeToken());
+		CachedWAT2Annotator.setCache("wat2.cache");
+		WATRelatednessComputer.setGcubeToken(c.getWatGcubeToken());
+		WATRelatednessComputer.setCache("relatedness_wat2.cache");
+		WikipediaInterface wikiApi = new WikipediaInterfaceWAT.WikipediaInterfaceWATBuilder().gcubeToken(c.getWatGcubeToken()).cache().build();
 		WikipediaToFreebase w2f = WikipediaToFreebase.open(c.getDefaultWikipediaToFreebaseStorage());
 		EntityToAnchors e2a = EntityToAnchors.fromDB(c.getDefaultEntityToAnchorsStorage());
-		WATRelatednessComputer.setCache("relatedness.cache");
-		A2WDataset ds = DatasetBuilder.getGerdaqDevel(wikiApi);
-		CachedWATAnnotator.setCache("wikisense.cache");
 
+		A2WDataset ds = DatasetBuilder.getGerdaqDevel(wikiApi);
+		
 		System.out.println("Printing basic information about dataset " + ds.getName());
 		TestDataset.dumpInfo(ds, wikiApi);
 
@@ -63,7 +66,7 @@ public class RuntimeExperiment {
 		}
 
 		wikiApi.flush();
-		CachedWATAnnotator.flush();
+		CachedWAT2Annotator.flush();
 		WATRelatednessComputer.flush();
 		BenchmarkCache.flush();
 	}

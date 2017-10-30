@@ -19,6 +19,9 @@ SMAPH is built on top of the information provided by search engines: it issues a
 - To use SMAPH with Google, please follow the guide [here](https://sobigdata.d4science.org/group/smaph/documentation) (See sections "Setting up Google CSE" and "Enabling the Google API").
 - To use SMAPH with Bing, register to the [Bing Web Search API](https://azure.microsoft.com/en-us/pricing/details/cognitive-services/search-api/).
 
+# Obtaining access to WAT
+SMAPH annotates snippets returned by search engines through an auxiliary annotator, WAT. In order to issue calls to WAT you need an authentication token to the TagMe VRE that you can obtain following [this procedure](https://sobigdata.d4science.org/web/tagme/wat-api).
+
 # Using SMAPH deployment on SoBigData
 SMAPH is accessible as a web service hosted by the [SoBigData European Research Infrastructure](http://www.sobigdata.eu). For general use, we strongly recommend to use this deployment, which is the only one for which we guarantee technical support. Registration is free.
 
@@ -101,12 +104,13 @@ Build the SMAPH Servlet WAR with:
 
 `mvn war:war`
 
-The servlet will need a few context parameters that must be passed e.g. through a `context.xml` file (to be placed in the Tomcat `conf/` directory). It should contain the following parameters:
+The servlet will need a few context parameters that must be passed e.g. through a `context.xml` file (to be placed in the Tomcat `conf/` directory). You will have to provide a gcube-token for accessing WAT as (replacing `WAT_GCUBE_TOKEN`). It should contain the following parameters:
+
 ```
 <?xml version='1.0' encoding='utf-8'?>
   <Context>
     <WatchedResource>WEB-INF/web.xml</WatchedResource>
-    <Parameter name="it.unipi.di.acube.smaph.wiki-pages-db" value="/PATH/TO/STORAGE/wikipedia_pages.db" override="false"/>
+    <Parameter name="it.unipi.di.acube.smaph.wat-gcube-token" value="WAT_GCUBE_TOKEN" override="false"/>
     <Parameter name="it.unipi.di.acube.smaph.wiki-to-freebase-db" value="/PATH/TO/STORAGE/freebase.db" override="false"/>
     <Parameter name="it.unipi.di.acube.smaph.entity-to-anchors-db" value="/PATH/TO/STORAGE/e2a.db" override="false"/>
 </Context>

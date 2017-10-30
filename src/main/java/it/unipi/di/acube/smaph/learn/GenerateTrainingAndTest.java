@@ -18,6 +18,7 @@ package it.unipi.di.acube.smaph.learn;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Vector;
 
 import org.slf4j.Logger;
@@ -32,6 +33,7 @@ import it.unipi.di.acube.batframework.problems.A2WDataset;
 import it.unipi.di.acube.batframework.utils.Pair;
 import it.unipi.di.acube.batframework.utils.WikipediaInterface;
 import it.unipi.di.acube.batframework.utils.datasets.MergeDatasets;
+import it.unipi.di.acube.smaph.QueryInformation;
 import it.unipi.di.acube.smaph.SmaphAnnotator;
 import it.unipi.di.acube.smaph.datasets.wikitofreebase.WikipediaToFreebase;
 import it.unipi.di.acube.smaph.learn.featurePacks.FeaturePack;
@@ -50,7 +52,8 @@ public class GenerateTrainingAndTest {
 	        List<HashSet<Annotation>> greedyPartialSolution,
 	        int greedyStep,
 	        ExampleGatherer<Annotation, HashSet<Annotation>> greedyGatherer,
-	        boolean keepNEOnly)
+	        boolean keepNEOnly,
+			Map<String, QueryInformation> qiCache)
 	        throws Exception {
 		
 		// On first step, initialize greedy partial solutions
@@ -94,7 +97,7 @@ public class GenerateTrainingAndTest {
 			}
 
 			smaph.generateExamples(query, goldStandard, goldStandardAnn, efVectorsToPresence, efCandidates, arVectorsToPresence,
-			        arCandidates, collVectorsToF1, collCandidates, greedyPartialSolutionI, greedyStep, greedyVectorsToF1Incr, greedyCandidates, keepNEOnly, null);
+			        arCandidates, collVectorsToF1, collCandidates, greedyPartialSolutionI, greedyStep, greedyVectorsToF1Incr, greedyCandidates, keepNEOnly, qiCache, null);
 
 			if (entityFilterGatherer != null)
 				entityFilterGatherer.addExample(goldBoolToDouble(efVectorsToPresence), efCandidates, goldStandard);
@@ -134,7 +137,7 @@ public class GenerateTrainingAndTest {
 			ExampleGatherer<Annotation, HashSet<Annotation>> develGreedyGatherer,
 			List<String> trainInstances, List<String> develInstances,
 			WikipediaInterface wikiApi, WikipediaToFreebase w2f,
-			OptDataset opt) throws Exception {
+			OptDataset opt, Map<String, QueryInformation> qiCache) throws Exception {
 		if (trainEntityFilterGatherer != null || trainAnnotationRegressorGatherer != null || trainCollectiveGatherer != null
 		        || trainGreedyGatherer != null) {
 
@@ -152,7 +155,7 @@ public class GenerateTrainingAndTest {
 				        yahoo);
 
 				gatherExamples(smaph, trainingDataset, trainEntityFilterGatherer, trainAnnotationRegressorGatherer,
-				        trainCollectiveGatherer, greedyPartialSolutionsTrain, greedyStep, trainGreedyGatherer, keepNEOnly);
+				        trainCollectiveGatherer, greedyPartialSolutionsTrain, greedyStep, trainGreedyGatherer, keepNEOnly, qiCache);
 
 				if (trainInstances != null)
 					trainInstances.addAll(trainingDataset.getTextInstanceList());
@@ -165,7 +168,7 @@ public class GenerateTrainingAndTest {
 
 				gatherExamples(smaph, trainingDataset,
 						trainEntityFilterGatherer, trainAnnotationRegressorGatherer,
-						trainCollectiveGatherer, greedyPartialSolutionsTrain, greedyStep, trainGreedyGatherer, keepNEOnly);
+						trainCollectiveGatherer, greedyPartialSolutionsTrain, greedyStep, trainGreedyGatherer, keepNEOnly, qiCache);
 
 				if (trainInstances != null)
 					trainInstances.addAll(trainingDataset.getTextInstanceList());
@@ -176,7 +179,7 @@ public class GenerateTrainingAndTest {
 				boolean keepNEOnly = true;
 				A2WDataset smaphDevel = new ERDDatasetFilter(DatasetBuilder.getGerdaqDevel(wikiApi), wikiApi, w2f);
 				gatherExamples(smaph, smaphDevel, develEntityFilterGatherer, develAnnotationRegressorGatherer,
-				        develCollectiveGatherer, greedyPartialSolutionsDevel, greedyStep, develGreedyGatherer, keepNEOnly);
+				        develCollectiveGatherer, greedyPartialSolutionsDevel, greedyStep, develGreedyGatherer, keepNEOnly, qiCache);
 				if (develInstances != null){
 					develInstances.addAll(smaphDevel.getTextInstanceList());
 				}
@@ -185,7 +188,7 @@ public class GenerateTrainingAndTest {
 				boolean keepNEOnly = false;
 				A2WDataset smaphDevel = DatasetBuilder.getGerdaqDevel(wikiApi);
 				gatherExamples(smaph, smaphDevel, develEntityFilterGatherer, develAnnotationRegressorGatherer,
-				        develCollectiveGatherer, greedyPartialSolutionsDevel, greedyStep, develGreedyGatherer, keepNEOnly);
+				        develCollectiveGatherer, greedyPartialSolutionsDevel, greedyStep, develGreedyGatherer, keepNEOnly, qiCache);
 				if (develInstances != null){
 					develInstances.addAll(smaphDevel.getTextInstanceList());
 				}

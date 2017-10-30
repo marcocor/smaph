@@ -43,14 +43,15 @@ import it.unipi.di.acube.batframework.problems.A2WDataset;
 import it.unipi.di.acube.batframework.problems.A2WSystem;
 import it.unipi.di.acube.batframework.problems.C2WDataset;
 import it.unipi.di.acube.batframework.problems.C2WSystem;
-import it.unipi.di.acube.batframework.systemPlugins.CachedWATAnnotator;
+import it.unipi.di.acube.batframework.systemPlugins.CachedWAT2Annotator;
 import it.unipi.di.acube.batframework.systemPlugins.MockAnnotator;
 import it.unipi.di.acube.batframework.systemPlugins.TagmeAnnotator;
+import it.unipi.di.acube.batframework.systemPlugins.WAT2Annotator;
 import it.unipi.di.acube.batframework.utils.DumpData;
 import it.unipi.di.acube.batframework.utils.Pair;
 import it.unipi.di.acube.batframework.utils.TestDataset;
 import it.unipi.di.acube.batframework.utils.WikipediaInterface;
-import it.unipi.di.acube.batframework.utils.WikipediaLocalInterface;
+import it.unipi.di.acube.batframework.utils.WikipediaInterfaceWAT;
 import it.unipi.di.acube.smaph.SmaphAnnotator;
 import it.unipi.di.acube.smaph.SmaphBuilder;
 import it.unipi.di.acube.smaph.SmaphBuilder.SmaphVersion;
@@ -77,19 +78,21 @@ public class RunBenchmark {
 		java.security.Security.setProperty("networkaddress.cache.ttl", "0");
 		Locale.setDefault(LOCALE);
 		SmaphConfig c = SmaphConfig.fromConfigFile("smaph-config.xml");
-		WikipediaInterface wikiApi = WikipediaLocalInterface.open(c.getDefaultWikipagesStorage());
-		EntityToAnchors e2a = EntityToAnchors.fromDB(c.getDefaultEntityToAnchorsStorage());
+		SmaphBuilder.initialize(c.getWatGcubeToken());
+		WATRelatednessComputer.setGcubeToken(c.getWatGcubeToken());
+		CachedWAT2Annotator.setCache("wat2.cache");
+		WATRelatednessComputer.setCache("relatedness_wat2.cache");
+		WikipediaInterface wikiApi = new WikipediaInterfaceWAT.WikipediaInterfaceWATBuilder().gcubeToken(c.getWatGcubeToken()).cache().build();
 		WikipediaToFreebase w2f = WikipediaToFreebase.open(c.getDefaultWikipediaToFreebaseStorage());
+		EntityToAnchors e2a = EntityToAnchors.fromDB(c.getDefaultEntityToAnchorsStorage());
 
-		WATRelatednessComputer.setCache("relatedness.cache");
 		A2WDataset ds = DatasetBuilder.getGerdaqTest(wikiApi);
 
 		System.out.println("Printing basic information about dataset " + ds.getName());
 		TestDataset.dumpInfo(ds, wikiApi);
 
-		CachedWATAnnotator wat = new CachedWATAnnotator("wikisense.mkapp.it", 80, "base", "COMMONNESS", "mw", "0.2", "0.0");
+		WAT2Annotator wat = SmaphBuilder.DEFAULT_CACHED_AUX_ANNOTATOR;
 
-		CachedWATAnnotator.setCache("wikisense.cache");
 		TagmeAnnotator tagme = null;
 		if (line.hasOption("tagme-gcube-token"))
 			tagme = new TagmeAnnotator("https://tagme.d4science.org/tagme/tag", line.getOptionValue("tagme-gcube-token"), 0.8f, 0.005f, 0.02f);
@@ -229,7 +232,7 @@ public class RunBenchmark {
 			System.out.format(LOCALE, "LB avg/max examples: %.3f\t%d%n", maxAndAvgGeneratedBindingsI.second,
 			        maxAndAvgGeneratedBindingsI.first);
 		wikiApi.flush();
-		CachedWATAnnotator.flush();
+		CachedWAT2Annotator.flush();
 		WATRelatednessComputer.flush();
 		BenchmarkCache.flush();
 	}

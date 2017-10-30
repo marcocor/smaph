@@ -13,5 +13,7 @@ public class WATRelatednessComputerTest {
 		assertTrue(WATRelatednessComputer.getLp("joseph berlusconi") == 0.0);
 		assertTrue(WATRelatednessComputer.getLp("sdfliksjgfoisdjgoija") == 0.0);
 		assertTrue(WATRelatednessComputer.getLp("marco sdfosdfjoiadasoi") == 0.0);
+		assertTrue(WATRelatednessComputer.getJaccardRelatedness(23388797, 23388798) == 0.0);
+		assertTrue(WATRelatednessComputer.getJaccardRelatedness(26909, 23388798) > 0.0);
 	}
 }
