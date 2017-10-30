@@ -1,3 +1,6 @@
+<img src="https://raw.githubusercontent.com/marcocor/smaph/master/src/docs/smaph_logo.png" width="300">
+
+
 The SMAPH system for query entity linking.
 =============
 
