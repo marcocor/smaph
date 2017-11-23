@@ -60,7 +60,9 @@ eaef557016496c5c5f848547dc3caf7a  storage/mapdb/freebase.db
 ## Option 1. Standalone web server
 SMAPH includes a Grizzly standalone web server that deploys the SMAPH Servlet and makes it accessible through a RESTful API. This servlet currently only supports Google CSE as search engine (if you are interested in Bing too, open an [issue](https://github.com/marcocor/smaph/issues)). You can run the standalone server with:
 
-`mvn exec:java -P server`
+`mvn exec:java -P server -Dsmaph.wat_gcube_token=<WAT_GCUBE_TOKEN>`
+
+(Replace *<WAT_GCUBE_TOKEN>* with a valid WAT gcube authentication token, see above).
 
 To change the default listening port (8080), hostname (`localhost`), or storage path (`storage/mapdb`), you can issue parameters `-Dsmaph.port=PORT`, `-Dsmaph.host=HOSTNAME`, `-Dsmaph.storage_path=PATH`.
 
