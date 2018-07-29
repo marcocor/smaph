@@ -35,7 +35,7 @@ public class ServerMain {
 	 * @throws URISyntaxException
 	 * @throws ProcessingException
 	 */
-	public static void startServer(String serverUri, Path storageBase) throws ProcessingException, URISyntaxException {
+	public static void startServer(String serverUri, Path storageBase, String watGcubeToken) throws ProcessingException, URISyntaxException {
 		LOG.info("Initializing SMAPH services.");
 		LOG.info("Storage path: {}", storageBase.toAbsolutePath());
 
@@ -50,6 +50,7 @@ public class ServerMain {
 		context.setInitParameter(SmaphContextListener.WIKI_PAGES_DB, storageBase.resolve("mapdb/wikipedia_pages.db").toString());
 		context.setInitParameter(SmaphContextListener.FREEBASE_DIR, storageBase.resolve("mapdb/freebase.db").toString());
 		context.setInitParameter(SmaphContextListener.ENTITY_TO_ANCHORS_DB, storageBase.resolve("mapdb/e2a.db").toString());
+		context.setInitParameter(SmaphContextListener.WAT_GCUBE_TOKEN, watGcubeToken);
 		context.deploy(httpServer);
 		try {
 			httpServer.start();
@@ -82,11 +83,12 @@ public class ServerMain {
 		options.addOption("h", "host", true, "Server hostname.");
 		options.addOption("p", "port", true, "TCP port to listen.");
 		options.addOption("s", "storage_path", true, "Storage path.");
+		options.addOption("w", "wat_gcube_token", true, "WAT gcube authentication token");
 		CommandLine line = parser.parse(options, args);
 
 		String serverUri = String.format("http://%s:%d/smaph", line.getOptionValue("host", "localhost"),
 		        Integer.parseInt(line.getOptionValue("port", "8080")));
 		Path storage = Paths.get(line.getOptionValue("storage_path"));
-		startServer(serverUri, storage);
+		startServer(serverUri, storage, line.getOptionValue("wat_gcube_token"));
 	}
 }
