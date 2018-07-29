@@ -132,7 +132,7 @@ and include it in your project's `pom.xml` with:
 <dependency>
   <groupId>it.unipi.di.acube</groupId>
   <artifactId>smaph</artifactId>
-  <version>3.1</version>
+  <version>3.1.1</version>
 </dependency>
 ```
 Take a look at the `annotateDefault` method in `SmaphServlet.java` to see how it's done. You will basically have to build an annotator with `SmaphBuilder` and call the annotator's `solveSa2W()` method.

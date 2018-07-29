@@ -3,7 +3,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>it.unipi.di.acube</groupId>
 	<artifactId>smaph</artifactId>
-	<version>3.1</version>
+	<version>3.1.1</version>
 	<packaging>jar</packaging>
 	<name>SMAPH</name>
 	<description>SMAPH system for query entity tagging</description>
